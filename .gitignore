@@ -1,0 +1,30 @@
+# Dependencies
+/vendor/
+node_modules/
+.pnpm-store/
+
+# Yii2 runtime + generated
+**/runtime/
+runtime/*.sqlite
+**/web/assets/
+**/config/*-local.php
+
+# Built SPA output (produced by `pnpm -r build` into each tier's web/app/)
+/frontend/web/app/
+/backend/web/app/
+/tenant/web/app/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+*.log
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json

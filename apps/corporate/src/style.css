@@ -1,0 +1,253 @@
+:root {
+  --bg: #ffffff;
+  --bg-soft: #f6f7f9;
+  --bg-elev: #ffffff;
+  --text: #10151c;
+  --text-soft: #566072;
+  --border: #e6e9ef;
+  --accent: #2f6bff;
+  --accent-hover: #1f56e0;
+  --accent-soft: #eaf0ff;
+  --shadow: 0 1px 2px rgba(16, 21, 28, 0.04), 0 8px 24px rgba(16, 21, 28, 0.06);
+  --radius: 16px;
+  --maxw: 1120px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0c0f14;
+    --bg-soft: #11151c;
+    --bg-elev: #141922;
+    --text: #eef1f6;
+    --text-soft: #9aa4b6;
+    --border: #222834;
+    --accent: #4d82ff;
+    --accent-hover: #6f9bff;
+    --accent-soft: #182338;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.35);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
+    Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease,
+    color 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.btn-ghost:hover {
+  background: var(--bg-soft);
+}
+
+.btn-lg {
+  padding: 15px 26px;
+  font-size: 16px;
+  border-radius: 14px;
+}
+
+.eyebrow {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 6px 12px;
+  border-radius: 999px;
+}
+
+.section {
+  padding: 84px 0;
+}
+
+.section-head {
+  max-width: 640px;
+  margin: 0 auto 48px;
+  text-align: center;
+}
+
+.section-head h2 {
+  font-size: clamp(26px, 4vw, 38px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 16px 0 12px;
+}
+
+.section-head p {
+  color: var(--text-soft);
+  font-size: 17px;
+  margin: 0;
+}
+
+.section--soft {
+  background: var(--bg-soft);
+}
+
+/* Shared surfaces */
+.grid {
+  display: grid;
+  gap: 20px;
+}
+.card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 26px;
+}
+
+/* Category / meta chip */
+.tag {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 5px 11px;
+  border-radius: 999px;
+}
+
+/* Back / breadcrumb link */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-soft);
+  font-size: 14.5px;
+  font-weight: 600;
+}
+.back-link:hover {
+  color: var(--text);
+}
+
+/* Internal-page header block */
+.page-header {
+  padding: 64px 0 40px;
+  text-align: center;
+}
+.page-header h1 {
+  font-size: clamp(30px, 5vw, 46px);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  margin: 18px auto 14px;
+  max-width: 760px;
+}
+.page-header p {
+  color: var(--text-soft);
+  font-size: clamp(16px, 2vw, 19px);
+  margin: 0 auto;
+  max-width: 620px;
+}
+
+/* Long-form article typography */
+.prose {
+  color: var(--text);
+  font-size: 17px;
+  line-height: 1.72;
+}
+.prose > * {
+  margin: 0 0 22px;
+}
+.prose > *:last-child {
+  margin-bottom: 0;
+}
+.prose h2 {
+  font-size: clamp(21px, 3vw, 26px);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  margin: 40px 0 16px;
+}
+.prose p {
+  color: var(--text-soft);
+}
+.prose ul {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.prose ul li {
+  position: relative;
+  padding-left: 28px;
+  color: var(--text-soft);
+}
+.prose ul li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--accent);
+  font-weight: 800;
+}
+.prose blockquote {
+  margin: 0;
+  padding: 18px 22px;
+  border-left: 3px solid var(--accent);
+  background: var(--bg-soft);
+  border-radius: 0 12px 12px 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text);
+}

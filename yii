@@ -1,0 +1,22 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Yii console bootstrap. Usage: php yii <route> [options]
+ */
+defined('YII_DEBUG') or define('YII_DEBUG', (getenv('YII_DEBUG') ?: 'true') === 'true');
+defined('YII_ENV') or define('YII_ENV', getenv('YII_ENV') ?: 'dev');
+
+require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/vendor/yiisoft/yii2/Yii.php';
+require __DIR__ . '/common/config/bootstrap.php';
+
+$config = \yii\helpers\ArrayHelper::merge(
+    require __DIR__ . '/common/config/main.php',
+    require __DIR__ . '/console/config/main.php',
+    file_exists(__DIR__ . '/common/config/main-local.php')
+        ? require __DIR__ . '/common/config/main-local.php'
+        : []
+);
+
+$exitCode = (new \yii\console\Application($config))->run();
+exit($exitCode);
