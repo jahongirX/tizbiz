@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { ApiError } from '@tizbiz/api-client'
 import { LogIn } from 'lucide-vue-next'
 import { useAuthStore } from '../stores/auth'
+import { VERTICALS } from '../lib/verticals'
 import PhoneInput from '../components/PhoneInput.vue'
 
 const auth = useAuthStore()
@@ -35,17 +36,21 @@ async function submit() {
   }
 }
 
-// One-click demo login with the seeded owner account.
-async function demoLogin() {
+// One-click demo login per business vertical — each opens into its own
+// matching admin (accent + terminology + sample data).
+const demoBusy = ref(null)
+async function demoLogin(v) {
   error.value = ''
+  demoBusy.value = v.key
   loading.value = true
   try {
-    await auth.login('+998900000001', 'secret123')
+    await auth.login(v.demoPhone, 'secret123')
     router.push('/')
   } catch (e) {
     error.value = e instanceof ApiError ? e.message : 'Demo hisobga kirishda xatolik'
   } finally {
     loading.value = false
+    demoBusy.value = null
   }
 }
 </script>
@@ -79,17 +84,29 @@ async function demoLogin() {
         </button>
       </form>
 
-      <div class="or-sep"><span>yoki</span></div>
+      <div class="or-sep"><span>yoki demo sifatida kiring</span></div>
 
-      <button
-        class="btn demo-btn"
-        style="width: 100%"
-        :disabled="loading"
-        type="button"
-        @click="demoLogin"
-      >
-        🚀 Demo sifatida kirish
-      </button>
+      <div class="demo-grid">
+        <button
+          v-for="v in VERTICALS"
+          :key="v.key"
+          type="button"
+          class="demo-card"
+          :style="{ '--vc': v.accent }"
+          :disabled="loading"
+          @click="demoLogin(v)"
+        >
+          <span class="demo-card__icon">
+            <span
+              v-if="demoBusy === v.key"
+              class="spinner"
+              style="width: 16px; height: 16px; border-width: 2px"
+            ></span>
+            <component :is="v.icon" v-else :size="18" />
+          </span>
+          <span class="demo-card__title">{{ v.title }}</span>
+        </button>
+      </div>
 
       <p class="muted" style="text-align: center; margin: 18px 0 0">
         Hisobingiz yo'qmi?
@@ -152,14 +169,44 @@ h1 {
   justify-content: center;
   gap: 8px;
 }
-.demo-btn {
-  border: 1px dashed var(--primary);
-  background: var(--primary-soft);
-  color: var(--primary);
-  font-weight: 600;
+.demo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
-.demo-btn:hover:not(:disabled) {
-  background: var(--primary);
+.demo-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface, transparent);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+}
+.demo-card:hover:not(:disabled) {
+  border-color: var(--vc);
+  background: color-mix(in srgb, var(--vc) 10%, transparent);
+}
+.demo-card:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.demo-card__icon {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
   color: #fff;
+  background: var(--vc);
+}
+.demo-card__title {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
 }
 </style>

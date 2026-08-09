@@ -34,7 +34,7 @@ class SlotEngine implements EngineInterface
         $enabled = (bool) $business->online_booking_enabled;
 
         return [
-            'engine' => self::key(),
+            'engine' => static::key(),
             'business' => [
                 'id' => (int) $business->id,
                 'name' => $business->name,

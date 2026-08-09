@@ -18,6 +18,8 @@ use yii\db\ActiveQuery;
  * @property string $timezone
  * @property int $status
  * @property array|null $features
+ * @property int|null $staff_count
+ * @property int|null $branches_count
  * @property int $created_at
  * @property int $updated_at
  *
@@ -76,6 +78,8 @@ class Business extends ActiveRecord
             [['booking_horizon_days'], 'default', 'value' => 30],
             [['engine'], 'string', 'max' => 24],
             [['engine'], 'default', 'value' => \common\engines\EngineFactory::DEFAULT_KEY],
+            [['engine'], 'in', 'range' => \common\engines\EngineFactory::keys(), 'message' => 'Noma\'lum yo\'nalish.'],
+            [['staff_count', 'branches_count'], 'integer', 'min' => 0, 'max' => 100000],
             [['features'], 'safe'],
         ];
     }
@@ -94,6 +98,8 @@ class Business extends ActiveRecord
             'booking_lead_min' => 'Minimal oldindan (daq)',
             'booking_horizon_days' => 'Necha kun oldin (maks)',
             'engine' => 'Dvigatel (yo\'nalish)',
+            'staff_count' => 'Xodimlar soni',
+            'branches_count' => 'Filiallar soni',
             'created_at' => 'Yaratilgan sana',
             'updated_at' => 'Yangilangan sana',
         ];

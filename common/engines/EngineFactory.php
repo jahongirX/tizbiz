@@ -13,11 +13,10 @@ use yii\base\InvalidArgumentException;
 class EngineFactory
 {
     private const MAP = [
-        'slot' => SlotEngine::class,
-        // Future verticals (each additive, in its own class):
-        // 'catalog' => CatalogEngine::class,  // tort / food
-        // 'rental'  => RentalEngine::class,   // kelin ko'ylak
-        // 'medical' => MedicalEngine::class,  // klinika / UZI
+        'slot' => SlotEngine::class,       // barber / go'zallik saloni
+        'medical' => MedicalEngine::class, // klinika / UZI / stomatologiya
+        'catalog' => CatalogEngine::class, // kafe / restoran / tort (Phase 2 flow)
+        'rental' => RentalEngine::class,   // kelin ko'ylak / kostyum ijarasi (Phase 3 flow)
     ];
 
     public const DEFAULT_KEY = 'slot';

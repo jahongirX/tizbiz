@@ -176,6 +176,96 @@ class SeedController extends Controller
         return ExitCode::OK;
     }
 
+    /**
+     * Seed one demo business per vertical (barber / cafe / clinic / rental), each
+     * with its engine, category and vertical-appropriate sample data, so the
+     * per-vertical demo logins each open into a matching, non-empty admin.
+     * Idempotent: skips a vertical whose slug already exists.
+     * Usage: php yii seed/verticals
+     */
+    public function actionVerticals(): int
+    {
+        $defs = [
+            [
+                'slug' => 'barber', 'name' => 'Aziza Beauty', 'category' => 'barber', 'engine' => 'slot',
+                'phone' => '+998901111111', 'owner' => 'Aziza Karimova', 'staff_count' => 3, 'branches' => 1,
+                'staff' => ['Usta Jahongir', 'Sartarosh'], 'cat' => 'Sartaroshxona',
+                'service' => ['Soch olish', 30, 5000000, 1000000],
+            ],
+            [
+                'slug' => 'tort', 'name' => 'Shirin Tort', 'category' => 'cafe', 'engine' => 'catalog',
+                'phone' => '+998902222222', 'owner' => 'Dilnoza Yusupova', 'staff_count' => 5, 'branches' => 2,
+                'staff' => ['Oshpaz Dilnoza', 'Qandolatchi'], 'cat' => 'Shirinliklar',
+                'service' => ['Napoleon tort (1kg)', 60, 15000000, 5000000],
+            ],
+            [
+                'slug' => 'klinika', 'name' => 'Sog\'lom Oila Klinikasi', 'category' => 'clinic', 'engine' => 'medical',
+                'phone' => '+998903333333', 'owner' => 'Dr. Sardor', 'staff_count' => 8, 'branches' => 1,
+                'staff' => ['Dr. Aziza', 'Shifokor'], 'cat' => 'Diagnostika',
+                'service' => ['UZI tekshiruvi', 30, 8000000, 2000000],
+            ],
+            [
+                'slug' => 'ijara', 'name' => 'Malika Kelin Salon', 'category' => 'rental', 'engine' => 'rental',
+                'phone' => '+998904444444', 'owner' => 'Malika Ergasheva', 'staff_count' => 2, 'branches' => 1,
+                'staff' => ['Menejer Malika', 'Stilist'], 'cat' => 'Ijara buyumlari',
+                'service' => ['Kelin ko\'ylagi (1 kun)', 60, 30000000, 10000000],
+            ],
+        ];
+
+        foreach ($defs as $d) {
+            if (Business::find()->where(['slug' => $d['slug']])->exists()) {
+                $this->stdout("  skip {$d['slug']} (already exists)\n");
+                continue;
+            }
+
+            $owner = User::findOne(['phone' => $d['phone']]);
+            if ($owner === null) {
+                $owner = $this->save(new User([
+                    'phone' => $d['phone'], 'name' => $d['owner'], 'status' => User::STATUS_ACTIVE,
+                ]), fn (User $u) => $u->setPassword('secret123'));
+            }
+
+            $business = $this->save(new Business([
+                'name' => $d['name'], 'slug' => $d['slug'], 'phone' => $d['phone'],
+                'category' => $d['category'], 'engine' => $d['engine'],
+                'staff_count' => $d['staff_count'], 'branches_count' => $d['branches'],
+                'tariff' => 'free', 'timezone' => 'Asia/Tashkent', 'status' => 10,
+            ]));
+
+            $this->save(new BusinessUser([
+                'business_id' => $business->id, 'user_id' => $owner->id, 'role' => 'business_owner',
+            ]));
+
+            $staff = $this->save(new Staff([
+                'business_id' => $business->id, 'name' => $d['staff'][0],
+                'specialization' => $d['staff'][1], 'is_active' => 1,
+            ]));
+            for ($weekday = 1; $weekday <= 6; $weekday++) {
+                $this->save(new WorkingHours([
+                    'staff_id' => $staff->id, 'weekday' => $weekday,
+                    'start_time' => '09:00:00', 'end_time' => '18:00:00',
+                ]));
+            }
+
+            $category = $this->save(new ServiceCategory([
+                'business_id' => $business->id, 'name' => $d['cat'], 'sort' => 0,
+            ]));
+            $this->save(new Service([
+                'business_id' => $business->id, 'category_id' => $category->id,
+                'name' => $d['service'][0], 'duration_min' => $d['service'][1],
+                'price_tiyin' => $d['service'][2], 'deposit_tiyin' => $d['service'][3], 'is_active' => 1,
+            ]));
+
+            $this->stdout(sprintf(
+                "  seeded %-8s business_id=%d  login: %s / secret123\n",
+                $d['slug'], $business->id, $d['phone']
+            ));
+        }
+
+        $this->stdout("Vertical demos ready.\n");
+        return ExitCode::OK;
+    }
+
     /** Save a model or abort with its validation errors. */
     private function save(ActiveRecord $model, ?callable $before = null): ActiveRecord
     {

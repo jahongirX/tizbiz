@@ -20,7 +20,28 @@ class AuthController extends Controller
 {
     protected function authOptional(): array
     {
-        return ['login', 'register'];
+        return ['login', 'register', 'check-slug'];
+    }
+
+    /**
+     * GET v1/auth/check-slug?slug=aziza-tortlari
+     * Public helper for the registration wizard: is this subdomain free?
+     */
+    public function actionCheckSlug(): array
+    {
+        $raw = strtolower(trim((string) Yii::$app->request->get('slug', '')));
+        // Same shape the Business slug rule enforces.
+        $slug = preg_replace('/[^a-z0-9-]+/', '', $raw);
+        $slug = trim((string) preg_replace('/-+/', '-', $slug), '-');
+
+        $valid = $slug !== '' && strlen($slug) >= 3 && strlen($slug) <= 80;
+        $taken = $valid && Business::find()->where(['slug' => $slug])->exists();
+
+        return [
+            'slug' => $slug,
+            'valid' => $valid,
+            'available' => $valid && !$taken,
+        ];
     }
 
     /**
@@ -111,6 +132,17 @@ class AuthController extends Controller
             $business->slug = (string) ($businessInput['slug'] ?? '');
             $business->category = isset($businessInput['category']) ? (string) $businessInput['category'] : null;
             $business->phone = isset($businessInput['phone']) ? (string) $businessInput['phone'] : null;
+            // Vertical engine (barber->slot, cafe->catalog, clinic->medical, rental->rental).
+            // Unknown/empty falls back to the default via the model rule.
+            if (!empty($businessInput['engine'])) {
+                $business->engine = (string) $businessInput['engine'];
+            }
+            if (isset($businessInput['staff_count']) && $businessInput['staff_count'] !== '') {
+                $business->staff_count = (int) $businessInput['staff_count'];
+            }
+            if (isset($businessInput['branches_count']) && $businessInput['branches_count'] !== '') {
+                $business->branches_count = (int) $businessInput['branches_count'];
+            }
             if (!$business->save()) {
                 $transaction->rollBack();
                 return $this->fail422($business);
@@ -231,6 +263,8 @@ class AuthController extends Controller
                 'id' => (int) $business->id,
                 'name' => $business->name,
                 'slug' => $business->slug,
+                'category' => $business->category,
+                'engine' => $business->engine,
                 'role' => (string) $m->role,
             ];
         }

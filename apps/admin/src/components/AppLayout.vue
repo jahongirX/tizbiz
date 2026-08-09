@@ -1,11 +1,10 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { RouterView, RouterLink, useRoute } from 'vue-router'
 import {
   CalendarDays,
   ClipboardList,
   Users,
-  Scissors,
   BarChart3,
   Settings,
   ChevronRight,
@@ -15,10 +14,16 @@ import {
   Menu,
 } from 'lucide-vue-next'
 import { useAuthStore } from '../stores/auth'
+import { verticalFor } from '../lib/verticals'
 import MiniCalendar from './MiniCalendar.vue'
 
 const auth = useAuthStore()
 const route = useRoute()
+
+// The active business's vertical drives the accent colour and the terminology
+// (services -> "Menyu"/"Buyumlar", staff -> "Shifokorlar", etc.).
+const vertical = computed(() => verticalFor(auth.activeBusiness))
+const accentSoft = computed(() => `color-mix(in srgb, ${vertical.value.accent} 14%, transparent)`)
 const switching = ref(false)
 const menuOpen = ref(false)
 
@@ -33,55 +38,59 @@ function toggleTheme() {
 }
 
 // Top-level nav: direct links + collapsible groups. Kept short (YClients-style).
-const nav = [
-  { type: 'link', to: '/', label: 'Jadval', icon: CalendarDays },
-  { type: 'link', to: '/appointments', label: 'Yozuvlar', icon: ClipboardList },
-  {
-    type: 'group',
-    key: 'clients',
-    label: 'Mijozlar',
-    icon: Users,
-    children: [
-      { to: '/clients', label: 'Baza' },
-      { to: '/categories', label: 'Kategoriyalar' },
-      { to: '/loyalty', label: 'Loyallik' },
-    ],
-  },
-  {
-    type: 'group',
-    key: 'catalog',
-    label: 'Katalog',
-    icon: Scissors,
-    children: [
-      { to: '/services', label: 'Xizmatlar' },
-      { to: '/staff', label: 'Xodimlar' },
-      { to: '/schedule', label: 'Ish jadvali' },
-      { to: '/ombor', label: 'Ombor' },
-    ],
-  },
-  {
-    type: 'group',
-    key: 'reports',
-    label: 'Hisobotlar',
-    icon: BarChart3,
-    children: [
-      { to: '/dashboard', label: 'Boshqaruv' },
-      { to: '/analytics', label: 'Analitika' },
-      { to: '/finance', label: 'Moliya' },
-      { to: '/payroll', label: 'Ish haqi' },
-    ],
-  },
-  {
-    type: 'group',
-    key: 'settings',
-    label: 'Sozlamalar',
-    icon: Settings,
-    children: [
-      { to: '/team', label: 'Jamoa' },
-      { to: '/settings', label: 'Onlayn-yozuv' },
-    ],
-  },
-]
+// Computed so the vertical's terminology + icon flow into the labels.
+const nav = computed(() => {
+  const t = vertical.value.terms
+  return [
+    { type: 'link', to: '/', label: 'Jadval', icon: CalendarDays },
+    { type: 'link', to: '/appointments', label: t.appointments, icon: ClipboardList },
+    {
+      type: 'group',
+      key: 'clients',
+      label: 'Mijozlar',
+      icon: Users,
+      children: [
+        { to: '/clients', label: 'Baza' },
+        { to: '/categories', label: 'Kategoriyalar' },
+        { to: '/loyalty', label: 'Loyallik' },
+      ],
+    },
+    {
+      type: 'group',
+      key: 'catalog',
+      label: 'Katalog',
+      icon: vertical.value.icon,
+      children: [
+        { to: '/services', label: t.services },
+        { to: '/staff', label: t.staff },
+        { to: '/schedule', label: 'Ish jadvali' },
+        { to: '/ombor', label: 'Ombor' },
+      ],
+    },
+    {
+      type: 'group',
+      key: 'reports',
+      label: 'Hisobotlar',
+      icon: BarChart3,
+      children: [
+        { to: '/dashboard', label: 'Boshqaruv' },
+        { to: '/analytics', label: 'Analitika' },
+        { to: '/finance', label: 'Moliya' },
+        { to: '/payroll', label: 'Ish haqi' },
+      ],
+    },
+    {
+      type: 'group',
+      key: 'settings',
+      label: 'Sozlamalar',
+      icon: Settings,
+      children: [
+        { to: '/team', label: 'Jamoa' },
+        { to: '/settings', label: 'Onlayn-yozuv' },
+      ],
+    },
+  ]
+})
 
 const openGroups = ref({})
 
@@ -93,7 +102,7 @@ function groupHasActive(group) {
 watch(
   () => route.path,
   () => {
-    for (const item of nav) {
+    for (const item of nav.value) {
       if (item.type === 'group' && groupHasActive(item)) {
         openGroups.value[item.key] = true
       }
@@ -122,11 +131,17 @@ async function onSwitch(e) {
 </script>
 
 <template>
-  <div class="shell">
+  <div class="shell" :style="{ '--primary': vertical.accent, '--primary-soft': accentSoft }">
     <aside class="sidebar" :class="{ open: menuOpen }">
       <div class="brand">
-        <span class="logo">N</span>
-        <span class="brand-name">TizBiz</span>
+        <span class="logo">T</span>
+        <div class="brand-text">
+          <span class="brand-name">TizBiz</span>
+          <span class="vbadge">
+            <component :is="vertical.icon" :size="12" />
+            {{ vertical.short }}
+          </span>
+        </div>
       </div>
 
       <div class="side-scroll">
@@ -260,6 +275,20 @@ async function onSwitch(e) {
   display: grid;
   place-items: center;
   font-size: 16px;
+}
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.1;
+}
+.vbadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary);
 }
 .side-scroll {
   flex: 1;
