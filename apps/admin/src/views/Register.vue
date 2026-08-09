@@ -396,6 +396,7 @@ h1 {
   border: 1.5px solid var(--border);
   border-radius: 12px;
   background: var(--surface, transparent);
+  color: var(--text); /* button doesn't inherit text colour -> theme-aware */
   cursor: pointer;
   text-align: left;
   transition: all 0.15s;
