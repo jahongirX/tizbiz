@@ -10,7 +10,7 @@ importers:
 
   apps/admin:
     dependencies:
-      '@navbat/api-client':
+      '@tizbiz/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
       lucide-vue-next:
@@ -35,7 +35,7 @@ importers:
 
   apps/booking:
     dependencies:
-      '@navbat/api-client':
+      '@tizbiz/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
       vue:

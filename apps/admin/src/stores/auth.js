@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { api, auth } from '@navbat/api-client'
+import { api, auth } from '@tizbiz/api-client'
 import router from '../router'
 
 export const useAuthStore = defineStore('auth', {
@@ -18,7 +18,7 @@ export const useAuthStore = defineStore('auth', {
       )
     },
     businessName() {
-      return this.activeBusiness?.name || 'Navbat'
+      return this.activeBusiness?.name || 'TizBiz'
     },
     role(state) {
       return state.active?.role || null

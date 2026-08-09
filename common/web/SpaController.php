@@ -27,7 +27,7 @@ class SpaController extends Controller
     {
         Yii::$app->response->format = Response::FORMAT_HTML;
 
-        $boot = '<script>window.__NAVBAT__=' . Json::htmlEncode([
+        $boot = '<script>window.__TIZBIZ__=' . Json::htmlEncode([
             'app' => $this->appName,
             'apiBase' => (string) (Yii::$app->params['api.base'] ?? ''),
             'tenantSlug' => $this->getTenantSlug(),

@@ -11,7 +11,7 @@ Faza 1 yadrosi (booking + CRM + prepayment) 20–50 biznesda ishlab turibdi.
 ## Scope
 
 **IN:**
-- Biznes tema sozlamasi: logo, nom, ranglar, subdomen (`{{slug}}.navbat.uz`)
+- Biznes tema sozlamasi: logo, nom, ranglar, subdomen (`{{slug}}.tizbiz.uz`)
 - Multi-tenant sayt renderer (shablon) — CRM xizmatlaridan avtomatik to'ladi
 - Telegram bot: biznes o'z tokenini ulaydi YOKI umumiy bot + deep-link fallback
 - CRM ↔ sayt/bot sinxron (bir manba: xizmat/narx/bo'sh vaqt)
@@ -52,7 +52,7 @@ GET    /v1/public/{subdomain}/services       (sayt renderer uchun public API)
 
 ## Infra
 
-- **Wildcard DNS** `*.navbat.uz` + Cloudflare; wildcard SSL.
+- **Wildcard DNS** `*.tizbiz.uz` + Cloudflare; wildcard SSL.
 - Subdomen → tenant resolver (middleware): subdomen bo'yicha `business_id` aniqlanadi.
 - Telegram per-bot webhook routing: `/{botId}` → tegishli tenant.
 

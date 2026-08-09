@@ -1,8 +1,8 @@
-// Framework-agnostic REST client for the Navbat API.
-// Reads bootstrap config injected by the server (window.__NAVBAT__) with dev
+// Framework-agnostic REST client for the TizBiz API.
+// Reads bootstrap config injected by the server (window.__TIZBIZ__) with dev
 // fallbacks, attaches the JWT, and unwraps the {data|errors} envelope.
 
-const boot = (typeof window !== 'undefined' && window.__NAVBAT__) || {}
+const boot = (typeof window !== 'undefined' && window.__TIZBIZ__) || {}
 
 export const config = {
   app: boot.app || 'app',
@@ -10,7 +10,7 @@ export const config = {
   tenantSlug: boot.tenantSlug ?? null,
 }
 
-const TOKEN_KEY = 'navbat_token'
+const TOKEN_KEY = 'tizbiz_token'
 
 export const auth = {
   get token() {

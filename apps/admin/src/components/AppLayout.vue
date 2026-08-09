@@ -29,7 +29,7 @@ const theme = ref(document.documentElement.getAttribute('data-theme') || (prefer
 function toggleTheme() {
   theme.value = theme.value === 'dark' ? 'light' : 'dark'
   document.documentElement.setAttribute('data-theme', theme.value)
-  localStorage.setItem('navbat_theme', theme.value)
+  localStorage.setItem('tizbiz_theme', theme.value)
 }
 
 // Top-level nav: direct links + collapsible groups. Kept short (YClients-style).
@@ -126,7 +126,7 @@ async function onSwitch(e) {
     <aside class="sidebar" :class="{ open: menuOpen }">
       <div class="brand">
         <span class="logo">N</span>
-        <span class="brand-name">Navbat</span>
+        <span class="brand-name">TizBiz</span>
       </div>
 
       <div class="side-scroll">

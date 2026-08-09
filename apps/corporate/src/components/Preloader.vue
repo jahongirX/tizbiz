@@ -10,7 +10,7 @@
         <span class="preloader__ring"></span>
         <span class="preloader__letter">N</span>
       </div>
-      <span class="preloader__name">Navbat</span>
+      <span class="preloader__name">TizBiz</span>
       <div class="preloader__bar" aria-hidden="true">
         <span class="preloader__fill"></span>
       </div>

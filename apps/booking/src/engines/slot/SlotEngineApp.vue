@@ -4,7 +4,7 @@
 // and handed in as props, so this component just renders the booking wizard.
 // A new vertical adds a sibling under ../<engine>/ ; nothing here changes.
 import { ref, reactive, computed } from 'vue'
-import { api, ApiError } from '@navbat/api-client'
+import { api, ApiError } from '@tizbiz/api-client'
 import ServiceStep from '../../components/ServiceStep.vue'
 import StaffStep from '../../components/StaffStep.vue'
 import DateTimeStep from '../../components/DateTimeStep.vue'

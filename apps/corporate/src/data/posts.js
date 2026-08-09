@@ -47,12 +47,12 @@ export const posts = [
       { type: 'h2', text: 'Natija' },
       {
         type: 'p',
-        text: 'Depozit va eslatmalarni birga qo‘llagan bizneslar no-show’ni ko‘p hollarda ikki-uch barobar kamaytiradi. Navbat’da bularning hammasi qutida — alohida sozlash shart emas, yoqib qo‘yasiz va ishlaydi.',
+        text: 'Depozit va eslatmalarni birga qo‘llagan bizneslar no-show’ni ko‘p hollarda ikki-uch barobar kamaytiradi. TizBiz’da bularning hammasi qutida — alohida sozlash shart emas, yoqib qo‘yasiz va ishlaydi.',
       },
     ],
   },
   {
-    slug: 'nega-har-bir-biznesga-onlayn-navbat-kerak',
+    slug: 'nega-har-bir-biznesga-onlayn-tizbiz-kerak',
     title: 'Nega har bir bizneosga onlayn navbat kerak',
     date: '2026-07-04',
     category: 'Strategiya',
@@ -86,7 +86,7 @@ export const posts = [
       { type: 'h2', text: 'Bu faqat yiriklar uchun emas' },
       {
         type: 'p',
-        text: 'Yakka ishlaydigan usta uchun ham onlayn navbat foydali: u ishlagan paytida telefon ko‘tarmaydi, lekin yozuvlar to‘xtamaydi. Navbat’da hatto bepul tarifda ham brendlangan sayt va bot beriladi — boshlash uchun hech narsa to‘lash shart emas.',
+        text: 'Yakka ishlaydigan usta uchun ham onlayn navbat foydali: u ishlagan paytida telefon ko‘tarmaydi, lekin yozuvlar to‘xtamaydi. TizBiz’da hatto bepul tarifda ham brendlangan sayt va bot beriladi — boshlash uchun hech narsa to‘lash shart emas.',
       },
     ],
   },
@@ -117,7 +117,7 @@ export const posts = [
       { type: 'h2', text: 'Biznes nuqtai nazaridan' },
       {
         type: 'p',
-        text: 'Bot biznesga tegishli — sizning nomingiz, logotipingiz va xizmatlaringiz bilan. Har bir yozilgan mijoz avtomatik bazaga tushadi. Siz botni qo‘lda sozlamaysiz: Navbat uni biznesingiz ma’lumotidan generatsiya qiladi.',
+        text: 'Bot biznesga tegishli — sizning nomingiz, logotipingiz va xizmatlaringiz bilan. Har bir yozilgan mijoz avtomatik bazaga tushadi. Siz botni qo‘lda sozlamaysiz: TizBiz uni biznesingiz ma’lumotidan generatsiya qiladi.',
       },
       {
         type: 'quote',
@@ -163,7 +163,7 @@ export const posts = [
       { type: 'h2', text: 'Ma’lumot — asosiy boylik' },
       {
         type: 'p',
-        text: 'Loyallik ishlashi uchun mijozlar bazasi kerak. Navbat har bir yozuvni bazaga yozadi: kim, qachon, qaysi xizmatga keldi. Shu baza ustida cashback, tug‘ilgan kun tabriklari va “ancha kelmadingiz” tipidagi qaytarish kampaniyalari quriladi.',
+        text: 'Loyallik ishlashi uchun mijozlar bazasi kerak. TizBiz har bir yozuvni bazaga yozadi: kim, qachon, qaysi xizmatga keldi. Shu baza ustida cashback, tug‘ilgan kun tabriklari va “ancha kelmadingiz” tipidagi qaytarish kampaniyalari quriladi.',
       },
       {
         type: 'p',
@@ -182,7 +182,7 @@ export const posts = [
     body: [
       {
         type: 'p',
-        text: 'O‘zbekistonda Payme va Click — deyarli har bir odam foydalanadigan to‘lov tizimlari. Navbat ikkalasini ham qo‘llab-quvvatlaydi, shuning uchun mijoz o‘ziga qulayini tanlaydi va yozilish jarayonini tark etmasdan to‘laydi.',
+        text: 'O‘zbekistonda Payme va Click — deyarli har bir odam foydalanadigan to‘lov tizimlari. TizBiz ikkalasini ham qo‘llab-quvvatlaydi, shuning uchun mijoz o‘ziga qulayini tanlaydi va yozilish jarayonini tark etmasdan to‘laydi.',
       },
       { type: 'h2', text: 'Nega oldindan to‘lov' },
       {
@@ -197,7 +197,7 @@ export const posts = [
       { type: 'h2', text: 'Depozit yoki to‘liq to‘lov' },
       {
         type: 'p',
-        text: 'Biznes o‘zi tanlaydi: to‘liq summani oldindan olishmi yoki faqat kichik depozitmi. Barber uchun 20 000 so‘m depozit yetarli bo‘lsa, kelin ko‘ylak saloni uchun to‘liqroq oldindan to‘lov mantiqiyroq. Navbat ikkala rejimni ham qo‘llaydi.',
+        text: 'Biznes o‘zi tanlaydi: to‘liq summani oldindan olishmi yoki faqat kichik depozitmi. Barber uchun 20 000 so‘m depozit yetarli bo‘lsa, kelin ko‘ylak saloni uchun to‘liqroq oldindan to‘lov mantiqiyroq. TizBiz ikkala rejimni ham qo‘llaydi.',
       },
       {
         type: 'quote',
@@ -245,7 +245,7 @@ export const posts = [
       { type: 'h2', text: 'Eslatma va qayta tashrif' },
       {
         type: 'p',
-        text: 'Ko‘p muolajalar bir necha bosqichdan iborat. Navbat keyingi tashrifni eslatib turadi va bemor o‘z vaqtida qaytadi — davolash uzilib qolmaydi. Klinika tarifi cheksiz shifokor va filialni, kengaytirilgan rollarni va prioritet qo‘llab-quvvatlashni o‘z ichiga oladi.',
+        text: 'Ko‘p muolajalar bir necha bosqichdan iborat. TizBiz keyingi tashrifni eslatib turadi va bemor o‘z vaqtida qaytadi — davolash uzilib qolmaydi. Klinika tarifi cheksiz shifokor va filialni, kengaytirilgan rollarni va prioritet qo‘llab-quvvatlashni o‘z ichiga oladi.',
       },
     ],
   },

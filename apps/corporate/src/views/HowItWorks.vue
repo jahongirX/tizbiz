@@ -43,7 +43,7 @@ const faq = [
   },
   {
     q: 'Mijoz ilova o‘rnatishi kerakmi?',
-    a: 'Yo‘q. Navbat Telegram-native. Mijoz allaqachon ochiq turgan Telegram’da bir necha tugma bilan navbat oladi.',
+    a: 'Yo‘q. TizBiz Telegram-native. Mijoz allaqachon ochiq turgan Telegram’da bir necha tugma bilan navbat oladi.',
   },
   {
     q: 'To‘lov qanday olinadi?',
@@ -58,7 +58,7 @@ const faq = [
       <span class="eyebrow">Qanday ishlaydi</span>
       <h1>Ro‘yxatdan o‘tishdan booking’gacha — olti qadam</h1>
       <p>
-        Navbat texnik bilim talab qilmaydi. Bir marta sozlaysiz — keyin tizim mijozlarni qabul
+        TizBiz texnik bilim talab qilmaydi. Bir marta sozlaysiz — keyin tizim mijozlarni qabul
         qilishni, to‘lovni va eslatmalarni o‘zi bajaradi.
       </p>
     </section>

@@ -6,7 +6,7 @@ import { useAuthStore } from './stores/auth'
 import './style.css'
 
 // Apply a saved theme override early (before mount) to avoid a flash.
-const savedTheme = localStorage.getItem('navbat_theme')
+const savedTheme = localStorage.getItem('tizbiz_theme')
 if (savedTheme === 'light' || savedTheme === 'dark') {
   document.documentElement.setAttribute('data-theme', savedTheme)
 }

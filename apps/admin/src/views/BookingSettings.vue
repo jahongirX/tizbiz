@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { api, ApiError } from '@navbat/api-client'
+import { api, ApiError } from '@tizbiz/api-client'
 
 const loading = ref(true)
 const error = ref('')

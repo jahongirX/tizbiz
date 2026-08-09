@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
-import { api, ApiError } from '@navbat/api-client'
+import { api, ApiError } from '@tizbiz/api-client'
 import { formatSom } from '../lib/money'
 import { formatDateTime, parseUtc } from '../lib/datetime'
 import { confirm } from '../composables/useConfirm'

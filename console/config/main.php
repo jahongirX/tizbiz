@@ -2,7 +2,7 @@
 $params = require __DIR__ . '/../../common/config/params.php';
 
 return [
-    'id' => 'navbat-console',
+    'id' => 'tizbiz-console',
     'basePath' => dirname(__DIR__),
     'controllerNamespace' => 'console\\controllers',
     'aliases' => [

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { api, ApiError } from '@navbat/api-client'
+import { api, ApiError } from '@tizbiz/api-client'
 import { somToTiyin, tiyinToSom, formatSom } from '../lib/money'
 import { confirm } from '../composables/useConfirm'
 import Modal from '../components/Modal.vue'

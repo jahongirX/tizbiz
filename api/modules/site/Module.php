@@ -7,7 +7,7 @@ use yii\base\Module as BaseModule;
 
 /**
  * Public, unauthenticated read surface for the per-business booking site
- * ({slug}.navbat.uz). Exposes just enough for the consumer booking flow.
+ * ({slug}.tizbiz.uz). Exposes just enough for the consumer booking flow.
  */
 class Module extends BaseModule implements BootstrapInterface
 {

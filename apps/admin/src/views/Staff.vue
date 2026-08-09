@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { api, ApiError } from '@navbat/api-client'
+import { api, ApiError } from '@tizbiz/api-client'
 import { confirm } from '../composables/useConfirm'
 import Modal from '../components/Modal.vue'
 

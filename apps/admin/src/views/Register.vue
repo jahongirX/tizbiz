@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ApiError } from '@navbat/api-client'
+import { ApiError } from '@tizbiz/api-client'
 import { UserPlus } from 'lucide-vue-next'
 import { useAuthStore } from '../stores/auth'
 import PhoneInput from '../components/PhoneInput.vue'
@@ -98,7 +98,7 @@ async function submit() {
     <div class="auth-card card">
       <div class="brand-row">
         <span class="logo">N</span>
-        <strong>Navbat Admin</strong>
+        <strong>TizBiz Admin</strong>
       </div>
       <h1>Ro'yxatdan o'tish</h1>
       <p class="muted" style="margin-top: -6px">Biznesingizni bir daqiqada ulang</p>
@@ -117,7 +117,7 @@ async function submit() {
           <div class="field">
             <label for="slug">Manzil (slug)</label>
             <input id="slug" v-model="form.slug" placeholder="aziza-beauty" @input="slugEdited = true" />
-            <small class="muted">{{ form.slug || 'slug' }}.navbat.uz</small>
+            <small class="muted">{{ form.slug || 'slug' }}.tizbiz.uz</small>
           </div>
           <div class="field">
             <label for="cat">Kategoriya</label>

@@ -1,15 +1,15 @@
 {
-  "name": "navbat-platform",
+  "name": "tizbiz-platform",
   "version": "0.1.0",
   "private": true,
-  "description": "Navbat — booking + CRM/loyalty + AI platform for local service businesses (Surxondaryo/Termiz)",
+  "description": "TizBiz — booking + CRM/loyalty + AI platform for local service businesses (Surxondaryo/Termiz)",
   "packageManager": "pnpm@9.15.0",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "dev:admin": "pnpm --filter @navbat/admin dev",
-    "dev:consumer": "pnpm --filter @navbat/consumer dev",
+    "dev:admin": "pnpm --filter @tizbiz/admin dev",
+    "dev:consumer": "pnpm --filter @tizbiz/consumer dev",
     "build": "pnpm -r build"
   }
 }

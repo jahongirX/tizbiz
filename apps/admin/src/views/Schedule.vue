@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
-import { api, ApiError } from '@navbat/api-client'
+import { api, ApiError } from '@tizbiz/api-client'
 import { confirm } from '../composables/useConfirm'
 
 const WEEKDAYS = [

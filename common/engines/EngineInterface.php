@@ -19,7 +19,7 @@ interface EngineInterface
     public function label(): string;
 
     /**
-     * Public storefront payload for {slug}.navbat.uz — everything the public
+     * Public storefront payload for {slug}.tizbiz.uz — everything the public
      * page needs to render for this vertical.
      */
     public function publicData(Business $business): array;

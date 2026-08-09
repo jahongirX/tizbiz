@@ -1,7 +1,7 @@
-# CLAUDE.md — Navbat Platform (ishchi nom)
+# CLAUDE.md — TizBiz Platform (ishchi nom)
 
 > Bu fayl loyihaning doimiy kontekstini saqlaydi. Har fazaning batafsil spesifikatsiyasi `docs/` papkasida.
-> Ishchi nom "Navbat" — yakuniy brend keyin belgilanadi.
+> Ishchi nom "TizBiz" — yakuniy brend keyin belgilanadi.
 
 ## 1. Loyiha nima
 
@@ -31,11 +31,11 @@ Repo ildizi = Yii2 advanced root. Har application = ildizdagi alohida tier; har 
 tier `web/` dan Vue SPA'ni serve qiladi (build `apps/*` dan shu tierning `web/` iga tushadi).
 
 ```
-/api                # Yii2 tier: REST API            -> api.navbat.uz
+/api                # Yii2 tier: REST API            -> api.tizbiz.uz
   /modules          # har biznes-domen alohida modul (booking, crm, billing, ...)
-/frontend           # Yii2 tier: corporate seller page (SPA shell) -> navbat.uz
-/backend            # Yii2 tier: biznes admin dashboard (SPA shell) -> admin.navbat.uz
-/tenant             # Yii2 tier: per-biznes subdomain sayt (SPA shell) -> {slug}.navbat.uz
+/frontend           # Yii2 tier: corporate seller page (SPA shell) -> tizbiz.uz
+/backend            # Yii2 tier: biznes admin dashboard (SPA shell) -> admin.tizbiz.uz
+/tenant             # Yii2 tier: per-biznes subdomain sayt (SPA shell) -> {slug}.tizbiz.uz
 /console            # Yii2 tier: migratsiyalar + CLI komandalar
 /common             # umumiy modellar, komponentlar (Jwt), web/SpaController + spa-shell
 /apps
@@ -55,7 +55,7 @@ subdomain'ni Host header'dan aniqlaydi (`common\web\SpaController`).
 ## 4. Arxitektura tamoyillari
 
 - **Multi-tenant:** har biznes = tenant. Har so'rovda `tenant_id` kontekst. Ma'lumotlar tenant bo'yicha izolyatsiya (query scope + RBAC).
-- **Subdomen:** brendlangan saytlar `{{business-slug}}.navbat.uz` da; wildcard DNS + Cloudflare.
+- **Subdomen:** brendlangan saytlar `{{business-slug}}.tizbiz.uz` da; wildcard DNS + Cloudflare.
 - **API format:** REST, JSON, `data`/`meta`/`errors` konverti; xatolarda RFC-7807 uslubi.
 - **Idempotentlik:** to'lov va booking yaratishda idempotency-key.
 - **Migratsiyalar:** har schema o'zgarishi Yii2 migration bilan; hech qachon qo'lda DDL.

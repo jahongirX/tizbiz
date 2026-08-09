@@ -117,7 +117,7 @@ const latestPosts = posts.slice(0, 3)
           <span class="grad">Telegram’da</span>
         </h1>
         <p class="hero__sub">
-          Sayti yo‘qmi? Muammo emas. Navbat sizga brendlangan mini-sayt, Telegram bot va
+          Sayti yo‘qmi? Muammo emas. TizBiz sizga brendlangan mini-sayt, Telegram bot va
           booking’ni qutida beradi — oldindan to‘lov bilan no-show’ni to‘xtatadi, mijozlar
           bazasini yig‘adi.
         </p>
@@ -180,7 +180,7 @@ const latestPosts = posts.slice(0, 3)
     <section id="features" class="section">
       <div class="container">
         <div class="section-head">
-          <span class="eyebrow">Nega Navbat</span>
+          <span class="eyebrow">Nega TizBiz</span>
           <h2>Mahalliy biznes uchun ishlangan</h2>
           <p>Biz “arzon YClients” emasmiz. Sizda sayt yo‘q edi — biz uni ham qo‘shib beramiz.</p>
         </div>
@@ -284,7 +284,7 @@ const latestPosts = posts.slice(0, 3)
             <span class="eyebrow">Loyiha haqida</span>
             <h2>Bosqichma-bosqich super-app</h2>
             <p>
-              Navbat booking’dan boshlanadi, keyin AI-seller, restoran zakazi, uy-xizmat va
+              TizBiz booking’dan boshlanadi, keyin AI-seller, restoran zakazi, uy-xizmat va
               iste’molchi ilovasiga o‘sadi. Biz hammasini birdan qurmaymiz — avval real
               ishlaydigan booking, keyin keyingisi.
             </p>

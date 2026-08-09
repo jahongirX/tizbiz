@@ -10,7 +10,7 @@ const YEAR = 2026
       <div class="footer__brand">
         <router-link to="/" class="brand">
           <span class="brand__mark">N</span>
-          <span class="brand__name">Navbat</span>
+          <span class="brand__name">TizBiz</span>
         </router-link>
         <p>Surxondaryo va Termiz xizmat bizneslari uchun booking, brendlangan sayt va CRM — Telegram’da.</p>
       </div>
@@ -32,7 +32,7 @@ const YEAR = 2026
     </div>
 
     <div class="container footer__bottom">
-      <span>© {{ YEAR }} Navbat. Barcha huquqlar himoyalangan.</span>
+      <span>© {{ YEAR }} TizBiz. Barcha huquqlar himoyalangan.</span>
       <span>Ishchi nom — brend keyin belgilanadi.</span>
     </div>
   </footer>

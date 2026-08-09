@@ -26,9 +26,9 @@ watch(() => route.fullPath, closeMenu)
 <template>
   <header class="nav" :class="{ 'nav--scrolled': scrolled }">
     <div class="container nav__inner">
-      <router-link to="/" class="brand" @click="closeMenu" aria-label="Navbat — bosh sahifa">
+      <router-link to="/" class="brand" @click="closeMenu" aria-label="TizBiz — bosh sahifa">
         <span class="brand__mark">N</span>
-        <span class="brand__name">Navbat</span>
+        <span class="brand__name">TizBiz</span>
       </router-link>
 
       <nav class="nav__links" :class="{ 'nav__links--open': menuOpen }" aria-label="Asosiy menyu">

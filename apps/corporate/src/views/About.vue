@@ -41,7 +41,7 @@ const phases = [
       <span class="eyebrow">Loyiha haqida</span>
       <h1>Mahalliy biznesni onlaynga olib chiqamiz</h1>
       <p>
-        Navbat — Surxondaryo va Termiz xizmat bizneslari uchun onlayn borliq, booking, CRM/loyallik
+        TizBiz — Surxondaryo va Termiz xizmat bizneslari uchun onlayn borliq, booking, CRM/loyallik
         va AI platformasi. Telegram-native. Biz “arzon YClients” emasmiz.
       </p>
     </section>
@@ -64,7 +64,7 @@ const phases = [
       <div class="container">
         <div class="section-head">
           <span class="eyebrow">Farqimiz</span>
-          <h2>Nega Navbat boshqacha</h2>
+          <h2>Nega TizBiz boshqacha</h2>
           <p>To‘rtta tamoyil ustiga qurilgan.</p>
         </div>
         <div class="grid pillars">
@@ -97,7 +97,7 @@ const phases = [
     <section class="section cta">
       <div class="container">
         <div class="cta__box">
-          <h2>Biznesingizni Navbat’ga ulang</h2>
+          <h2>Biznesingizni TizBiz’ga ulang</h2>
           <p>Bepul boshlang — brendlangan sayt, bot va booking bir kunda tayyor bo‘ladi.</p>
           <div class="cta__actions">
             <a class="btn btn-primary btn-lg" :href="REGISTER_URL">Bepul boshlash</a>

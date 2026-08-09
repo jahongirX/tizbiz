@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ApiError } from '@navbat/api-client'
+import { ApiError } from '@tizbiz/api-client'
 import { LogIn } from 'lucide-vue-next'
 import { useAuthStore } from '../stores/auth'
 import PhoneInput from '../components/PhoneInput.vue'
@@ -55,7 +55,7 @@ async function demoLogin() {
     <div class="auth-card card">
       <div class="brand-row">
         <span class="logo">N</span>
-        <strong>Navbat Admin</strong>
+        <strong>TizBiz Admin</strong>
       </div>
       <h1>Tizimga kirish</h1>
       <p class="muted mb-0" style="margin-top: -6px">Biznesingizni boshqaring</p>

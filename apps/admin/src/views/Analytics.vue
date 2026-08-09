@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { api, ApiError } from '@navbat/api-client'
+import { api, ApiError } from '@tizbiz/api-client'
 import { todayInput, addDays, localDayStartUtc, localDayEndUtc } from '../lib/datetime'
 import { formatSom } from '../lib/money'
 

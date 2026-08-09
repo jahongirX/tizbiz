@@ -2,7 +2,7 @@
 $params = require __DIR__ . '/../../common/config/params.php';
 
 return [
-    'id' => 'navbat-frontend',
+    'id' => 'tizbiz-frontend',
     'basePath' => dirname(__DIR__),
     'controllerNamespace' => 'frontend\\controllers',
     'aliases' => [

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { api, ApiError } from '@navbat/api-client'
+import { api, ApiError } from '@tizbiz/api-client'
 import { isoDate, slotTime, dayStrip, slotBucket } from '../format.js'
 
 const props = defineProps({

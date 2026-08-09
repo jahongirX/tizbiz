@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { auth } from '@navbat/api-client'
+import { auth } from '@tizbiz/api-client'
 
 import AppLayout from '../components/AppLayout.vue'
 

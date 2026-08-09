@@ -5,7 +5,7 @@ namespace frontend\controllers;
 use common\web\SpaController;
 
 /**
- * Corporate seller page (platform marketing site) → navbat.uz.
+ * Corporate seller page (platform marketing site) → tizbiz.uz.
  */
 class SiteController extends SpaController
 {

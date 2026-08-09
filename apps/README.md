@@ -5,15 +5,15 @@ app is built, that tier serves the placeholder shell from `common/web/spa-shell.
 
 | App | Builds into | Domain | Purpose |
 |---|---|---|---|
-| `corporate` | `frontend/web/` | `navbat.uz` | Marketing / seller page |
-| `admin` | `backend/web/` | `admin.navbat.uz` | Business admin dashboard |
-| `booking` | `tenant/web/` | `{slug}.navbat.uz` | Consumer booking + Telegram Mini-App |
+| `corporate` | `frontend/web/` | `tizbiz.uz` | Marketing / seller page |
+| `admin` | `backend/web/` | `admin.tizbiz.uz` | Business admin dashboard |
+| `booking` | `tenant/web/` | `{slug}.tizbiz.uz` | Consumer booking + Telegram Mini-App |
 | `superadmin` | (own tier, later) | — | Platform administration |
 
-Every app reads bootstrap data injected by the server into `window.__NAVBAT__`:
+Every app reads bootstrap data injected by the server into `window.__TIZBIZ__`:
 
 ```js
-window.__NAVBAT__ = { app: 'admin', apiBase: 'https://api.navbat.uz', tenantSlug: 'aziza' }
+window.__TIZBIZ__ = { app: 'admin', apiBase: 'https://api.tizbiz.uz', tenantSlug: 'aziza' }
 ```
 
 Vite `build.outDir` should target the matching tier's `web/`, and the dev server proxies

@@ -15,8 +15,8 @@ const related = computed(() => {
 // Keep the document title in sync with the article for the browser tab.
 watchEffect(() => {
   document.title = post.value
-    ? `${post.value.title} — Navbat blog`
-    : 'Maqola topilmadi — Navbat'
+    ? `${post.value.title} — TizBiz blog`
+    : 'Maqola topilmadi — TizBiz'
 })
 </script>
 

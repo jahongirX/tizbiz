@@ -6,7 +6,7 @@ use common\web\SpaController;
 use Yii;
 
 /**
- * Per-business branded site served on {slug}.navbat.uz (wildcard subdomain).
+ * Per-business branded site served on {slug}.tizbiz.uz (wildcard subdomain).
  * The business slug is taken from the Host header; the SPA/API resolve the rest.
  */
 class SiteController extends SpaController

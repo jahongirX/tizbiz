@@ -1,6 +1,6 @@
 {
-    "name": "navbat/server",
-    "description": "Navbat server — Yii2 advanced: frontend + backend + api + tenant + console + common",
+    "name": "tizbiz/server",
+    "description": "TizBiz server — Yii2 advanced: frontend + backend + api + tenant + console + common",
     "type": "project",
     "license": "proprietary",
     "minimum-stability": "stable",

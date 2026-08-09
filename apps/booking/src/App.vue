@@ -1,11 +1,11 @@
 <script setup>
-// Public tenant SPA shell ({slug}.navbat.uz). It loads the site payload once,
+// Public tenant SPA shell ({slug}.tizbiz.uz). It loads the site payload once,
 // reads the business `engine` and renders that engine's layout (stage 6). Adding
 // a vertical = one entry in ENGINES + a component under ./engines/<key>/ ; the
 // slot engine is the current online-booking flow. Engines are lazy-loaded so a
 // visitor only downloads the layout their business actually uses.
 import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
-import { api, config, ApiError } from '@navbat/api-client'
+import { api, config, ApiError } from '@tizbiz/api-client'
 
 const ENGINES = {
   slot: defineAsyncComponent(() => import('./engines/slot/SlotEngineApp.vue')),
