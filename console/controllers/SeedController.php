@@ -413,36 +413,74 @@ class SeedController extends Controller
         }
 
         $services = Service::find()->where(['business_id' => $bid])->orderBy(['id' => SORT_ASC])->all();
+        $count = count($desserts);
         $i = 0;
         $n = 0;
         foreach ($services as $svc) {
             $name = mb_strtolower((string) $svc->name);
+            $isDrink = false;
             if (str_contains($name, 'kapuchino') || str_contains($name, 'amerikano') || str_contains($name, 'kofe')) {
-                $src = $ingredient('Coffee');
+                $primary = $ingredient('Coffee');
+                $isDrink = true;
             } elseif (str_contains($name, 'choy') || str_contains($name, 'tea')) {
-                $src = $ingredient('Tea');
+                $primary = $ingredient('Tea');
+                $isDrink = true;
             } elseif (str_contains($name, 'apelsin') || str_contains($name, 'fresh')) {
-                $src = $ingredient('Orange');
+                $primary = $ingredient('Orange');
+                $isDrink = true;
             } else {
-                // Spread across the dessert list for variety (deterministic).
-                $src = $desserts[($i * 7) % count($desserts)];
-                $i++;
+                $primary = $desserts[($i * 7) % $count];
             }
 
-            $ext = str_ends_with($src, '.png') ? 'png' : 'jpg';
-            $file = $dir . '/real-' . $svc->id . '.' . $ext;
-            $bytes = $this->fetchUrl($src);
-            if ($bytes === null || strlen($bytes) < 500 || file_put_contents($file, $bytes) === false) {
+            $gallery = [];
+            $main = $this->saveImage($primary, $dir, 'real-' . $svc->id, $base);
+            if ($main === null) {
                 $this->stdout("  skip {$svc->name} (download failed)\n");
                 continue;
             }
-            $svc->image = $base . '/uploads/menu/real-' . $svc->id . '.' . $ext;
-            $svc->save(false, ['image']);
+            $gallery[] = $main;
+
+            // A couple more shots for the gallery (desserts only — drinks stay 1).
+            if (!$isDrink) {
+                foreach ([2, 3] as $k) {
+                    $extra = $this->saveImage($desserts[(($i * 7) + $k * 13) % $count], $dir, 'real-' . $svc->id . '-' . $k, $base);
+                    if ($extra !== null) {
+                        $gallery[] = $extra;
+                    }
+                }
+            }
+            $i++;
+
+            $svc->image = $main;
+            $svc->gallery = $gallery;
+            $svc->description = $this->dishDescription((string) $svc->name);
+            $svc->save(false, ['image', 'gallery', 'description']);
             $n++;
         }
 
-        $this->stdout("Attached $n real photos to '{$business->name}'.\n");
+        $this->stdout("Attached photos + galleries to $n items of '{$business->name}'.\n");
         return ExitCode::OK;
+    }
+
+    /** Download an image to $dir/$name.<ext> and return its public URL, or null. */
+    private function saveImage(string $url, string $dir, string $name, string $base): ?string
+    {
+        $ext = str_ends_with($url, '.png') ? 'png' : 'jpg';
+        $bytes = $this->fetchUrl($url);
+        if ($bytes === null || strlen($bytes) < 500) {
+            return null;
+        }
+        $file = $dir . '/' . $name . '.' . $ext;
+        if (file_put_contents($file, $bytes) === false) {
+            return null;
+        }
+        return $base . '/uploads/menu/' . $name . '.' . $ext;
+    }
+
+    private function dishDescription(string $name): string
+    {
+        return $name . ' — yangi, mazali va sifatli ingredientlardan tayyorlanadi. '
+            . 'Buyurtma bering, tez orada tayyorlab beramiz. Ofis va uyga yetkazib berish mavjud.';
     }
 
     /** GET a URL and return the body, or null on failure. */

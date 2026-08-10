@@ -36,6 +36,11 @@ class Service extends ActiveRecord
     {
         return [
             TimestampBehavior::class,
+            // gallery is a JSON column (array of image URLs).
+            [
+                'class' => \common\behaviors\JsonAttributeBehavior::class,
+                'attributes' => ['gallery'],
+            ],
         ];
     }
 
@@ -54,6 +59,8 @@ class Service extends ActiveRecord
             [['online_bookable'], 'boolean'],
             [['online_bookable'], 'default', 'value' => true],
             [['image'], 'string', 'max' => 500],
+            [['description'], 'string'],
+            [['gallery'], 'safe'],
         ];
     }
 

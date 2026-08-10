@@ -19,7 +19,7 @@ const editing = ref(null)
 const form = ref(blank())
 
 function blank() {
-  return { name: '', duration_min: 30, price_som: '', deposit_som: '', category_id: '', is_active: true, online_bookable: true, image: '' }
+  return { name: '', duration_min: 30, price_som: '', deposit_som: '', category_id: '', is_active: true, online_bookable: true, image: '', description: '', gallery: [] }
 }
 
 const categoryName = computed(() => {
@@ -63,6 +63,8 @@ function openEdit(s) {
     is_active: s.is_active !== false,
     online_bookable: s.online_bookable !== false,
     image: s.image || '',
+    description: s.description || '',
+    gallery: Array.isArray(s.gallery) ? [...s.gallery] : [],
   }
   formError.value = ''
   showModal.value = true
@@ -81,6 +83,8 @@ async function save() {
       is_active: form.value.is_active,
       online_bookable: form.value.online_bookable,
       image: form.value.image || '',
+      description: form.value.description || '',
+      gallery: form.value.gallery || [],
     }
     if (editing.value) {
       await api.patch('/v1/services/' + editing.value.id, payload)
@@ -238,12 +242,30 @@ onMounted(load)
       <form @submit.prevent="save">
         <div v-if="formError" class="alert alert-error">{{ formError }}</div>
         <div class="field">
-          <label>Rasm</label>
+          <label>Asosiy rasm</label>
           <ImageUpload v-model="form.image" :size="88" />
+        </div>
+        <div class="field">
+          <label>Rasmlar galereyasi</label>
+          <div class="gallery-edit">
+            <div v-for="(g, idx) in form.gallery" :key="idx" class="gthumb">
+              <img :src="g" alt="" />
+              <button type="button" class="gx" @click="form.gallery.splice(idx, 1)">✕</button>
+            </div>
+            <ImageUpload
+              :model-value="''"
+              :size="64"
+              @update:model-value="(u) => u && form.gallery.push(u)"
+            />
+          </div>
         </div>
         <div class="field">
           <label>Nomi</label>
           <input v-model="form.name" placeholder="Soch olish" required />
+        </div>
+        <div class="field">
+          <label>Tavsif</label>
+          <textarea v-model="form.description" rows="3" placeholder="Mahsulot haqida qisqacha ma'lumot"></textarea>
         </div>
         <div class="field-row">
           <div class="field">
@@ -382,5 +404,37 @@ onMounted(load)
   color: var(--primary);
   font-weight: 700;
   font-size: 14px;
+}
+.gallery-edit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+}
+.gthumb {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.gthumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.gx {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+  line-height: 1;
 }
 </style>

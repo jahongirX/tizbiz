@@ -134,6 +134,24 @@ const brandInitials = computed(() =>
     .join('')
     .toUpperCase(),
 )
+
+// ---- Product detail modal (gallery + description + counter) ----
+const detail = ref(null)
+const galleryIndex = ref(0)
+function openDetail(it) {
+  detail.value = it
+  galleryIndex.value = 0
+}
+function closeDetail() {
+  detail.value = null
+}
+const detailImages = computed(() => {
+  const it = detail.value
+  if (!it) return []
+  const g = Array.isArray(it.gallery) ? it.gallery.filter(Boolean) : []
+  if (it.image && !g.includes(it.image)) g.unshift(it.image)
+  return g.length ? g : it.image ? [it.image] : []
+})
 </script>
 
 <template>
@@ -177,13 +195,15 @@ const brandInitials = computed(() =>
         <h2>{{ c.name }}</h2>
         <div class="grid">
           <article v-for="it in c.items" :key="it.id" class="card">
-            <div class="card-img">
-              <img v-if="it.image" :src="it.image" :alt="it.name" />
-              <span v-else class="ph">{{ it.name.charAt(0) }}</span>
+            <div class="card-open" @click="openDetail(it)">
+              <div class="card-img">
+                <img v-if="it.image" :src="it.image" :alt="it.name" />
+                <span v-else class="ph">{{ it.name.charAt(0) }}</span>
+              </div>
+              <div class="card-price">{{ soms(it.price_tiyin) }}</div>
+              <div class="card-name">{{ it.name }}</div>
+              <div class="card-portion">1 dona</div>
             </div>
-            <div class="card-price">{{ soms(it.price_tiyin) }}</div>
-            <div class="card-name">{{ it.name }}</div>
-            <div class="card-portion">1 dona</div>
             <div class="card-foot">
               <div v-if="qtyOf(it) > 0" class="stepper">
                 <button aria-label="Kamaytirish" @click="dec(it)">−</button>
@@ -274,6 +294,46 @@ const brandInitials = computed(() =>
         </div>
       </template>
     </aside>
+
+    <!-- Product detail modal: gallery + price + description + counter -->
+    <div v-if="detail" class="modal-backdrop" @click.self="closeDetail">
+      <div class="modal">
+        <button class="modal-x" aria-label="Yopish" @click="closeDetail">✕</button>
+        <div class="modal-gallery">
+          <div class="mg-main">
+            <img v-if="detailImages.length" :src="detailImages[galleryIndex]" :alt="detail.name" />
+            <span v-else class="ph">{{ detail.name.charAt(0) }}</span>
+          </div>
+          <div v-if="detailImages.length > 1" class="mg-thumbs">
+            <button
+              v-for="(g, idx) in detailImages"
+              :key="idx"
+              class="mg-thumb"
+              :class="{ on: idx === galleryIndex }"
+              @click="galleryIndex = idx"
+            >
+              <img :src="g" alt="" />
+            </button>
+          </div>
+        </div>
+        <div class="modal-info">
+          <div class="modal-price">{{ soms(detail.price_tiyin) }}</div>
+          <h3 class="modal-name">{{ detail.name }}</h3>
+          <p class="modal-portion">1 dona</p>
+          <p v-if="detail.description" class="modal-desc">{{ detail.description }}</p>
+          <div class="modal-foot">
+            <div v-if="qtyOf(detail) > 0" class="stepper big">
+              <button aria-label="Kamaytirish" @click="dec(detail)">−</button>
+              <span>{{ qtyOf(detail) }}</span>
+              <button aria-label="Ko‘paytirish" @click="add(detail)">+</button>
+            </div>
+            <button v-else class="modal-add" @click="add(detail)">
+              Savatga qo‘shish · {{ soms(detail.price_tiyin) }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -663,6 +723,161 @@ const brandInitials = computed(() =>
   color: var(--muted);
   padding: 40px;
   text-align: center;
+}
+
+/* Clickable card area + full-width foot stepper */
+.card-open {
+  cursor: pointer;
+}
+.card-foot .stepper {
+  width: 100%;
+}
+
+/* Product detail modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+.modal {
+  position: relative;
+  width: 100%;
+  max-width: 780px;
+  max-height: 90vh;
+  overflow: auto;
+  background: var(--surface);
+  border-radius: 22px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+}
+.modal-x {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+}
+.modal-gallery {
+  padding: 16px;
+}
+.mg-main {
+  aspect-ratio: 1 / 1;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+}
+.mg-main img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.mg-main .ph {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font-size: 60px;
+  font-weight: 800;
+  color: var(--brand);
+  background: var(--brand-soft);
+}
+.mg-thumbs {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.mg-thumb {
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  background: #fff;
+  cursor: pointer;
+  padding: 0;
+}
+.mg-thumb.on {
+  border-color: var(--brand);
+}
+.mg-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.modal-info {
+  padding: 26px 26px 26px 10px;
+  display: flex;
+  flex-direction: column;
+}
+.modal-price {
+  font-size: 26px;
+  font-weight: 800;
+}
+.modal-name {
+  font-size: 20px;
+  margin: 6px 0 2px;
+}
+.modal-portion {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0 0 14px;
+}
+.modal-desc {
+  color: var(--text);
+  opacity: 0.85;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0 0 20px;
+}
+.modal-foot {
+  margin-top: auto;
+}
+.modal-add {
+  width: 100%;
+  border: none;
+  background: var(--brand);
+  color: var(--brand-ink);
+  font-weight: 700;
+  padding: 15px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 15px;
+}
+.stepper.big {
+  height: 52px;
+  border-radius: 14px;
+}
+.stepper.big button {
+  width: 44px;
+  height: 44px;
+  font-size: 24px;
+}
+.stepper.big span {
+  font-size: 18px;
+}
+@media (max-width: 640px) {
+  .modal {
+    grid-template-columns: 1fr;
+    max-height: 92vh;
+  }
+  .modal-info {
+    padding: 6px 20px 22px;
+  }
 }
 
 /* Responsive: cart drops to a full-width block below the menu */

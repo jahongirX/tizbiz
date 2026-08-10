@@ -95,6 +95,17 @@ class ServiceController extends Controller
             $v = $this->body('image');
             $model->image = ($v === null || $v === '') ? null : (string) $v;
         }
+        if (array_key_exists('description', $this->body())) {
+            $v = $this->body('description');
+            $model->description = ($v === null || $v === '') ? null : (string) $v;
+        }
+        if (array_key_exists('gallery', $this->body())) {
+            $v = $this->body('gallery');
+            // Keep only non-empty string URLs.
+            $model->gallery = is_array($v)
+                ? array_values(array_filter(array_map('strval', $v), static fn ($u) => trim($u) !== ''))
+                : null;
+        }
     }
 
     /** Ensure category_id (if set) belongs to the same business. */
