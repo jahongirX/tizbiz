@@ -33,6 +33,18 @@ class SettingsController extends Controller
         if (($v = $this->body('booking_horizon_days')) !== null) {
             $model->booking_horizon_days = (int) $v;
         }
+        // Telegram bot token: empty string clears it; otherwise the model rule
+        // validates the @BotFather token format.
+        $tok = $this->body('telegram_bot_token');
+        if ($tok !== null) {
+            $tok = trim((string) $tok);
+            if ($tok === '') {
+                $model->telegram_bot_token = null;
+                $model->telegram_bot_username = null;
+            } else {
+                $model->telegram_bot_token = $tok;
+            }
+        }
 
         if (!$model->save()) {
             return $this->fail422($model);
@@ -46,6 +58,9 @@ class SettingsController extends Controller
             'online_booking_enabled' => (bool) $b->online_booking_enabled,
             'booking_lead_min' => (int) $b->booking_lead_min,
             'booking_horizon_days' => (int) $b->booking_horizon_days,
+            // Never echo the raw token back to the client — expose only status.
+            'telegram_connected' => $b->telegram_bot_token !== null && $b->telegram_bot_token !== '',
+            'telegram_bot_username' => $b->telegram_bot_username,
         ];
     }
 

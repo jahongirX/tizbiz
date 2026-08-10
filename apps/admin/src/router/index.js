@@ -15,6 +15,7 @@ const routes = [
       { path: 'dashboard', name: 'dashboard', component: () => import('../views/Dashboard.vue') },
       { path: 'timetable', redirect: '/' },
       { path: 'appointments', name: 'appointments', component: () => import('../views/Appointments.vue') },
+      { path: 'orders', name: 'orders', component: () => import('../views/Orders.vue') },
       { path: 'services', name: 'services', component: () => import('../views/Services.vue') },
       { path: 'staff', name: 'staff', component: () => import('../views/Staff.vue') },
       { path: 'schedule', name: 'schedule', component: () => import('../views/Schedule.vue') },

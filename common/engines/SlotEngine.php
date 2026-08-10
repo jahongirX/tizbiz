@@ -35,19 +35,25 @@ class SlotEngine implements EngineInterface
 
         return [
             'engine' => static::key(),
-            'business' => [
-                'id' => (int) $business->id,
-                'name' => $business->name,
-                'slug' => $business->slug,
-                'category' => $business->category,
-                'phone' => $business->phone,
-                'timezone' => $business->timezone,
-                'online_booking_enabled' => $enabled,
-            ],
+            'business' => $this->businessPayload($business),
             'services' => $enabled ? $this->offerings($business) : [],
             'staff' => $enabled
                 ? Staff::find()->where(['business_id' => $business->id, 'is_active' => 1])->all()
                 : [],
+        ];
+    }
+
+    /** Shared public business profile (reused by sibling engines). */
+    protected function businessPayload(Business $business): array
+    {
+        return [
+            'id' => (int) $business->id,
+            'name' => $business->name,
+            'slug' => $business->slug,
+            'category' => $business->category,
+            'phone' => $business->phone,
+            'timezone' => $business->timezone,
+            'online_booking_enabled' => (bool) $business->online_booking_enabled,
         ];
     }
 

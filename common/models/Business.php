@@ -20,6 +20,8 @@ use yii\db\ActiveQuery;
  * @property array|null $features
  * @property int|null $staff_count
  * @property int|null $branches_count
+ * @property string|null $telegram_bot_token
+ * @property string|null $telegram_bot_username
  * @property int $created_at
  * @property int $updated_at
  *
@@ -80,6 +82,9 @@ class Business extends ActiveRecord
             [['engine'], 'default', 'value' => \common\engines\EngineFactory::DEFAULT_KEY],
             [['engine'], 'in', 'range' => \common\engines\EngineFactory::keys(), 'message' => 'Noma\'lum yo\'nalish.'],
             [['staff_count', 'branches_count'], 'integer', 'min' => 0, 'max' => 100000],
+            [['telegram_bot_token'], 'string', 'max' => 80],
+            [['telegram_bot_username'], 'string', 'max' => 64],
+            [['telegram_bot_token'], 'match', 'pattern' => '/^\d{6,}:[A-Za-z0-9_-]{20,}$/', 'message' => 'Bot token formati noto\'g\'ri.', 'skipOnEmpty' => true],
             [['features'], 'safe'],
         ];
     }
@@ -100,6 +105,8 @@ class Business extends ActiveRecord
             'engine' => 'Dvigatel (yo\'nalish)',
             'staff_count' => 'Xodimlar soni',
             'branches_count' => 'Filiallar soni',
+            'telegram_bot_token' => 'Telegram bot token',
+            'telegram_bot_username' => 'Telegram bot foydalanuvchi nomi',
             'created_at' => 'Yaratilgan sana',
             'updated_at' => 'Yangilangan sana',
         ];

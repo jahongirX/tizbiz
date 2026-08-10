@@ -266,6 +266,68 @@ class SeedController extends Controller
         return ExitCode::OK;
     }
 
+    /**
+     * Enrich the catalog demo (slug `tort`) with a multi-category menu so the
+     * storefront looks real. Idempotent: skips if the menu already has >1 item.
+     * Usage: php yii seed/catalog-menu
+     */
+    public function actionCatalogMenu(): int
+    {
+        $business = Business::findOne(['slug' => 'tort']);
+        if ($business === null) {
+            $this->stderr("Run seed/verticals first (needs the 'tort' business).\n");
+            return ExitCode::UNSPECIFIED_ERROR;
+        }
+        $bid = (int) $business->id;
+        if (Service::find()->where(['business_id' => $bid])->count() >= 8) {
+            $this->stdout("Catalog menu already present; skipping.\n");
+            return ExitCode::OK;
+        }
+
+        // category => [ [name, price_so'm], ... ]  (duration is irrelevant here)
+        $menu = [
+            'Tortlar' => [
+                ['Napoleon tort (1kg)', 150000], ['Medovik tort (1kg)', 160000],
+                ['Chizkeyk (1kg)', 180000], ['Shokoladli tort (1kg)', 170000],
+            ],
+            'Shirinliklar' => [
+                ['Ekler (6 dona)', 45000], ['Makaron (6 dona)', 60000],
+                ['Pirojnoye', 15000], ['Kruassan', 20000],
+            ],
+            'Ichimliklar' => [
+                ['Amerikano', 22000], ['Kapuchino', 28000],
+                ['Choy (choynak)', 15000], ['Fresh apelsin', 30000],
+            ],
+            'Kombo' => [
+                ['Tort bo\'lagi + kofe', 40000], ['2 ta ekler + choy', 55000],
+            ],
+        ];
+
+        $sort = 0;
+        $items = 0;
+        foreach ($menu as $catName => $rows) {
+            // find-or-create the category (idempotent, tolerates a partial prior run)
+            $category = ServiceCategory::findOne(['business_id' => $bid, 'name' => $catName])
+                ?? $this->save(new ServiceCategory([
+                    'business_id' => $bid, 'name' => $catName, 'sort' => $sort,
+                ]));
+            $sort++;
+            foreach ($rows as [$name, $som]) {
+                if (Service::find()->where(['business_id' => $bid, 'name' => $name])->exists()) {
+                    continue;
+                }
+                $this->save(new Service([
+                    'business_id' => $bid, 'category_id' => $category->id, 'name' => $name,
+                    'duration_min' => 30, 'price_tiyin' => $som * 100, 'deposit_tiyin' => 0, 'is_active' => 1,
+                ]));
+                $items++;
+            }
+        }
+
+        $this->stdout(sprintf("Added %d menu items across %d categories to '%s'.\n", $items, count($menu), $business->name));
+        return ExitCode::OK;
+    }
+
     /** Save a model or abort with its validation errors. */
     private function save(ActiveRecord $model, ?callable $before = null): ActiveRecord
     {

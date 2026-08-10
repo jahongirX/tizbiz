@@ -14,6 +14,14 @@ const form = ref({
   booking_horizon_days: 30,
 })
 
+// Telegram bot connection (token is write-only; server returns only status).
+const tgToken = ref('')
+const telegramConnected = ref(false)
+const telegramUsername = ref(null)
+const tgSaving = ref(false)
+const tgError = ref('')
+const tgSaved = ref('')
+
 async function load() {
   loading.value = true
   error.value = ''
@@ -24,6 +32,8 @@ async function load() {
       booking_lead_min: Number(res.booking_lead_min ?? 60),
       booking_horizon_days: Number(res.booking_horizon_days ?? 30),
     }
+    telegramConnected.value = !!res.telegram_connected
+    telegramUsername.value = res.telegram_bot_username || null
   } catch (e) {
     error.value = e instanceof ApiError ? e.message : 'Yuklab bo\'lmadi'
   } finally {
@@ -53,6 +63,29 @@ async function save() {
     formError.value = e instanceof ApiError ? e.message : 'Saqlab bo\'lmadi'
   } finally {
     saving.value = false
+  }
+}
+
+async function saveTelegram(clear = false) {
+  tgError.value = ''
+  tgSaved.value = ''
+  const token = clear ? '' : tgToken.value.trim()
+  if (!clear && token === '') {
+    tgError.value = 'Token kiriting'
+    return
+  }
+  tgSaving.value = true
+  try {
+    const res = await api.put('/v1/settings/booking', { telegram_bot_token: token })
+    telegramConnected.value = !!res.telegram_connected
+    telegramUsername.value = res.telegram_bot_username || null
+    tgToken.value = ''
+    tgSaved.value = telegramConnected.value ? '✓ Token saqlandi' : '✓ O‘chirildi'
+    setTimeout(() => (tgSaved.value = ''), 2500)
+  } catch (e) {
+    tgError.value = e instanceof ApiError ? e.message : 'Saqlab bo\'lmadi'
+  } finally {
+    tgSaving.value = false
   }
 }
 
@@ -113,5 +146,108 @@ onMounted(load)
         </div>
       </form>
     </section>
+
+    <!-- Telegram bot -->
+    <section v-if="!loading" class="card tg-card" style="max-width: 520px; margin-top: 18px">
+      <div class="tg-head">
+        <span class="tg-ico">✈️</span>
+        <div>
+          <h2>Telegram bot</h2>
+          <p class="muted" style="margin: 2px 0 0; font-size: 13px">
+            Bot orqali mijozlar katalogni ko‘radi va buyurtma beradi.
+          </p>
+        </div>
+      </div>
+
+      <div v-if="telegramConnected" class="tg-status ok">
+        ✓ Ulangan<span v-if="telegramUsername"> · @{{ telegramUsername }}</span>
+      </div>
+      <div v-else class="tg-status off">Ulanmagan</div>
+
+      <div v-if="tgError" class="alert alert-error" style="margin-top: 12px">{{ tgError }}</div>
+
+      <ol class="tg-steps muted">
+        <li>Telegramda <strong>@BotFather</strong> ni oching → <code>/newbot</code></li>
+        <li>Bot nomi va foydalanuvchi nomini bering</li>
+        <li>Berilgan <strong>token</strong> ni shu yerga joylang</li>
+      </ol>
+
+      <div class="field">
+        <label>Bot token</label>
+        <input
+          v-model="tgToken"
+          type="password"
+          autocomplete="off"
+          placeholder="123456789:AA... (BotFather'dan)"
+        />
+      </div>
+
+      <div class="row" style="gap: 12px; margin-top: 6px; align-items: center">
+        <button class="btn btn-primary" :disabled="tgSaving" @click="saveTelegram(false)">
+          {{ tgSaving ? 'Saqlanmoqda…' : telegramConnected ? 'Tokenni yangilash' : 'Ulash' }}
+        </button>
+        <button
+          v-if="telegramConnected"
+          class="btn btn-ghost"
+          :disabled="tgSaving"
+          @click="saveTelegram(true)"
+        >
+          Uzish
+        </button>
+        <span v-if="tgSaved" style="color: var(--success); font-weight: 600">{{ tgSaved }}</span>
+      </div>
+
+      <p class="muted tg-note">
+        ⓘ Bot ishga tushishi uchun serverda ochiq (HTTPS) webhook manzil kerak. Token saqlangach,
+        deploy paytida bot avtomatik ulanadi.
+      </p>
+    </section>
   </div>
 </template>
+
+<style scoped>
+.tg-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+.tg-head h2 {
+  font-size: 17px;
+  margin: 0;
+}
+.tg-ico {
+  font-size: 26px;
+}
+.tg-status {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.tg-status.ok {
+  background: var(--success-soft, rgba(16, 185, 129, 0.14));
+  color: var(--success, #10b981);
+}
+.tg-status.off {
+  background: var(--surface-2, rgba(127, 127, 127, 0.14));
+  color: var(--text-muted);
+}
+.tg-steps {
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 14px 0;
+  padding-left: 18px;
+}
+.tg-steps code {
+  background: var(--surface-2, rgba(127, 127, 127, 0.14));
+  padding: 1px 6px;
+  border-radius: 6px;
+}
+.tg-note {
+  font-size: 12px;
+  margin: 14px 0 0;
+  line-height: 1.5;
+}
+</style>

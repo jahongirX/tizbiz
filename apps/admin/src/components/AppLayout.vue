@@ -43,7 +43,13 @@ const nav = computed(() => {
   const t = vertical.value.terms
   return [
     { type: 'link', to: '/', label: 'Jadval', icon: CalendarDays },
-    { type: 'link', to: '/appointments', label: t.appointments, icon: ClipboardList },
+    // Catalog (cafe/restaurant) works in orders, not time-slot appointments.
+    {
+      type: 'link',
+      to: vertical.value.engine === 'catalog' ? '/orders' : '/appointments',
+      label: t.appointments,
+      icon: ClipboardList,
+    },
     {
       type: 'group',
       key: 'clients',

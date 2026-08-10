@@ -9,6 +9,28 @@ import { api, config, ApiError } from '@tizbiz/api-client'
 
 const ENGINES = {
   slot: defineAsyncComponent(() => import('./engines/slot/SlotEngineApp.vue')),
+  medical: defineAsyncComponent(() => import('./engines/slot/SlotEngineApp.vue')),
+  catalog: defineAsyncComponent(() => import('./engines/catalog/CatalogEngineApp.vue')),
+}
+
+// Per-engine brand palette layered on the shared TizBiz theme. Medical = blue,
+// catalog = orange, rental = purple; slot keeps the default indigo.
+const THEMES = {
+  slot: { brand: '#5850ec', brand2: '#7c6cff', ink: '#ffffff', soft: '#eceafe', softDark: '#21243a' },
+  medical: { brand: '#2563eb', brand2: '#38bdf8', ink: '#ffffff', soft: '#e6efff', softDark: '#12213f' },
+  catalog: { brand: '#f2721c', brand2: '#fb9a3c', ink: '#ffffff', soft: '#fff0e3', softDark: '#2a1a0d' },
+  rental: { brand: '#8b5cf6', brand2: '#a78bfa', ink: '#ffffff', soft: '#f1ebff', softDark: '#221a3a' },
+}
+
+function applyTheme(engine) {
+  const t = THEMES[engine] || THEMES.slot
+  const isDark = typeof window !== 'undefined'
+    && window.matchMedia('(prefers-color-scheme: dark)').matches
+  const root = document.documentElement.style
+  root.setProperty('--brand', t.brand)
+  root.setProperty('--brand-2', t.brand2)
+  root.setProperty('--brand-ink', t.ink)
+  root.setProperty('--brand-soft', isDark ? t.softDark : t.soft)
 }
 
 const slug =
@@ -26,7 +48,10 @@ onMounted(async () => {
   try {
     const data = await api.get(`/v1/site/${encodeURIComponent(slug)}`)
     if (!data.business) notFound.value = true
-    else payload.value = data
+    else {
+      payload.value = data
+      applyTheme(data.engine || 'slot')
+    }
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) notFound.value = true
     else loadError.value = e instanceof ApiError ? e.message : 'Sahifani yuklab bo‘lmadi.'
@@ -71,5 +96,6 @@ onMounted(async () => {
     :business="payload.business"
     :services="payload.services || []"
     :staff="payload.staff || []"
+    :payload="payload"
   />
 </template>
