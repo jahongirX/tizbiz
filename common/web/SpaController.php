@@ -31,6 +31,8 @@ class SpaController extends Controller
             'app' => $this->appName,
             'apiBase' => (string) (Yii::$app->params['api.base'] ?? ''),
             'tenantSlug' => $this->getTenantSlug(),
+            'publicBase' => (string) (Yii::$app->params['public.base'] ?? ''),
+            'rootDomain' => (string) (Yii::$app->params['root.domain'] ?? ''),
         ]) . ';</script>';
 
         $built = Yii::$app->basePath . '/web/app/index.html';

@@ -10,4 +10,7 @@ return [
     'timezone.display' => 'Asia/Tashkent',
     'api.base' => getenv('API_BASE') ?: 'http://127.0.0.1:8081', // REST base the SPAs call
     'root.domain' => getenv('ROOT_DOMAIN') ?: 'tizbiz.uz', // {slug}.{root.domain} for tenants
+    // Public storefront URL template. Empty -> SPA builds https://{slug}.{root.domain}.
+    // Locally set this to a query-param form, e.g. http://t.startup/?slug={slug}.
+    'public.base' => getenv('PUBLIC_BASE') ?: '',
 ];

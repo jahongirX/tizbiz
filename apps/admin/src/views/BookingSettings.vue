@@ -1,6 +1,9 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { api, ApiError } from '@tizbiz/api-client'
+import { ref, computed, onMounted } from 'vue'
+import { api, ApiError, publicSiteUrl } from '@tizbiz/api-client'
+import { ExternalLink } from 'lucide-vue-next'
+
+const publicUrl = computed(() => publicSiteUrl((form.value.slug || '').trim() || 'demo'))
 
 const loading = ref(true)
 const error = ref('')
@@ -118,6 +121,10 @@ onMounted(load)
           <span class="muted" style="font-size: 12px">
             Public saytingiz manzili. O‘zgartirsangiz, eski havolalar ishlamay qoladi.
           </span>
+          <a :href="publicUrl" target="_blank" rel="noopener" class="site-link">
+            <ExternalLink :size="14" /> Saytni ochish
+            <span class="muted">— {{ publicUrl }}</span>
+          </a>
         </div>
 
         <hr class="sep" />
@@ -248,6 +255,22 @@ onMounted(load)
   border: none;
   border-top: 1px solid var(--border);
   margin: 18px 0;
+}
+.site-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+}
+.site-link:hover {
+  text-decoration: underline;
+}
+.site-link .muted {
+  font-weight: 400;
 }
 .tg-head {
   display: flex;

@@ -8,6 +8,18 @@ export const config = {
   app: boot.app || 'app',
   apiBase: (boot.apiBase || 'http://127.0.0.1:8899').replace(/\/$/, ''),
   tenantSlug: boot.tenantSlug ?? null,
+  publicBase: boot.publicBase || '',
+  rootDomain: boot.rootDomain || 'tizbiz.uz',
+}
+
+/** Public storefront URL for a business slug (prod subdomain or local base). */
+export function publicSiteUrl(slug) {
+  const s = String(slug || '').trim()
+  const base = config.publicBase
+  if (base) {
+    return base.includes('{slug}') ? base.split('{slug}').join(s) : base.replace(/\/$/, '') + '/?slug=' + encodeURIComponent(s)
+  }
+  return `https://${s}.${config.rootDomain}`
 }
 
 const TOKEN_KEY = 'tizbiz_token'

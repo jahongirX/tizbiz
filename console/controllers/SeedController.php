@@ -328,6 +328,168 @@ class SeedController extends Controller
         return ExitCode::OK;
     }
 
+    /**
+     * Generate a placeholder photo for every menu item of the catalog demo
+     * (slug `tort`) — an appetising gradient card with the dish name — and
+     * attach it. Self-contained (GD + a system font), no external images.
+     * Usage: php yii seed/catalog-images
+     */
+    public function actionCatalogImages(): int
+    {
+        $business = Business::findOne(['slug' => 'tort']);
+        if ($business === null) {
+            $this->stderr("Run seed/verticals + seed/catalog-menu first.\n");
+            return ExitCode::UNSPECIFIED_ERROR;
+        }
+        if (!function_exists('imagecreatetruecolor')) {
+            $this->stderr("GD extension not available.\n");
+            return ExitCode::UNSPECIFIED_ERROR;
+        }
+        $font = null;
+        foreach ([
+            '/System/Library/Fonts/Supplemental/Arial.ttf',
+            '/Library/Fonts/Arial.ttf',
+            '/System/Library/Fonts/Supplemental/Verdana.ttf',
+        ] as $f) {
+            if (is_file($f)) {
+                $font = $f;
+                break;
+            }
+        }
+        if ($font === null) {
+            $this->stderr("No TTF font found.\n");
+            return ExitCode::UNSPECIFIED_ERROR;
+        }
+
+        $bid = (int) $business->id;
+        $services = Service::find()->where(['business_id' => $bid])->all();
+        $dir = \Yii::getAlias('@api/web/uploads/menu');
+        \yii\helpers\FileHelper::createDirectory($dir, 0775);
+        $base = rtrim((string) (\Yii::$app->params['api.base'] ?? ''), '/');
+        if ($base === '' || str_contains($base, '127.0.0.1')) {
+            $base = 'https://api.startup'; // console default is not the MAMP host
+        }
+
+        $n = 0;
+        foreach ($services as $svc) {
+            $this->makeDishImage($dir . '/' . $svc->id . '.png', (string) $svc->name, (int) $svc->id, $font);
+            $svc->image = $base . '/uploads/menu/' . $svc->id . '.png';
+            $svc->save(false, ['image']);
+            $n++;
+        }
+        $this->stdout("Generated $n menu images for '{$business->name}'.\n");
+        return ExitCode::OK;
+    }
+
+    private function makeDishImage(string $path, string $name, int $seed, string $font): void
+    {
+        $W = 600;
+        $H = 400;
+        $im = imagecreatetruecolor($W, $H);
+        imagealphablending($im, true);
+
+        // Vertical gradient from a seeded, appetising hue.
+        $hue = ($seed * 47) % 360;
+        [$r1, $g1, $b1] = $this->hsl($hue, 62, 58);
+        [$r2, $g2, $b2] = $this->hsl(($hue + 28) % 360, 66, 40);
+        for ($y = 0; $y < $H; $y++) {
+            $t = $y / $H;
+            $col = imagecolorallocate(
+                $im,
+                (int) round($r1 + ($r2 - $r1) * $t),
+                (int) round($g1 + ($g2 - $g1) * $t),
+                (int) round($b1 + ($b2 - $b1) * $t)
+            );
+            imageline($im, 0, $y, $W, $y, $col);
+        }
+
+        // Decorative translucent "plate".
+        $plate = imagecolorallocatealpha($im, 255, 255, 255, 100);
+        imagefilledellipse($im, $W - 95, 95, 160, 160, $plate);
+
+        // Dark gradient at the bottom for text legibility.
+        $start = (int) ($H * 0.5);
+        for ($y = $start; $y < $H; $y++) {
+            $p = ($y - $start) / ($H - $start);
+            $alpha = 127 - (int) round(100 * $p);
+            imageline($im, 0, $y, $W, $y, imagecolorallocatealpha($im, 0, 0, 0, $alpha));
+        }
+
+        // Dish name (wrapped), bottom-left.
+        $white = imagecolorallocate($im, 255, 255, 255);
+        $size = 30;
+        $lh = 42;
+        $lines = $this->wrapText($name, $font, $size, $W - 60);
+        $y = $H - 34 - $lh * (count($lines) - 1);
+        foreach ($lines as $line) {
+            imagettftext($im, $size, 0, 30, $y, $white, $font, $line);
+            $y += $lh;
+        }
+
+        imagepng($im, $path);
+        imagedestroy($im);
+    }
+
+    /** @return string[] up to 3 lines fitting $maxW pixels. */
+    private function wrapText(string $text, string $font, int $size, int $maxW): array
+    {
+        $words = preg_split('/\s+/', trim($text)) ?: [];
+        $lines = [];
+        $cur = '';
+        foreach ($words as $w) {
+            $try = $cur === '' ? $w : $cur . ' ' . $w;
+            $bb = imagettfbbox($size, 0, $font, $try);
+            if (abs($bb[2] - $bb[0]) > $maxW && $cur !== '') {
+                $lines[] = $cur;
+                $cur = $w;
+            } else {
+                $cur = $try;
+            }
+        }
+        if ($cur !== '') {
+            $lines[] = $cur;
+        }
+        return array_slice($lines, 0, 3);
+    }
+
+    /** HSL (deg,%,%) -> [r,g,b] 0-255. */
+    private function hsl(float $h, float $s, float $l): array
+    {
+        $h /= 360;
+        $s /= 100;
+        $l /= 100;
+        if ($s == 0.0) {
+            $r = $g = $b = $l;
+        } else {
+            $q = $l < 0.5 ? $l * (1 + $s) : $l + $s - $l * $s;
+            $p = 2 * $l - $q;
+            $r = $this->hue2rgb($p, $q, $h + 1 / 3);
+            $g = $this->hue2rgb($p, $q, $h);
+            $b = $this->hue2rgb($p, $q, $h - 1 / 3);
+        }
+        return [(int) round($r * 255), (int) round($g * 255), (int) round($b * 255)];
+    }
+
+    private function hue2rgb(float $p, float $q, float $t): float
+    {
+        if ($t < 0) {
+            $t += 1;
+        }
+        if ($t > 1) {
+            $t -= 1;
+        }
+        if ($t < 1 / 6) {
+            return $p + ($q - $p) * 6 * $t;
+        }
+        if ($t < 1 / 2) {
+            return $q;
+        }
+        if ($t < 2 / 3) {
+            return $p + ($q - $p) * (2 / 3 - $t) * 6;
+        }
+        return $p;
+    }
+
     /** Save a model or abort with its validation errors. */
     private function save(ActiveRecord $model, ?callable $before = null): ActiveRecord
     {
