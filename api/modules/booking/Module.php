@@ -35,6 +35,9 @@ class Module extends \yii\base\Module implements BootstrapInterface
             'GET v1/settings/booking' => 'booking/settings/view',
             'PUT v1/settings/booking' => 'booking/settings/update',
 
+            // Image upload (menu items / categories).
+            'POST v1/uploads' => 'booking/upload/create',
+
             // Staff availability (public).
             'GET v1/staff/<id:\d+>/availability' => 'booking/availability/index',
 

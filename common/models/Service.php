@@ -53,6 +53,7 @@ class Service extends ActiveRecord
             [['is_active'], 'default', 'value' => true],
             [['online_bookable'], 'boolean'],
             [['online_bookable'], 'default', 'value' => true],
+            [['image'], 'string', 'max' => 500],
         ];
     }
 

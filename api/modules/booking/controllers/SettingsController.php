@@ -24,6 +24,11 @@ class SettingsController extends Controller
 
         $model = $this->business();
 
+        // Slug (public subdomain). The Business `unique` rule excludes self, so
+        // saving the same slug is a no-op; a taken one returns 422.
+        if (($v = $this->body('slug')) !== null) {
+            $model->slug = strtolower(trim((string) $v));
+        }
         if (($v = $this->body('online_booking_enabled')) !== null) {
             $model->online_booking_enabled = (bool) $v;
         }
@@ -55,6 +60,7 @@ class SettingsController extends Controller
     private function payload(Business $b): array
     {
         return [
+            'slug' => $b->slug,
             'online_booking_enabled' => (bool) $b->online_booking_enabled,
             'booking_lead_min' => (int) $b->booking_lead_min,
             'booking_horizon_days' => (int) $b->booking_horizon_days,

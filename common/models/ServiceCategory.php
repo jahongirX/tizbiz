@@ -32,6 +32,7 @@ class ServiceCategory extends ActiveRecord
             [['name'], 'string', 'max' => 96],
             [['business_id', 'sort'], 'integer'],
             [['sort'], 'default', 'value' => 0],
+            [['image'], 'string', 'max' => 500],
         ];
     }
 

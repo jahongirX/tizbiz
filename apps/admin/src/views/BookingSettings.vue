@@ -9,6 +9,7 @@ const saved = ref(false)
 const formError = ref('')
 
 const form = ref({
+  slug: '',
   online_booking_enabled: false,
   booking_lead_min: 60,
   booking_horizon_days: 30,
@@ -28,6 +29,7 @@ async function load() {
   try {
     const res = await api.get('/v1/settings/booking')
     form.value = {
+      slug: res.slug || '',
       online_booking_enabled: !!res.online_booking_enabled,
       booking_lead_min: Number(res.booking_lead_min ?? 60),
       booking_horizon_days: Number(res.booking_horizon_days ?? 30),
@@ -47,12 +49,14 @@ async function save() {
   saving.value = true
   try {
     const payload = {
+      slug: form.value.slug.trim(),
       online_booking_enabled: form.value.online_booking_enabled,
       booking_lead_min: Number(form.value.booking_lead_min),
       booking_horizon_days: Number(form.value.booking_horizon_days),
     }
     const res = await api.put('/v1/settings/booking', payload)
     form.value = {
+      slug: res.slug ?? payload.slug,
       online_booking_enabled: !!res.online_booking_enabled,
       booking_lead_min: Number(res.booking_lead_min ?? payload.booking_lead_min),
       booking_horizon_days: Number(res.booking_horizon_days ?? payload.booking_horizon_days),
@@ -105,6 +109,19 @@ onMounted(load)
       <div v-if="formError" class="alert alert-error">{{ formError }}</div>
 
       <form @submit.prevent="save">
+        <div class="field">
+          <label>Sayt manzili (slug)</label>
+          <div class="slug-row">
+            <input v-model="form.slug" placeholder="aziza-tortlari" />
+            <span class="slug-suffix">.tizbiz.uz</span>
+          </div>
+          <span class="muted" style="font-size: 12px">
+            Public saytingiz manzili. O‘zgartirsangiz, eski havolalar ishlamay qoladi.
+          </span>
+        </div>
+
+        <hr class="sep" />
+
         <label class="row" style="gap: 10px; cursor: pointer; margin-bottom: 6px">
           <input v-model="form.online_booking_enabled" type="checkbox" style="width: auto" />
           <span style="font-weight: 600">Onlayn yozuvni yoqish</span>
@@ -206,6 +223,32 @@ onMounted(load)
 </template>
 
 <style scoped>
+.slug-row {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.slug-row input {
+  border: none;
+  flex: 1;
+  background: transparent;
+}
+.slug-row input:focus {
+  outline: none;
+}
+.slug-suffix {
+  padding: 0 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.sep {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 18px 0;
+}
 .tg-head {
   display: flex;
   gap: 12px;

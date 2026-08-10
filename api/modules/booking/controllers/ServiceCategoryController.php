@@ -66,6 +66,10 @@ class ServiceCategoryController extends Controller
         if (($v = $this->body('sort')) !== null) {
             $model->sort = (int) $v;
         }
+        if (array_key_exists('image', $this->body())) {
+            $v = $this->body('image');
+            $model->image = ($v === null || $v === '') ? null : (string) $v;
+        }
     }
 
     private function findCategory(int $id): ServiceCategory

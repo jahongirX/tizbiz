@@ -177,7 +177,10 @@ const brandInitials = computed(() =>
         <h2>{{ c.name }}</h2>
         <div class="cat-grid">
           <article v-for="it in c.items" :key="it.id" class="prod">
-            <div class="prod-thumb">{{ it.name.charAt(0) }}</div>
+            <div class="prod-thumb">
+              <img v-if="it.image" :src="it.image" :alt="it.name" />
+              <span v-else>{{ it.name.charAt(0) }}</span>
+            </div>
             <div class="prod-body">
               <div class="prod-name">{{ it.name }}</div>
               <div class="prod-price">{{ soms(it.price_tiyin) }}</div>
@@ -368,7 +371,7 @@ const brandInitials = computed(() =>
   box-shadow: var(--shadow-sm);
 }
 .prod-thumb {
-  height: 88px;
+  height: 120px;
   border-radius: 10px;
   background: var(--brand-soft);
   color: var(--brand);
@@ -377,6 +380,12 @@ const brandInitials = computed(() =>
   font-size: 34px;
   font-weight: 800;
   margin-bottom: 10px;
+  overflow: hidden;
+}
+.prod-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .prod-body {
   flex: 1;

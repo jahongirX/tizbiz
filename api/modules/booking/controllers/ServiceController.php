@@ -91,6 +91,10 @@ class ServiceController extends Controller
         if (($v = $this->body('online_bookable')) !== null) {
             $model->online_bookable = (bool) $v;
         }
+        if (array_key_exists('image', $this->body())) {
+            $v = $this->body('image');
+            $model->image = ($v === null || $v === '') ? null : (string) $v;
+        }
     }
 
     /** Ensure category_id (if set) belongs to the same business. */

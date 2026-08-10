@@ -4,6 +4,8 @@ import { api, ApiError } from '@tizbiz/api-client'
 import { somToTiyin, tiyinToSom, formatSom } from '../lib/money'
 import { confirm } from '../composables/useConfirm'
 import Modal from '../components/Modal.vue'
+import ImageUpload from '../components/ImageUpload.vue'
+import { Pencil, Trash2 } from 'lucide-vue-next'
 
 const loading = ref(true)
 const error = ref('')
@@ -17,7 +19,7 @@ const editing = ref(null)
 const form = ref(blank())
 
 function blank() {
-  return { name: '', duration_min: 30, price_som: '', deposit_som: '', category_id: '', is_active: true, online_bookable: true }
+  return { name: '', duration_min: 30, price_som: '', deposit_som: '', category_id: '', is_active: true, online_bookable: true, image: '' }
 }
 
 const categoryName = computed(() => {
@@ -60,6 +62,7 @@ function openEdit(s) {
     category_id: s.category_id || '',
     is_active: s.is_active !== false,
     online_bookable: s.online_bookable !== false,
+    image: s.image || '',
   }
   formError.value = ''
   showModal.value = true
@@ -77,6 +80,7 @@ async function save() {
       category_id: form.value.category_id || null,
       is_active: form.value.is_active,
       online_bookable: form.value.online_bookable,
+      image: form.value.image || '',
     }
     if (editing.value) {
       await api.patch('/v1/services/' + editing.value.id, payload)
@@ -102,6 +106,50 @@ async function remove(s) {
   }
 }
 
+// ---- Categories (with image) ----
+const catModal = ref(false)
+const catSaving = ref(false)
+const catError = ref('')
+const editingCat = ref(null)
+const catForm = ref({ name: '', image: '' })
+
+function openCatCreate() {
+  editingCat.value = null
+  catForm.value = { name: '', image: '' }
+  catError.value = ''
+  catModal.value = true
+}
+function openCatEdit(c) {
+  editingCat.value = c
+  catForm.value = { name: c.name, image: c.image || '' }
+  catError.value = ''
+  catModal.value = true
+}
+async function saveCat() {
+  catError.value = ''
+  catSaving.value = true
+  try {
+    const payload = { name: catForm.value.name.trim(), image: catForm.value.image || '' }
+    if (editingCat.value) await api.patch('/v1/service-categories/' + editingCat.value.id, payload)
+    else await api.post('/v1/service-categories', payload)
+    catModal.value = false
+    await load()
+  } catch (e) {
+    catError.value = e instanceof ApiError ? e.message : 'Saqlab bo\'lmadi'
+  } finally {
+    catSaving.value = false
+  }
+}
+async function removeCat(c) {
+  if (!(await confirm({ message: `"${c.name}" kategoriyasini o'chirilsinmi?`, danger: true, confirmText: 'O‘chirish' }))) return
+  try {
+    await api.del('/v1/service-categories/' + c.id)
+    await load()
+  } catch (e) {
+    error.value = e instanceof ApiError ? e.message : 'O\'chirib bo\'lmadi'
+  }
+}
+
 onMounted(load)
 </script>
 
@@ -116,6 +164,26 @@ onMounted(load)
     <div v-if="loading" class="loading-block"><span class="spinner"></span> Yuklanmoqda…</div>
 
     <template v-else>
+      <!-- Categories with images -->
+      <section class="cat-panel card">
+        <div class="cat-panel-head">
+          <h3>Kategoriyalar</h3>
+          <button class="btn btn-sm btn-primary" @click="openCatCreate">+ Kategoriya</button>
+        </div>
+        <p v-if="!categories.length" class="muted" style="margin: 0; font-size: 13px">
+          Kategoriya yo‘q. Menyu/xizmatlarni bo‘limlarga ajrating.
+        </p>
+        <div v-else class="cat-list">
+          <div v-for="c in categories" :key="c.id" class="cat-item">
+            <img v-if="c.image" :src="c.image" class="cat-thumb" alt="" />
+            <span v-else class="cat-thumb ph">{{ c.name.charAt(0) }}</span>
+            <span class="cat-name">{{ c.name }}</span>
+            <button class="icon-btn" title="Tahrir" @click="openCatEdit(c)"><Pencil :size="14" /></button>
+            <button class="icon-btn del" title="O‘chirish" @click="removeCat(c)"><Trash2 :size="14" /></button>
+          </div>
+        </div>
+      </section>
+
       <div v-if="!services.length" class="empty card">
         Hali xizmat qo'shilmagan. <a href="#" @click.prevent="openCreate">Birinchisini qo'shing</a>.
       </div>
@@ -124,6 +192,7 @@ onMounted(load)
         <table class="data">
           <thead>
             <tr>
+              <th style="width: 44px"></th>
               <th>Nomi</th>
               <th>Kategoriya</th>
               <th>Davomiyligi</th>
@@ -136,6 +205,10 @@ onMounted(load)
           </thead>
           <tbody>
             <tr v-for="s in services" :key="s.id">
+              <td>
+                <img v-if="s.image" :src="s.image" class="row-thumb" alt="" />
+                <span v-else class="row-thumb ph">{{ s.name.charAt(0) }}</span>
+              </td>
               <td><strong>{{ s.name }}</strong></td>
               <td>{{ categoryName[s.category_id] || '—' }}</td>
               <td>{{ s.duration_min }} daqiqa</td>
@@ -164,6 +237,10 @@ onMounted(load)
     <Modal v-if="showModal" :title="editing ? 'Xizmatni tahrirlash' : 'Yangi xizmat'" @close="showModal = false">
       <form @submit.prevent="save">
         <div v-if="formError" class="alert alert-error">{{ formError }}</div>
+        <div class="field">
+          <label>Rasm</label>
+          <ImageUpload v-model="form.image" :size="88" />
+        </div>
         <div class="field">
           <label>Nomi</label>
           <input v-model="form.name" placeholder="Soch olish" required />
@@ -207,5 +284,103 @@ onMounted(load)
         </button>
       </template>
     </Modal>
+
+    <Modal v-if="catModal" :title="editingCat ? 'Kategoriyani tahrirlash' : 'Yangi kategoriya'" @close="catModal = false">
+      <form @submit.prevent="saveCat">
+        <div v-if="catError" class="alert alert-error">{{ catError }}</div>
+        <div class="field">
+          <label>Rasm</label>
+          <ImageUpload v-model="catForm.image" :size="88" />
+        </div>
+        <div class="field">
+          <label>Nomi</label>
+          <input v-model="catForm.name" placeholder="Tortlar" required />
+        </div>
+      </form>
+      <template #footer>
+        <button class="btn" @click="catModal = false">Bekor</button>
+        <button class="btn btn-primary" :disabled="catSaving" @click="saveCat">
+          {{ catSaving ? 'Saqlanmoqda…' : 'Saqlash' }}
+        </button>
+      </template>
+    </Modal>
   </div>
 </template>
+
+<style scoped>
+.cat-panel {
+  margin-bottom: 16px;
+  padding: 16px;
+}
+.cat-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.cat-panel-head h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.cat-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.cat-thumb {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.cat-thumb.ph {
+  display: grid;
+  place-items: center;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 700;
+}
+.cat-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+.icon-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: inline-flex;
+}
+.icon-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.icon-btn.del:hover {
+  color: var(--danger, #ef4444);
+}
+.row-thumb {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.row-thumb.ph {
+  display: grid;
+  place-items: center;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 14px;
+}
+</style>

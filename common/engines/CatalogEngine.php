@@ -34,13 +34,16 @@ class CatalogEngine extends SlotEngine
             ->orderBy(['sort' => SORT_ASC, 'id' => SORT_ASC])
             ->all();
         $order = [];
+        $img = [];
         $groups = [];
         foreach ($catNames as $c) {
             $order[(int) $c->id] = $c->name;
+            $img[(int) $c->id] = $c->image;
             $groups[(int) $c->id] = [];
         }
         $groups[0] = [];
         $order[0] = 'Boshqa';
+        $img[0] = null;
 
         foreach ($items as $it) {
             $cid = (int) ($it->category_id ?? 0);
@@ -53,7 +56,7 @@ class CatalogEngine extends SlotEngine
         $categories = [];
         foreach ($order as $cid => $name) {
             if (!empty($groups[$cid])) {
-                $categories[] = ['id' => $cid, 'name' => $name, 'items' => $groups[$cid]];
+                $categories[] = ['id' => $cid, 'name' => $name, 'image' => $img[$cid], 'items' => $groups[$cid]];
             }
         }
 

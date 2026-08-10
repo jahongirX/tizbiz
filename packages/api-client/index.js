@@ -66,12 +66,37 @@ async function request(method, path, body) {
   return json && json.data !== undefined ? json.data : json
 }
 
+/** Multipart file upload. Lets the browser set the multipart boundary. */
+async function upload(path, file, field = 'file') {
+  const token = auth.token
+  const fd = new FormData()
+  fd.append(field, file)
+  const res = await fetch(config.apiBase + path, {
+    method: 'POST',
+    headers: token ? { Authorization: 'Bearer ' + token } : {},
+    body: fd,
+  })
+  let json = null
+  try {
+    json = await res.json()
+  } catch (_) {
+    /* empty / non-JSON body */
+  }
+  if (!res.ok) {
+    const first = json && json.errors && json.errors[0]
+    const message = (first && (first.detail || first.title)) || 'HTTP ' + res.status
+    throw new ApiError(message, res.status, json && json.errors)
+  }
+  return json && json.data !== undefined ? json.data : json
+}
+
 export const api = {
   get: (path) => request('GET', path),
   post: (path, body) => request('POST', path, body),
   patch: (path, body) => request('PATCH', path, body),
   put: (path, body) => request('PUT', path, body),
   del: (path) => request('DELETE', path),
+  upload,
 }
 
 export default api
