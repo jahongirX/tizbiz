@@ -381,6 +381,92 @@ class SeedController extends Controller
         return ExitCode::OK;
     }
 
+    /**
+     * Fill the catalog demo (slug `tort`) with REAL food photos downloaded from
+     * TheMealDB (desserts) + ingredient images for drinks, stored locally so the
+     * storefront is self-contained. "Similar is fine" — a cake shop, so dessert
+     * photos suit every item. Usage: php yii seed/catalog-real-images
+     */
+    public function actionCatalogRealImages(): int
+    {
+        $business = Business::findOne(['slug' => 'tort']);
+        if ($business === null) {
+            $this->stderr("Run seed/verticals + seed/catalog-menu first.\n");
+            return ExitCode::UNSPECIFIED_ERROR;
+        }
+        $bid = (int) $business->id;
+
+        $listJson = $this->fetchUrl('https://www.themealdb.com/api/json/v1/1/filter.php?c=Dessert');
+        $meals = $listJson !== null ? (json_decode($listJson, true)['meals'] ?? []) : [];
+        $desserts = array_values(array_filter(array_map(static fn ($m) => $m['strMealThumb'] ?? null, $meals)));
+        if ($desserts === []) {
+            $this->stderr("Could not fetch dessert images (network?).\n");
+            return ExitCode::UNSPECIFIED_ERROR;
+        }
+        $ingredient = static fn (string $n) => "https://www.themealdb.com/images/ingredients/{$n}.png";
+
+        $dir = \Yii::getAlias('@api/web/uploads/menu');
+        \yii\helpers\FileHelper::createDirectory($dir, 0775);
+        $base = rtrim((string) (\Yii::$app->params['api.base'] ?? ''), '/');
+        if ($base === '' || str_contains($base, '127.0.0.1')) {
+            $base = 'https://api.startup';
+        }
+
+        $services = Service::find()->where(['business_id' => $bid])->orderBy(['id' => SORT_ASC])->all();
+        $i = 0;
+        $n = 0;
+        foreach ($services as $svc) {
+            $name = mb_strtolower((string) $svc->name);
+            if (str_contains($name, 'kapuchino') || str_contains($name, 'amerikano') || str_contains($name, 'kofe')) {
+                $src = $ingredient('Coffee');
+            } elseif (str_contains($name, 'choy') || str_contains($name, 'tea')) {
+                $src = $ingredient('Tea');
+            } elseif (str_contains($name, 'apelsin') || str_contains($name, 'fresh')) {
+                $src = $ingredient('Orange');
+            } else {
+                // Spread across the dessert list for variety (deterministic).
+                $src = $desserts[($i * 7) % count($desserts)];
+                $i++;
+            }
+
+            $ext = str_ends_with($src, '.png') ? 'png' : 'jpg';
+            $file = $dir . '/real-' . $svc->id . '.' . $ext;
+            $bytes = $this->fetchUrl($src);
+            if ($bytes === null || strlen($bytes) < 500 || file_put_contents($file, $bytes) === false) {
+                $this->stdout("  skip {$svc->name} (download failed)\n");
+                continue;
+            }
+            $svc->image = $base . '/uploads/menu/real-' . $svc->id . '.' . $ext;
+            $svc->save(false, ['image']);
+            $n++;
+        }
+
+        $this->stdout("Attached $n real photos to '{$business->name}'.\n");
+        return ExitCode::OK;
+    }
+
+    /** GET a URL and return the body, or null on failure. */
+    private function fetchUrl(string $url): ?string
+    {
+        if (function_exists('curl_init')) {
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_TIMEOUT => 25,
+                CURLOPT_USERAGENT => 'TizBiz-seed/1.0',
+                CURLOPT_SSL_VERIFYPEER => false,
+            ]);
+            $body = curl_exec($ch);
+            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            return ($body !== false && $code === 200) ? (string) $body : null;
+        }
+        $ctx = stream_context_create(['http' => ['timeout' => 25, 'user_agent' => 'TizBiz-seed/1.0']]);
+        $body = @file_get_contents($url, false, $ctx);
+        return $body === false ? null : $body;
+    }
+
     private function makeDishImage(string $path, string $name, int $seed, string $font): void
     {
         $W = 600;

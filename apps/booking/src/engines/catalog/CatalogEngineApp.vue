@@ -284,11 +284,11 @@ const brandInitials = computed(() =>
 }
 .store-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
-  gap: 22px;
-  max-width: 1180px;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 26px;
+  max-width: none;
   margin: 0 auto;
-  padding: 0 18px 40px;
+  padding: 0 clamp(16px, 2.5vw, 48px) 44px;
   align-items: start;
 }
 .sm {
