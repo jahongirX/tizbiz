@@ -1,7 +1,9 @@
 <script setup>
-// Catalog engine (cafe / restaurant / cakes) public storefront — Yandex-Market
-// style: left category rail, centre product grid, right full-height cart. Data
-// comes from the site payload (categories -> items) loaded once by App.vue.
+// Catalog engine (cafe / restaurant / cakes / clinic) public storefront.
+// Mobile-first, single narrow column — identical framing to the slot engine
+// (shared .shell / .brand / .card / .btn / .dock from style.css). Browsing is a
+// category-grouped product list; the cart + checkout is a full-screen step-style
+// sheet. Data comes from the site payload (categories -> items).
 import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import { api, ApiError } from '@tizbiz/api-client'
 import { soms } from '../../format'
@@ -21,6 +23,18 @@ const itemById = computed(() => {
   for (const c of categories.value) for (const it of c.items || []) m[it.id] = it
   return m
 })
+
+const brandInitials = computed(() =>
+  String(business.value?.name || '?')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join('')
+    .toUpperCase(),
+)
+const bizPhone = computed(() => business.value?.phone || business.value?.phone_number || '')
+const bizCategory = computed(() => business.value?.category || business.value?.category_name || '')
 
 // ---- Cart (item id -> qty) ----
 const cart = reactive({})
@@ -48,16 +62,8 @@ function clearCart() {
   for (const k of Object.keys(cart)) delete cart[k]
 }
 
-// ---- Mobile cart sheet (desktop keeps the always-visible right rail) ----
+// ---- Cart sheet + checkout ----
 const cartOpen = ref(false)
-function openCart() {
-  cartOpen.value = true
-}
-function closeCart() {
-  cartOpen.value = false
-}
-
-// ---- Checkout ----
 const panel = ref('cart') // cart | checkout | done
 const cust = reactive({ name: '', phone: '' })
 const note = ref('')
@@ -65,6 +71,14 @@ const submitting = ref(false)
 const orderError = ref('')
 const placedOrder = ref(null)
 
+function openCart() {
+  if (!cartCount.value) return
+  panel.value = 'cart'
+  cartOpen.value = true
+}
+function closeCart() {
+  cartOpen.value = false
+}
 function goCheckout() {
   if (cartCount.value > 0) {
     orderError.value = ''
@@ -103,13 +117,14 @@ async function placeOrder() {
 
 function reset() {
   panel.value = 'cart'
+  cartOpen.value = false
   placedOrder.value = null
   cust.name = ''
   cust.phone = ''
   note.value = ''
 }
 
-// ---- Scroll-spy: highlight the left category on scroll ----
+// ---- Scroll-spy: highlight the active category chip ----
 const activeCat = ref(null)
 const sections = {}
 function setSection(id, el) {
@@ -128,23 +143,13 @@ onMounted(() => {
         if (e.isIntersecting) activeCat.value = Number(e.target.dataset.cat)
       }
     },
-    { rootMargin: '-10% 0px -80% 0px', threshold: 0 },
+    { rootMargin: '-14% 0px -80% 0px', threshold: 0 },
   )
   Object.values(sections).forEach((el) => observer.observe(el))
 })
 onBeforeUnmount(() => observer?.disconnect())
 
-const brandInitials = computed(() =>
-  String(business.value?.name || '?')
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((p) => p[0])
-    .join('')
-    .toUpperCase(),
-)
-
-// ---- Product detail modal (gallery + description + counter) ----
+// ---- Product detail sheet (gallery + description + counter) ----
 const detail = ref(null)
 const galleryIndex = ref(0)
 function openDetail(it) {
@@ -164,628 +169,469 @@ const detailImages = computed(() => {
 </script>
 
 <template>
-  <div class="store">
-    <!-- LEFT: brand + categories -->
-    <aside class="rail">
-      <div class="brand">
-        <span class="brand-logo">{{ brandInitials }}</span>
-        <div class="brand-txt">
-          <strong>{{ business.name }}</strong>
-          <span class="muted sm">Onlayn buyurtma</span>
+  <div class="cat-root">
+  <!-- BROWSE: same narrow column + branded header as the step engine -->
+  <div class="shell">
+    <header class="brand">
+      <div class="brand-top">
+        <div class="brand-logo">{{ brandInitials }}</div>
+        <div class="brand-info">
+          <h1>{{ business.name }}</h1>
+          <div class="sub">Onlayn buyurtma</div>
         </div>
       </div>
-      <div class="rail-title">Katalog</div>
-      <nav class="rail-nav">
-        <button
-          v-for="c in categories"
-          :key="c.id"
-          class="rail-item"
-          :class="{ active: activeCat === c.id }"
-          @click="scrollTo(c.id)"
-        >
-          <span class="rail-ico">
-            <img v-if="c.image" :src="c.image" alt="" />
-            <span v-else>{{ c.name.charAt(0) }}</span>
-          </span>
-          <span class="rail-name">{{ c.name }}</span>
-        </button>
-      </nav>
-    </aside>
+      <div v-if="bizCategory || bizPhone" class="brand-chips">
+        <span v-if="bizCategory" class="brand-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
+            <line x1="7" y1="7" x2="7.01" y2="7" />
+          </svg>
+          {{ bizCategory }}
+        </span>
+        <a v-if="bizPhone" class="brand-chip" :href="`tel:${bizPhone}`">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0122 16.92z" />
+          </svg>
+          {{ bizPhone }}
+        </a>
+      </div>
+    </header>
 
-    <!-- MIDDLE: products -->
-    <main class="main">
-      <section
+    <!-- category chips -->
+    <div v-if="categories.length" class="cat-strip">
+      <button
         v-for="c in categories"
         :key="c.id"
-        :ref="(el) => setSection(c.id, el)"
-        :data-cat="c.id"
-        class="sec"
+        class="cat-chip"
+        :class="{ on: activeCat === c.id }"
+        @click="scrollTo(c.id)"
       >
-        <h2>{{ c.name }}</h2>
-        <div class="grid">
-          <article v-for="it in c.items" :key="it.id" class="card">
-            <div class="card-open" @click="openDetail(it)">
-              <div class="card-img">
-                <img v-if="it.image" :src="it.image" :alt="it.name" />
-                <span v-else class="ph">{{ it.name.charAt(0) }}</span>
-              </div>
-              <div class="card-price">{{ soms(it.price_tiyin) }}</div>
-              <div class="card-name">{{ it.name }}</div>
-              <div class="card-portion">1 dona</div>
-            </div>
-            <div class="card-foot">
-              <div v-if="qtyOf(it) > 0" class="stepper">
-                <button aria-label="Kamaytirish" @click="dec(it)">−</button>
-                <span>{{ qtyOf(it) }}</span>
-                <button aria-label="Ko‘paytirish" @click="add(it)">+</button>
-              </div>
-              <button v-else class="add" @click="add(it)">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
-                  <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-              </button>
-            </div>
-          </article>
+        {{ c.name }}
+      </button>
+    </div>
+
+    <!-- product sections -->
+    <section
+      v-for="c in categories"
+      :key="c.id"
+      :ref="(el) => setSection(c.id, el)"
+      :data-cat="c.id"
+      class="prod-sec"
+    >
+      <h2 class="sec-title">{{ c.name }}</h2>
+      <article v-for="it in c.items" :key="it.id" class="card prod">
+        <button class="prod-main" @click="openDetail(it)">
+          <span class="thumb">
+            <img v-if="it.image" :src="it.image" :alt="it.name" />
+            <span v-else class="thumb-ph">{{ it.name.charAt(0) }}</span>
+          </span>
+          <span class="grow">
+            <span class="title">{{ it.name }}</span>
+            <span class="price">{{ soms(it.price_tiyin) }}</span>
+          </span>
+        </button>
+        <div class="ctrl">
+          <div v-if="qtyOf(it) > 0" class="qty">
+            <button aria-label="Kamaytirish" @click="dec(it)">−</button>
+            <span>{{ qtyOf(it) }}</span>
+            <button aria-label="Ko‘paytirish" @click="add(it)">+</button>
+          </div>
+          <button v-else class="add" aria-label="Qo‘shish" @click="add(it)">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+              stroke-width="2.4" stroke-linecap="round">
+              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
         </div>
-      </section>
+      </article>
+    </section>
 
-      <div v-if="!categories.length" class="empty-menu">Menyu hozircha bo‘sh.</div>
-    </main>
+    <div v-if="!categories.length" class="empty">
+      <div class="emo">🍽️</div>
+      Menyu hozircha bo‘sh.
+    </div>
+  </div>
 
-    <!-- RIGHT: full-height cart (mobile: full-screen sheet toggled by the bottom bar) -->
-    <aside class="cart" :class="{ open: cartOpen }">
-      <div class="cart-h">
-        <button class="cart-back" aria-label="Katalogga qaytish" @click="closeCart">←</button>
-        <h3>Savat<span v-if="cartCount" class="badge">{{ cartCount }}</span></h3>
-        <button v-if="cartLines.length && panel === 'cart'" class="clear" @click="clearCart">Tozalash</button>
+  <!-- fixed bottom dock: go to cart -->
+  <div v-if="cartCount && !cartOpen" class="dock">
+    <div class="dock-inner">
+      <button class="btn cart-cta" @click="openCart">
+        <span class="cta-count">{{ cartCount }}</span>
+        <span>Savatga o‘tish</span>
+        <strong>{{ soms(cartTotal) }}</strong>
+      </button>
+    </div>
+  </div>
+
+  <!-- CART sheet: full-screen, narrow column, step-style -->
+  <div v-if="cartOpen" class="sheet">
+    <div class="shell">
+      <div class="step-head sheet-head">
+        <button class="back" aria-label="Orqaga" @click="closeCart">←</button>
+        <h2>{{ panel === 'checkout' ? 'Rasmiylashtirish' : panel === 'done' ? 'Tayyor' : 'Savat' }}</h2>
+        <button
+          v-if="cartLines.length && panel === 'cart'"
+          class="clear"
+          @click="clearCart"
+        >
+          Tozalash
+        </button>
       </div>
 
-      <!-- Cart list -->
+      <!-- cart list -->
       <template v-if="panel === 'cart'">
-        <div v-if="!cartLines.length" class="cart-empty">
-          <div class="cart-empty-ico">🛍️</div>
-          <p>Savat bo‘sh</p>
-          <span>Menyudan tanlang</span>
+        <div v-if="!cartLines.length" class="empty">
+          <div class="emo">🛍️</div>
+          Savat bo‘sh
         </div>
         <template v-else>
-          <div class="cart-scroll">
-            <div v-for="l in cartLines" :key="l.item.id" class="cart-line">
-              <div class="cl-thumb">
-                <img v-if="l.item.image" :src="l.item.image" :alt="l.item.name" />
-                <span v-else>{{ l.item.name.charAt(0) }}</span>
-              </div>
-              <div class="cl-main">
-                <div class="cl-name">{{ l.item.name }}</div>
-                <div class="cl-price">{{ soms(l.item.price_tiyin * l.qty) }}</div>
-              </div>
-              <div class="stepper sm">
-                <button @click="dec(l.item)">−</button>
-                <span>{{ l.qty }}</span>
-                <button @click="add(l.item)">+</button>
-              </div>
+          <article v-for="l in cartLines" :key="l.item.id" class="card">
+            <span class="thumb sm">
+              <img v-if="l.item.image" :src="l.item.image" :alt="l.item.name" />
+              <span v-else class="thumb-ph">{{ l.item.name.charAt(0) }}</span>
+            </span>
+            <div class="grow">
+              <div class="title">{{ l.item.name }}</div>
+              <div class="meta">{{ soms(l.item.price_tiyin * l.qty) }}</div>
+            </div>
+            <div class="qty">
+              <button aria-label="Kamaytirish" @click="dec(l.item)">−</button>
+              <span>{{ l.qty }}</span>
+              <button aria-label="Ko‘paytirish" @click="add(l.item)">+</button>
+            </div>
+          </article>
+
+          <div class="summary">
+            <div class="row total">
+              <span class="k">Jami</span>
+              <span class="v accent">{{ soms(cartTotal) }}</span>
             </div>
           </div>
-          <div class="cart-foot">
-            <button class="next-btn" @click="goCheckout">
-              <span>Rasmiylashtirish</span>
-              <strong>{{ soms(cartTotal) }}</strong>
-            </button>
-          </div>
+          <button class="btn" @click="goCheckout">Rasmiylashtirish</button>
         </template>
       </template>
 
-      <!-- Checkout form -->
+      <!-- checkout form -->
       <template v-else-if="panel === 'checkout'">
-        <div class="cart-scroll">
-          <div v-if="orderError" class="alert">{{ orderError }}</div>
-          <label class="fl">Ismingiz</label>
-          <input v-model="cust.name" class="fi" placeholder="Ism" />
-          <label class="fl">Telefon</label>
+        <div v-if="orderError" class="alert">{{ orderError }}</div>
+        <div class="field">
+          <label>Ismingiz</label>
+          <input v-model="cust.name" type="text" placeholder="Ism" />
+        </div>
+        <div class="field">
+          <label>Telefon</label>
           <PhoneInput v-model="cust.phone" />
-          <label class="fl">Izoh (ixtiyoriy)</label>
-          <textarea v-model="note" class="fi" rows="2" placeholder="Manzil yoki izoh"></textarea>
         </div>
-        <div class="cart-foot">
-          <button class="next-btn" :disabled="submitting" @click="placeOrder">
-            <span>{{ submitting ? 'Yuborilmoqda…' : 'Buyurtma berish' }}</span>
-            <strong>{{ soms(cartTotal) }}</strong>
-          </button>
-          <button class="link-btn" @click="panel = 'cart'">← Savatga qaytish</button>
+        <div class="field">
+          <label>Izoh (ixtiyoriy)</label>
+          <input v-model="note" type="text" placeholder="Manzil yoki izoh" />
         </div>
+        <div class="summary">
+          <div class="row total">
+            <span class="k">To‘lov</span>
+            <span class="v accent">{{ soms(cartTotal) }}</span>
+          </div>
+        </div>
+        <button class="btn" :disabled="submitting" @click="placeOrder">
+          {{ submitting ? 'Yuborilmoqda…' : 'Buyurtma berish' }}
+        </button>
+        <button class="btn ghost" @click="panel = 'cart'">← Savatga qaytish</button>
       </template>
 
-      <!-- Done -->
+      <!-- done -->
       <template v-else>
-        <div class="cart-empty">
-          <div class="done-ico">✓</div>
-          <p>Buyurtma qabul qilindi!</p>
-          <span>#{{ placedOrder?.id }} · {{ soms(placedOrder?.total_tiyin) }}</span>
-          <button class="next-btn" style="margin-top: 18px" @click="reset"><span>Yana buyurtma</span></button>
+        <div class="done-hero">
+          <div class="check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <h2>Buyurtma qabul qilindi!</h2>
+          <p>#{{ placedOrder?.id }} · {{ soms(placedOrder?.total_tiyin) }}</p>
         </div>
+        <button class="btn" @click="reset">Yana buyurtma</button>
       </template>
-    </aside>
+    </div>
+  </div>
 
-    <!-- Mobile-only: floating bar that opens the cart sheet -->
-    <button v-if="cartCount && !cartOpen" class="mobile-bar" @click="openCart">
-      <span class="mb-count">{{ cartCount }}</span>
-      <span class="mb-label">Savatga o‘tish</span>
-      <strong class="mb-total">{{ soms(cartTotal) }}</strong>
-    </button>
-
-    <!-- Product detail modal: gallery + price + description + counter -->
-    <div v-if="detail" class="modal-backdrop" @click.self="closeDetail">
-      <div class="modal">
-        <button class="modal-x" aria-label="Yopish" @click="closeDetail">✕</button>
-        <div class="modal-gallery">
-          <div class="mg-main">
-            <img v-if="detailImages.length" :src="detailImages[galleryIndex]" :alt="detail.name" />
-            <span v-else class="ph">{{ detail.name.charAt(0) }}</span>
-          </div>
-          <div v-if="detailImages.length > 1" class="mg-thumbs">
-            <button
-              v-for="(g, idx) in detailImages"
-              :key="idx"
-              class="mg-thumb"
-              :class="{ on: idx === galleryIndex }"
-              @click="galleryIndex = idx"
-            >
-              <img :src="g" alt="" />
-            </button>
-          </div>
+  <!-- Product detail sheet: gallery + price + description + counter -->
+  <div v-if="detail" class="modal-backdrop" @click.self="closeDetail">
+    <div class="modal">
+      <button class="modal-x" aria-label="Yopish" @click="closeDetail">✕</button>
+      <div class="mg-main">
+        <img v-if="detailImages.length" :src="detailImages[galleryIndex]" :alt="detail.name" />
+        <span v-else class="thumb-ph big">{{ detail.name.charAt(0) }}</span>
+      </div>
+      <div v-if="detailImages.length > 1" class="mg-thumbs">
+        <button
+          v-for="(g, idx) in detailImages"
+          :key="idx"
+          class="mg-thumb"
+          :class="{ on: idx === galleryIndex }"
+          @click="galleryIndex = idx"
+        >
+          <img :src="g" alt="" />
+        </button>
+      </div>
+      <div class="modal-info">
+        <div class="modal-price">{{ soms(detail.price_tiyin) }}</div>
+        <h3 class="modal-name">{{ detail.name }}</h3>
+        <p v-if="detail.description" class="modal-desc">{{ detail.description }}</p>
+        <div v-if="qtyOf(detail) > 0" class="qty big">
+          <button aria-label="Kamaytirish" @click="dec(detail)">−</button>
+          <span>{{ qtyOf(detail) }}</span>
+          <button aria-label="Ko‘paytirish" @click="add(detail)">+</button>
         </div>
-        <div class="modal-info">
-          <div class="modal-price">{{ soms(detail.price_tiyin) }}</div>
-          <h3 class="modal-name">{{ detail.name }}</h3>
-          <p class="modal-portion">1 dona</p>
-          <p v-if="detail.description" class="modal-desc">{{ detail.description }}</p>
-          <div class="modal-foot">
-            <div v-if="qtyOf(detail) > 0" class="stepper big">
-              <button aria-label="Kamaytirish" @click="dec(detail)">−</button>
-              <span>{{ qtyOf(detail) }}</span>
-              <button aria-label="Ko‘paytirish" @click="add(detail)">+</button>
-            </div>
-            <button v-else class="modal-add" @click="add(detail)">
-              Savatga qo‘shish · {{ soms(detail.price_tiyin) }}
-            </button>
-          </div>
-        </div>
+        <button v-else class="btn" @click="add(detail)">
+          Savatga qo‘shish · {{ soms(detail.price_tiyin) }}
+        </button>
       </div>
     </div>
+  </div>
   </div>
 </template>
 
 <style scoped>
-.store {
-  display: grid;
-  grid-template-columns: 236px minmax(0, 1fr) 360px;
-  align-items: start;
-  min-height: 100vh;
-  background: var(--bg);
-}
-.sm {
-  font-size: 12px;
-}
-.muted {
-  color: var(--muted);
+/* Single template root that doesn't create a box (fixed/centered children keep
+   their viewport-relative behaviour). */
+.cat-root {
+  display: contents;
 }
 
-/* LEFT rail */
-.rail {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow-y: auto;
-  padding: 22px 14px;
-  scrollbar-width: thin;
-}
-.brand {
+/* Category chips (horizontal, matches the day-strip idiom) */
+.cat-strip {
   display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 0 8px 18px;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 12px;
+  margin: 0 -2px 6px;
+  scrollbar-width: none;
 }
-.brand-logo {
-  width: 44px;
-  height: 44px;
-  flex: 0 0 44px;
-  border-radius: 13px;
+.cat-strip::-webkit-scrollbar {
+  display: none;
+}
+.cat-chip {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+}
+.cat-chip.on {
   background: var(--brand);
+  border-color: var(--brand);
   color: var(--brand-ink);
-  display: grid;
-  place-items: center;
-  font-weight: 800;
+  box-shadow: var(--shadow-brand);
 }
-.brand-txt {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.25;
+
+/* Sections */
+.prod-sec {
+  scroll-margin-top: 96px;
+  margin-bottom: 18px;
 }
-.brand-txt strong {
-  font-size: 15px;
-}
-.rail-title {
-  font-size: 13px;
+.sec-title {
+  font-size: 18px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-  padding: 0 8px 8px;
+  letter-spacing: -0.01em;
+  margin: 4px 2px 12px;
 }
-.rail-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+
+/* Product row — built on the shared .card */
+.prod {
+  justify-content: space-between;
+  gap: 10px;
 }
-.rail-item {
+.prod-main {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 13px;
   border: none;
   background: transparent;
-  color: var(--text);
-  padding: 8px;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
+  padding: 0;
   text-align: left;
+  color: var(--text);
 }
-.rail-item:hover {
-  background: var(--surface);
-}
-.rail-item.active {
-  background: var(--brand-soft);
-  color: var(--brand);
-}
-.rail-ico {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
-  border-radius: 10px;
-  overflow: hidden;
-  background: var(--surface-2);
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  color: var(--brand);
-}
-.rail-ico img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* MIDDLE products */
-.main {
-  padding: 22px clamp(14px, 2vw, 34px) 44px;
-}
-.sec {
-  scroll-margin-top: 14px;
-  margin-bottom: 30px;
-}
-.sec h2 {
-  font-size: 23px;
-  margin: 0 0 14px;
-}
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(184px, 1fr));
-  gap: 14px;
-}
-
-/* Product card — dark surface, white image, bottom +/stepper */
-.card {
-  display: flex;
-  flex-direction: column;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 10px;
-}
-.card-img {
-  aspect-ratio: 1 / 1;
-  border-radius: 12px;
+.thumb {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 auto;
+  border-radius: 14px;
   overflow: hidden;
   background: #fff;
-  margin-bottom: 10px;
+  display: grid;
+  place-items: center;
 }
-.card-img img {
+.thumb.sm {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+}
+.thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-.card-img .ph {
+.thumb-ph {
   width: 100%;
   height: 100%;
   display: grid;
   place-items: center;
-  font-size: 40px;
   font-weight: 800;
+  font-size: 20px;
   color: var(--brand);
   background: var(--brand-soft);
 }
-.card-price {
-  font-weight: 800;
-  font-size: 18px;
-  padding: 0 2px;
+.thumb-ph.big {
+  font-size: 64px;
 }
-.card-name {
-  font-size: 14px;
-  line-height: 1.3;
-  padding: 3px 2px 0;
+.prod .title {
+  font-weight: 650;
+  font-size: 15px;
+  line-height: 1.25;
 }
-.card-portion {
-  font-size: 12px;
-  color: var(--muted);
-  padding: 3px 2px 0;
+.prod .price {
+  font-weight: 750;
+  font-size: 15px;
+  margin-top: 3px;
 }
-.card-foot {
-  margin-top: 10px;
+
+/* Add button + stepper */
+.ctrl {
+  flex: 0 0 auto;
 }
 .add {
-  width: 100%;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   border: none;
   border-radius: 12px;
-  background: var(--surface-2);
-  color: var(--text);
+  background: var(--brand-soft);
+  color: var(--brand);
   display: grid;
   place-items: center;
-  cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
-.add:hover {
-  background: var(--brand);
-  color: var(--brand-ink);
+.add:active {
+  transform: scale(0.94);
 }
-.stepper {
-  display: flex;
+.qty {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  height: 42px;
+  gap: 2px;
+  height: 40px;
   border-radius: 12px;
   background: var(--brand);
   padding: 4px;
 }
-.stepper button {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
+.qty button {
+  width: 32px;
+  height: 32px;
   border: none;
-  background: rgba(255, 255, 255, 0.18);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.2);
   color: var(--brand-ink);
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 700;
   line-height: 1;
-  cursor: pointer;
 }
-.stepper button:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-.stepper span {
+.qty span {
+  min-width: 24px;
+  text-align: center;
   font-weight: 800;
   color: var(--brand-ink);
 }
-
-/* RIGHT cart — full height */
-.cart {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: var(--surface);
-  border-left: 1px solid var(--border);
-}
-.cart-h {
-  display: flex;
-  align-items: center;
+.qty.big {
+  height: 52px;
+  border-radius: 14px;
+  width: 100%;
   justify-content: space-between;
-  padding: 20px 20px 14px;
-  flex-shrink: 0;
 }
-.cart-h h3 {
-  margin: 0;
-  font-size: 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.qty.big button {
+  width: 44px;
+  height: 44px;
+  font-size: 24px;
 }
-.badge {
-  background: var(--brand);
-  color: var(--brand-ink);
+
+/* Cart dock CTA */
+.cart-cta {
+  gap: 10px;
+}
+.cta-count {
+  background: rgba(255, 255, 255, 0.22);
   border-radius: 999px;
-  padding: 1px 9px;
-  font-size: 12px;
-  font-weight: 700;
+  padding: 2px 10px;
+  font-size: 13px;
+}
+.cart-cta strong {
+  margin-left: auto;
+}
+
+/* Cart sheet overlay */
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  overflow-y: auto;
+  background: var(--bg);
+}
+.sheet-head {
+  padding-top: calc(14px + env(safe-area-inset-top));
+  justify-content: flex-start;
+}
+.sheet-head h2 {
+  flex: 1;
 }
 .clear {
   border: none;
   background: transparent;
   color: var(--muted);
-  cursor: pointer;
   font-size: 13px;
 }
-.clear:hover {
-  color: var(--danger);
-}
-.cart-empty {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  color: var(--muted);
-  padding: 20px;
-}
-.cart-empty-ico {
-  font-size: 46px;
-  margin-bottom: 6px;
-}
-.cart-empty p {
-  margin: 6px 0 2px;
-  font-weight: 700;
+.summary .row.total .v {
   font-size: 17px;
-  color: var(--text);
-}
-.done-ico {
-  width: 58px;
-  height: 58px;
-  margin-bottom: 8px;
-  border-radius: 50%;
-  background: var(--success-soft);
-  color: var(--success);
-  display: grid;
-  place-items: center;
-  font-size: 30px;
-  font-weight: 800;
-}
-.cart-scroll {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.cart-line {
-  display: grid;
-  grid-template-columns: 48px 1fr auto;
-  gap: 10px;
-  align-items: center;
-}
-.cl-thumb {
-  width: 48px;
-  height: 48px;
-  border-radius: 11px;
-  overflow: hidden;
-  background: #fff;
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  color: var(--brand);
-}
-.cl-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.cl-name {
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.2;
-}
-.cl-price {
-  font-size: 12px;
-  color: var(--muted);
-  margin-top: 2px;
-}
-.cart-foot {
-  flex-shrink: 0;
-  padding: 14px 20px calc(18px + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--border);
-}
-.next-btn {
-  width: 100%;
-  border: none;
-  background: var(--brand);
-  color: var(--brand-ink);
-  font-weight: 700;
-  padding: 15px 18px;
-  border-radius: 14px;
-  cursor: pointer;
-  font-size: 15px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.next-btn:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-.link-btn {
-  width: 100%;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  padding: 12px;
-  margin-top: 4px;
-  cursor: pointer;
-}
-.fl {
-  display: block;
-  font-size: 12px;
-  color: var(--muted);
-  margin: 8px 0 4px;
-}
-.fi {
-  width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 11px 13px;
-  background: var(--bg);
-  color: var(--text);
-  font: inherit;
-}
-.alert {
-  background: var(--warning-soft);
-  color: var(--warning);
-  border-radius: 10px;
-  padding: 9px 12px;
-  font-size: 13px;
-}
-.empty-menu {
-  color: var(--muted);
-  padding: 40px;
-  text-align: center;
 }
 
-/* Clickable card area + full-width foot stepper */
-.card-open {
-  cursor: pointer;
-}
-.card-foot .stepper {
-  width: 100%;
-}
-
-/* Mobile-only widgets — hidden on desktop, revealed in the ≤720px block */
-.cart-back {
-  display: none;
-}
-.mobile-bar {
-  display: none;
-}
-
-/* Product detail modal */
+/* Product detail — bottom sheet, single column */
 .modal-backdrop {
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(2px);
-  display: grid;
-  place-items: center;
-  padding: 20px;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
 }
 .modal {
   position: relative;
   width: 100%;
-  max-width: 780px;
-  max-height: 90vh;
-  overflow: auto;
+  max-width: 520px;
+  max-height: 92vh;
+  overflow-y: auto;
   background: var(--surface);
-  border-radius: 22px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+  border-radius: 24px 24px 0 0;
+  padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
+}
+@media (min-width: 560px) {
+  .modal-backdrop {
+    align-items: center;
+  }
+  .modal {
+    border-radius: 24px;
+  }
 }
 .modal-x {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 14px;
+  right: 14px;
   z-index: 2;
   width: 34px;
   height: 34px;
@@ -794,14 +640,10 @@ const detailImages = computed(() => {
   background: rgba(0, 0, 0, 0.45);
   color: #fff;
   font-size: 15px;
-  cursor: pointer;
-}
-.modal-gallery {
-  padding: 16px;
 }
 .mg-main {
-  aspect-ratio: 1 / 1;
-  border-radius: 16px;
+  aspect-ratio: 4 / 3;
+  border-radius: 18px;
   overflow: hidden;
   background: #fff;
 }
@@ -810,16 +652,6 @@ const detailImages = computed(() => {
   height: 100%;
   object-fit: cover;
 }
-.mg-main .ph {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  font-size: 60px;
-  font-weight: 800;
-  color: var(--brand);
-  background: var(--brand-soft);
-}
 .mg-thumbs {
   display: flex;
   gap: 8px;
@@ -827,13 +659,12 @@ const detailImages = computed(() => {
   flex-wrap: wrap;
 }
 .mg-thumb {
-  width: 60px;
-  height: 60px;
-  border-radius: 10px;
+  width: 58px;
+  height: 58px;
+  border-radius: 12px;
   overflow: hidden;
   border: 2px solid transparent;
   background: #fff;
-  cursor: pointer;
   padding: 0;
 }
 .mg-thumb.on {
@@ -845,204 +676,20 @@ const detailImages = computed(() => {
   object-fit: cover;
 }
 .modal-info {
-  padding: 26px 26px 26px 10px;
-  display: flex;
-  flex-direction: column;
+  padding: 16px 4px 4px;
 }
 .modal-price {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 800;
 }
 .modal-name {
-  font-size: 20px;
-  margin: 6px 0 2px;
-}
-.modal-portion {
-  color: var(--muted);
-  font-size: 13px;
-  margin: 0 0 14px;
+  font-size: 19px;
+  margin: 4px 0 8px;
 }
 .modal-desc {
-  color: var(--text);
-  opacity: 0.85;
+  color: var(--muted);
   font-size: 14px;
   line-height: 1.6;
-  margin: 0 0 20px;
-}
-.modal-foot {
-  margin-top: auto;
-}
-.modal-add {
-  width: 100%;
-  border: none;
-  background: var(--brand);
-  color: var(--brand-ink);
-  font-weight: 700;
-  padding: 15px;
-  border-radius: 14px;
-  cursor: pointer;
-  font-size: 15px;
-}
-.stepper.big {
-  height: 52px;
-  border-radius: 14px;
-}
-.stepper.big button {
-  width: 44px;
-  height: 44px;
-  font-size: 24px;
-}
-.stepper.big span {
-  font-size: 18px;
-}
-@media (max-width: 640px) {
-  .modal {
-    grid-template-columns: 1fr;
-    max-height: 92vh;
-  }
-  .modal-info {
-    padding: 6px 20px 22px;
-  }
-}
-
-/* Responsive: cart drops to a full-width block below the menu */
-@media (max-width: 1040px) {
-  .store {
-    grid-template-columns: 210px minmax(0, 1fr);
-  }
-  .cart {
-    grid-column: 1 / -1;
-    position: static;
-    height: auto;
-    border-left: none;
-    border-top: 1px solid var(--border);
-  }
-  .cart-empty {
-    min-height: 180px;
-  }
-}
-/* ── Mobile: catalog + step-style cart sheet ─────────────────────────── */
-@media (max-width: 720px) {
-  .store {
-    display: block;
-  }
-
-  /* Sticky compact header: brand + horizontal category chips */
-  .rail {
-    position: sticky;
-    top: 0;
-    z-index: 30;
-    height: auto;
-    overflow: visible;
-    padding: 10px 0 8px;
-    background: var(--bg);
-    border-bottom: 1px solid var(--border);
-  }
-  .brand {
-    padding: 0 14px 8px;
-  }
-  .brand-logo {
-    width: 38px;
-    height: 38px;
-    flex-basis: 38px;
-    border-radius: 11px;
-  }
-  .rail-title {
-    display: none;
-  }
-  .rail-nav {
-    flex-direction: row;
-    flex-wrap: nowrap;
-    gap: 8px;
-    overflow-x: auto;
-    padding: 0 14px 2px;
-    scrollbar-width: none;
-  }
-  .rail-nav::-webkit-scrollbar {
-    display: none;
-  }
-  .rail-item {
-    flex: 0 0 auto;
-    padding: 8px 14px;
-    border-radius: 999px;
-    background: var(--surface);
-    white-space: nowrap;
-  }
-  .rail-ico {
-    display: none;
-  }
-
-  /* Products: two columns, leave room for the floating bar */
-  .main {
-    padding: 14px 14px 96px;
-  }
-  .grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-  }
-  .sec h2 {
-    font-size: 19px;
-  }
-  .card-price {
-    font-size: 16px;
-  }
-
-  /* Cart becomes a full-screen, step-style sheet slid up from the bottom */
-  .cart {
-    position: fixed;
-    inset: 0;
-    z-index: 60;
-    height: 100%;
-    border-left: none;
-    border-top: none;
-    transform: translateY(100%);
-    transition: transform 0.28s ease;
-  }
-  .cart.open {
-    transform: none;
-  }
-  .cart-back {
-    display: grid;
-    place-items: center;
-    width: 36px;
-    height: 36px;
-    border: none;
-    border-radius: 10px;
-    background: var(--surface-2);
-    color: var(--text);
-    font-size: 20px;
-    cursor: pointer;
-  }
-
-  /* Floating bottom bar → opens the cart */
-  .mobile-bar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    position: fixed;
-    left: 12px;
-    right: 12px;
-    bottom: calc(12px + env(safe-area-inset-bottom));
-    z-index: 50;
-    border: none;
-    border-radius: 16px;
-    padding: 13px 16px;
-    background: var(--brand);
-    color: var(--brand-ink);
-    font-weight: 700;
-    font-size: 15px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    cursor: pointer;
-  }
-  .mb-count {
-    background: rgba(255, 255, 255, 0.22);
-    border-radius: 999px;
-    padding: 2px 10px;
-    font-size: 13px;
-  }
-  .mb-label {
-    flex: 1;
-    text-align: left;
-  }
+  margin: 0 0 18px;
 }
 </style>
