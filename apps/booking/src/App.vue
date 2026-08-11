@@ -9,7 +9,8 @@ import { api, config, ApiError } from '@tizbiz/api-client'
 
 const ENGINES = {
   slot: defineAsyncComponent(() => import('./engines/slot/SlotEngineApp.vue')),
-  medical: defineAsyncComponent(() => import('./engines/slot/SlotEngineApp.vue')),
+  // Medical shares the web-catalog storefront (blue-themed), like food.
+  medical: defineAsyncComponent(() => import('./engines/catalog/CatalogEngineApp.vue')),
   catalog: defineAsyncComponent(() => import('./engines/catalog/CatalogEngineApp.vue')),
 }
 

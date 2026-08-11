@@ -44,10 +44,11 @@ const nav = computed(() => {
   const t = vertical.value.terms
   return [
     { type: 'link', to: '/', label: 'Jadval', icon: CalendarDays },
-    // Catalog (cafe/restaurant) works in orders, not time-slot appointments.
+    // Catalog verticals (cafe/restaurant + clinic) work in orders/requests,
+    // not time-slot appointments — both use the web-catalog storefront.
     {
       type: 'link',
-      to: vertical.value.engine === 'catalog' ? '/orders' : '/appointments',
+      to: ['catalog', 'medical'].includes(vertical.value.engine) ? '/orders' : '/appointments',
       label: t.appointments,
       icon: ClipboardList,
     },

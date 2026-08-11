@@ -48,6 +48,15 @@ function clearCart() {
   for (const k of Object.keys(cart)) delete cart[k]
 }
 
+// ---- Mobile cart sheet (desktop keeps the always-visible right rail) ----
+const cartOpen = ref(false)
+function openCart() {
+  cartOpen.value = true
+}
+function closeCart() {
+  cartOpen.value = false
+}
+
 // ---- Checkout ----
 const panel = ref('cart') // cart | checkout | done
 const cust = reactive({ name: '', phone: '' })
@@ -223,9 +232,10 @@ const detailImages = computed(() => {
       <div v-if="!categories.length" class="empty-menu">Menyu hozircha bo‘sh.</div>
     </main>
 
-    <!-- RIGHT: full-height cart -->
-    <aside class="cart">
+    <!-- RIGHT: full-height cart (mobile: full-screen sheet toggled by the bottom bar) -->
+    <aside class="cart" :class="{ open: cartOpen }">
       <div class="cart-h">
+        <button class="cart-back" aria-label="Katalogga qaytish" @click="closeCart">←</button>
         <h3>Savat<span v-if="cartCount" class="badge">{{ cartCount }}</span></h3>
         <button v-if="cartLines.length && panel === 'cart'" class="clear" @click="clearCart">Tozalash</button>
       </div>
@@ -294,6 +304,13 @@ const detailImages = computed(() => {
         </div>
       </template>
     </aside>
+
+    <!-- Mobile-only: floating bar that opens the cart sheet -->
+    <button v-if="cartCount && !cartOpen" class="mobile-bar" @click="openCart">
+      <span class="mb-count">{{ cartCount }}</span>
+      <span class="mb-label">Savatga o‘tish</span>
+      <strong class="mb-total">{{ soms(cartTotal) }}</strong>
+    </button>
 
     <!-- Product detail modal: gallery + price + description + counter -->
     <div v-if="detail" class="modal-backdrop" @click.self="closeDetail">
@@ -733,6 +750,14 @@ const detailImages = computed(() => {
   width: 100%;
 }
 
+/* Mobile-only widgets — hidden on desktop, revealed in the ≤720px block */
+.cart-back {
+  display: none;
+}
+.mobile-bar {
+  display: none;
+}
+
 /* Product detail modal */
 .modal-backdrop {
   position: fixed;
@@ -896,17 +921,128 @@ const detailImages = computed(() => {
     min-height: 180px;
   }
 }
+/* ── Mobile: catalog + step-style cart sheet ─────────────────────────── */
 @media (max-width: 720px) {
   .store {
-    grid-template-columns: 1fr;
+    display: block;
   }
+
+  /* Sticky compact header: brand + horizontal category chips */
   .rail {
-    position: static;
+    position: sticky;
+    top: 0;
+    z-index: 30;
     height: auto;
+    overflow: visible;
+    padding: 10px 0 8px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .brand {
+    padding: 0 14px 8px;
+  }
+  .brand-logo {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+    border-radius: 11px;
+  }
+  .rail-title {
+    display: none;
   }
   .rail-nav {
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 0 14px 2px;
+    scrollbar-width: none;
+  }
+  .rail-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .rail-item {
+    flex: 0 0 auto;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--surface);
+    white-space: nowrap;
+  }
+  .rail-ico {
+    display: none;
+  }
+
+  /* Products: two columns, leave room for the floating bar */
+  .main {
+    padding: 14px 14px 96px;
+  }
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .sec h2 {
+    font-size: 19px;
+  }
+  .card-price {
+    font-size: 16px;
+  }
+
+  /* Cart becomes a full-screen, step-style sheet slid up from the bottom */
+  .cart {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    height: 100%;
+    border-left: none;
+    border-top: none;
+    transform: translateY(100%);
+    transition: transform 0.28s ease;
+  }
+  .cart.open {
+    transform: none;
+  }
+  .cart-back {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 10px;
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: 20px;
+    cursor: pointer;
+  }
+
+  /* Floating bottom bar → opens the cart */
+  .mobile-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: 50;
+    border: none;
+    border-radius: 16px;
+    padding: 13px 16px;
+    background: var(--brand);
+    color: var(--brand-ink);
+    font-weight: 700;
+    font-size: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+  }
+  .mb-count {
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    padding: 2px 10px;
+    font-size: 13px;
+  }
+  .mb-label {
+    flex: 1;
+    text-align: left;
   }
 }
 </style>

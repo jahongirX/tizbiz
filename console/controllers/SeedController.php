@@ -597,6 +597,108 @@ class SeedController extends Controller
         return ExitCode::OK;
     }
 
+    /**
+     * Fill the clinic demo (slug `klinika`) with a medical service catalog so it
+     * renders the same web-catalog storefront as food — grouped by category, each
+     * service with a blue medical tile image + description. Idempotent for the
+     * menu; re-attaches images each run. Usage: php yii seed/medical-catalog
+     */
+    public function actionMedicalCatalog(): int
+    {
+        $business = Business::findOne(['slug' => 'klinika']);
+        if ($business === null) {
+            $this->stderr("Run seed/verticals first (needs the 'klinika' business).\n");
+            return ExitCode::UNSPECIFIED_ERROR;
+        }
+        $bid = (int) $business->id;
+
+        // category => [ [name, price_so'm], ... ]
+        $menu = [
+            'UZI / Diagnostika' => [
+                ['UZI (qorin bo\'shlig\'i)', 80000], ['UZI (buyrak)', 70000],
+                ['EKG', 50000], ['Rentgen', 60000],
+            ],
+            'Laboratoriya' => [
+                ['Umumiy qon tahlili', 40000], ['Qand tahlili', 25000], ['Gormonlar tahlili', 120000],
+            ],
+            'Shifokor qabuli' => [
+                ['Terapevt qabuli', 50000], ['Kardiolog qabuli', 80000], ['Nevrolog qabuli', 80000],
+            ],
+            'Stomatologiya' => [
+                ['Tish davolash', 150000], ['Tish oqartirish', 300000], ['Stomatolog konsultatsiyasi', 30000],
+            ],
+        ];
+
+        $sort = 0;
+        foreach ($menu as $catName => $rows) {
+            $category = ServiceCategory::findOne(['business_id' => $bid, 'name' => $catName])
+                ?? $this->save(new ServiceCategory([
+                    'business_id' => $bid, 'name' => $catName, 'sort' => $sort,
+                ]));
+            $sort++;
+            foreach ($rows as [$name, $som]) {
+                if (Service::find()->where(['business_id' => $bid, 'name' => $name])->exists()) {
+                    continue;
+                }
+                $this->save(new Service([
+                    'business_id' => $bid, 'category_id' => $category->id, 'name' => $name,
+                    'duration_min' => 30, 'price_tiyin' => $som * 100, 'deposit_tiyin' => 0, 'is_active' => 1,
+                ]));
+            }
+        }
+
+        $font = $this->ttfFont();
+        if (!function_exists('imagecreatetruecolor') || $font === null) {
+            $this->stdout("Medical catalog seeded (no GD/font, images skipped).\n");
+            return ExitCode::OK;
+        }
+
+        $dir = \Yii::getAlias('@api/web/uploads/menu');
+        \yii\helpers\FileHelper::createDirectory($dir, 0775);
+        $base = rtrim((string) (\Yii::$app->params['api.base'] ?? ''), '/');
+        if ($base === '' || str_contains($base, '127.0.0.1')) {
+            $base = 'https://api.startup';
+        }
+
+        $services = Service::find()->where(['business_id' => $bid])->orderBy(['id' => SORT_ASC])->all();
+        $n = 0;
+        foreach ($services as $svc) {
+            $file = $dir . '/med-' . $svc->id . '.png';
+            // 205° = medical blue.
+            $this->makeDishImage($file, (string) $svc->name, (int) $svc->id, $font, 205);
+            $url = $base . '/uploads/menu/med-' . $svc->id . '.png';
+            $svc->image = $url;
+            $svc->gallery = [$url];
+            $svc->description = $this->medicalDescription((string) $svc->name);
+            $svc->save(false, ['image', 'gallery', 'description']);
+            $n++;
+        }
+
+        $this->stdout("Clinic '{$business->name}' catalog + images ready ($n services).\n");
+        return ExitCode::OK;
+    }
+
+    private function medicalDescription(string $name): string
+    {
+        return $name . ' — malakali shifokorlar va zamonaviy uskunalar bilan amalga oshiriladi. '
+            . 'Onlayn navbat oling, qulay vaqtni tanlang. Natijalar tez va aniq.';
+    }
+
+    /** First available system TTF font, or null. */
+    private function ttfFont(): ?string
+    {
+        foreach ([
+            '/System/Library/Fonts/Supplemental/Arial.ttf',
+            '/Library/Fonts/Arial.ttf',
+            '/System/Library/Fonts/Supplemental/Verdana.ttf',
+        ] as $f) {
+            if (is_file($f)) {
+                return $f;
+            }
+        }
+        return null;
+    }
+
     /** Download an image to $dir/$name.<ext> and return its public URL, or null. */
     private function saveImage(string $url, string $dir, string $name, string $base): ?string
     {
@@ -640,15 +742,18 @@ class SeedController extends Controller
         return $body === false ? null : $body;
     }
 
-    private function makeDishImage(string $path, string $name, int $seed, string $font): void
+    private function makeDishImage(string $path, string $name, int $seed, string $font, ?int $hueBase = null): void
     {
         $W = 600;
         $H = 400;
         $im = imagecreatetruecolor($W, $H);
         imagealphablending($im, true);
 
-        // Vertical gradient from a seeded, appetising hue.
-        $hue = ($seed * 47) % 360;
+        // Vertical gradient. Default: a seeded, appetising hue. When $hueBase is
+        // given (e.g. blue for a clinic) the hue stays near it with slight variety.
+        $hue = $hueBase !== null
+            ? (($hueBase + (($seed * 13) % 40) - 20) + 360) % 360
+            : ($seed * 47) % 360;
         [$r1, $g1, $b1] = $this->hsl($hue, 62, 58);
         [$r2, $g2, $b2] = $this->hsl(($hue + 28) % 360, 66, 40);
         for ($y = 0; $y < $H; $y++) {
