@@ -12,6 +12,7 @@ import {
   Moon,
   LogOut,
   Menu,
+  Gift,
 } from 'lucide-vue-next'
 import { useAuthStore } from '../stores/auth'
 import { verticalFor } from '../lib/verticals'
@@ -52,6 +53,7 @@ const nav = computed(() => {
       label: t.appointments,
       icon: ClipboardList,
     },
+    { type: 'link', to: '/loyalty', label: 'Loyallik', icon: Gift },
     {
       type: 'group',
       key: 'clients',
@@ -60,7 +62,6 @@ const nav = computed(() => {
       children: [
         { to: '/clients', label: 'Baza' },
         { to: '/categories', label: 'Kategoriyalar' },
-        { to: '/loyalty', label: 'Loyallik' },
       ],
     },
     {
