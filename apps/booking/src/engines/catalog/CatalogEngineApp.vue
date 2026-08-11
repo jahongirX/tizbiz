@@ -280,6 +280,7 @@ const detailImages = computed(() => {
   </div>
 
   <!-- CART sheet: full-screen, narrow column, step-style -->
+  <Transition name="slideup">
   <div v-if="cartOpen" class="sheet">
     <div class="shell">
       <div class="step-head sheet-head">
@@ -370,8 +371,10 @@ const detailImages = computed(() => {
       </template>
     </div>
   </div>
+  </Transition>
 
   <!-- Product detail sheet: gallery + price + description + counter -->
+  <Transition name="sheet">
   <div v-if="detail" class="modal-backdrop" @click.self="closeDetail">
     <div class="modal">
       <button class="modal-x" aria-label="Yopish" @click="closeDetail">✕</button>
@@ -405,6 +408,7 @@ const detailImages = computed(() => {
       </div>
     </div>
   </div>
+  </Transition>
   </div>
 </template>
 
@@ -474,6 +478,10 @@ const detailImages = computed(() => {
   padding: 0;
   text-align: left;
   color: var(--text);
+}
+.prod-main .grow {
+  display: flex;
+  flex-direction: column;
 }
 .thumb {
   width: 56px;
@@ -705,5 +713,44 @@ const detailImages = computed(() => {
   font-size: 14px;
   line-height: 1.6;
   margin: 0 0 18px;
+}
+
+/* Product detail sheet: backdrop fades, the sheet slides up from the bottom */
+.sheet-enter-active,
+.sheet-leave-active {
+  transition: opacity 0.26s ease;
+}
+.sheet-enter-active .modal,
+.sheet-leave-active .modal {
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.sheet-enter-from,
+.sheet-leave-to {
+  opacity: 0;
+}
+.sheet-enter-from .modal,
+.sheet-leave-to .modal {
+  transform: translateY(100%);
+}
+
+/* Cart sheet slides up as a whole */
+.slideup-enter-active,
+.slideup-leave-active {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.slideup-enter-from,
+.slideup-leave-to {
+  transform: translateY(100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-enter-active,
+  .sheet-leave-active,
+  .sheet-enter-active .modal,
+  .sheet-leave-active .modal,
+  .slideup-enter-active,
+  .slideup-leave-active {
+    transition-duration: 0.001ms;
+  }
 }
 </style>
