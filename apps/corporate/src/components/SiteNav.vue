@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import logoUrl from '../assets/logo.png'
 
 const LOGIN_URL = 'https://b.startup/'
 const REGISTER_URL = 'https://b.startup/app/register'
@@ -27,8 +28,7 @@ watch(() => route.fullPath, closeMenu)
   <header class="nav" :class="{ 'nav--scrolled': scrolled }">
     <div class="container nav__inner">
       <router-link to="/" class="brand" @click="closeMenu" aria-label="TizBiz — bosh sahifa">
-        <span class="brand__mark">N</span>
-        <span class="brand__name">TizBiz</span>
+        <img :src="logoUrl" alt="TizBiz" class="brand__logo" />
       </router-link>
 
       <nav class="nav__links" :class="{ 'nav__links--open': menuOpen }" aria-label="Asosiy menyu">
@@ -75,20 +75,11 @@ watch(() => route.fullPath, closeMenu)
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font-weight: 700;
-  font-size: 18px;
-  letter-spacing: -0.01em;
 }
-.brand__mark {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  background: var(--accent);
-  color: #fff;
-  font-weight: 800;
+.brand__logo {
+  height: 34px;
+  width: auto;
+  display: block;
 }
 .nav__links {
   display: flex;

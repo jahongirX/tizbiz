@@ -16,6 +16,7 @@ import {
 import { useAuthStore } from '../stores/auth'
 import { verticalFor } from '../lib/verticals'
 import MiniCalendar from './MiniCalendar.vue'
+import logoUrl from '../assets/logo.png'
 
 const auth = useAuthStore()
 const route = useRoute()
@@ -140,14 +141,11 @@ async function onSwitch(e) {
   <div class="shell" :style="{ '--primary': vertical.accent, '--primary-soft': accentSoft }">
     <aside class="sidebar" :class="{ open: menuOpen }">
       <div class="brand">
-        <span class="logo">T</span>
-        <div class="brand-text">
-          <span class="brand-name">TizBiz</span>
-          <span class="vbadge">
-            <component :is="vertical.icon" :size="12" />
-            {{ vertical.short }}
-          </span>
-        </div>
+        <img :src="logoUrl" alt="TizBiz" class="brand-logo" />
+        <span class="vbadge">
+          <component :is="vertical.icon" :size="12" />
+          {{ vertical.short }}
+        </span>
       </div>
 
       <div class="side-scroll">
@@ -264,29 +262,17 @@ async function onSwitch(e) {
 }
 .brand {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
   padding: 18px 20px;
-  font-weight: 700;
-  font-size: 18px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
-.logo {
-  width: 30px;
+.brand-logo {
   height: 30px;
-  border-radius: 8px;
-  background: var(--primary);
-  color: #fff;
-  display: grid;
-  place-items: center;
-  font-size: 16px;
-}
-.brand-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  line-height: 1.1;
+  width: auto;
+  display: block;
 }
 .vbadge {
   display: inline-flex;

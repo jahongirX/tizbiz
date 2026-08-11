@@ -1,4 +1,6 @@
 <script setup>
+import logoUrl from '../assets/logo.png'
+
 const LOGIN_URL = 'https://b.startup/'
 const REGISTER_URL = 'https://b.startup/app/register'
 const YEAR = 2026
@@ -9,8 +11,7 @@ const YEAR = 2026
     <div class="container footer__inner">
       <div class="footer__brand">
         <router-link to="/" class="brand">
-          <span class="brand__mark">N</span>
-          <span class="brand__name">TizBiz</span>
+          <img :src="logoUrl" alt="TizBiz" class="brand__logo" />
         </router-link>
         <p>Surxondaryo va Termiz xizmat bizneslari uchun booking, brendlangan sayt va CRM — Telegram’da.</p>
       </div>
@@ -53,20 +54,11 @@ const YEAR = 2026
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font-weight: 700;
-  font-size: 18px;
-  letter-spacing: -0.01em;
 }
-.brand__mark {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  background: var(--accent);
-  color: #fff;
-  font-weight: 800;
+.brand__logo {
+  height: 36px;
+  width: auto;
+  display: block;
 }
 .footer__brand p {
   color: var(--text-soft);

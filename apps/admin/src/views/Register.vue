@@ -6,6 +6,7 @@ import { UserPlus, ArrowLeft, ArrowRight, Check, X } from 'lucide-vue-next'
 import { useAuthStore } from '../stores/auth'
 import { VERTICALS } from '../lib/verticals'
 import PhoneInput from '../components/PhoneInput.vue'
+import logoUrl from '../assets/logo.png'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -151,8 +152,8 @@ async function submit() {
   <div class="auth-wrap">
     <div class="auth-card card" :style="{ '--accent': accent }">
       <div class="brand-row">
-        <span class="logo">T</span>
-        <strong>TizBiz Admin</strong>
+        <img :src="logoUrl" alt="TizBiz" class="brand-logo" />
+        <span class="brand-suffix">Admin</span>
       </div>
       <h1>Ro'yxatdan o'tish</h1>
       <p class="muted" style="margin-top: -6px">Biznesingizni bir daqiqada ulang</p>
@@ -312,15 +313,17 @@ async function submit() {
   gap: 10px;
   margin-bottom: 16px;
 }
-.logo {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: var(--primary);
-  color: #fff;
-  display: grid;
-  place-items: center;
-  font-weight: 700;
+.brand-logo {
+  height: 34px;
+  width: auto;
+  display: block;
+}
+.brand-suffix {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-soft, #6b7280);
+  padding-left: 10px;
+  border-left: 1px solid var(--border, #e5e7eb);
 }
 h1 {
   font-size: 22px;

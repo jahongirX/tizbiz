@@ -199,6 +199,13 @@ class SeedController extends Controller
                 'service' => ['Napoleon tort (1kg)', 60, 15000000, 5000000],
             ],
             [
+                // Food / restaurant — same catalog storefront as the cake shop.
+                'slug' => 'restoran', 'name' => 'Milliy Taomlar', 'category' => 'restaurant', 'engine' => 'catalog',
+                'phone' => '+998905555555', 'owner' => 'Bekzod Rahimov', 'staff_count' => 12, 'branches' => 3,
+                'staff' => ['Oshpaz Bekzod', 'Ofitsiant'], 'cat' => 'Milliy taomlar',
+                'service' => ['Osh (palov)', 30, 3500000, 0],
+            ],
+            [
                 'slug' => 'klinika', 'name' => 'Sog\'lom Oila Klinikasi', 'category' => 'clinic', 'engine' => 'medical',
                 'phone' => '+998903333333', 'owner' => 'Dr. Sardor', 'staff_count' => 8, 'branches' => 1,
                 'staff' => ['Dr. Aziza', 'Shifokor'], 'cat' => 'Diagnostika',
@@ -459,6 +466,134 @@ class SeedController extends Controller
         }
 
         $this->stdout("Attached photos + galleries to $n items of '{$business->name}'.\n");
+        return ExitCode::OK;
+    }
+
+    /**
+     * Fill the restaurant demo (slug `restoran`) with a real food menu + REAL
+     * food photos from TheMealDB (Beef/Chicken/Seafood/Pasta/Vegetarian), so the
+     * catalog storefront works for food & restaurants exactly like the cake shop.
+     * Idempotent for the menu; re-attaches photos each run.
+     * Usage: php yii seed/restaurant-menu
+     */
+    public function actionRestaurantMenu(): int
+    {
+        $business = Business::findOne(['slug' => 'restoran']);
+        if ($business === null) {
+            $this->stderr("Run seed/verticals first (needs the 'restoran' business).\n");
+            return ExitCode::UNSPECIFIED_ERROR;
+        }
+        $bid = (int) $business->id;
+
+        // category => [ [name, price_so'm], ... ]
+        $menu = [
+            'Milliy taomlar' => [
+                ['Osh (palov)', 35000], ['Lagmon', 32000], ['Manti (5 dona)', 30000],
+                ['Norin', 33000], ['Somsa (tandir)', 12000],
+            ],
+            'Shashlik / Grill' => [
+                ['Mol shashlik (1 six)', 28000], ['Tovuq shashlik (1 six)', 22000],
+                ['Qazan kabob', 45000], ['Jigar shashlik', 25000],
+            ],
+            'Salatlar' => [
+                ['Achichuk', 15000], ['Sezar salat', 38000], ['Vinegret', 18000],
+            ],
+            'Fast food' => [
+                ['Lavash (tovuq)', 30000], ['Burger', 35000], ['Xot-dog', 20000],
+            ],
+            'Ichimliklar' => [
+                ['Choy (choynak)', 10000], ['Kompot', 12000],
+                ['Coca-Cola 0.5', 12000], ['Fresh apelsin', 28000],
+            ],
+        ];
+
+        $sort = 0;
+        foreach ($menu as $catName => $rows) {
+            $category = ServiceCategory::findOne(['business_id' => $bid, 'name' => $catName])
+                ?? $this->save(new ServiceCategory([
+                    'business_id' => $bid, 'name' => $catName, 'sort' => $sort,
+                ]));
+            $sort++;
+            foreach ($rows as [$name, $som]) {
+                if (Service::find()->where(['business_id' => $bid, 'name' => $name])->exists()) {
+                    continue;
+                }
+                $this->save(new Service([
+                    'business_id' => $bid, 'category_id' => $category->id, 'name' => $name,
+                    'duration_min' => 30, 'price_tiyin' => $som * 100, 'deposit_tiyin' => 0, 'is_active' => 1,
+                ]));
+            }
+        }
+
+        // Build a pool of real food thumbnails from several savoury categories.
+        $pool = [];
+        foreach (['Beef', 'Chicken', 'Seafood', 'Pasta', 'Vegetarian'] as $cat) {
+            $json = $this->fetchUrl('https://www.themealdb.com/api/json/v1/1/filter.php?c=' . $cat);
+            $meals = $json !== null ? (json_decode($json, true)['meals'] ?? []) : [];
+            foreach ($meals as $m) {
+                if (!empty($m['strMealThumb'])) {
+                    $pool[] = $m['strMealThumb'];
+                }
+            }
+        }
+        if ($pool === []) {
+            $this->stderr("Could not fetch food images (network?). Menu seeded without photos.\n");
+            return ExitCode::OK;
+        }
+        $ingredient = static fn (string $n) => "https://www.themealdb.com/images/ingredients/{$n}.png";
+
+        $dir = \Yii::getAlias('@api/web/uploads/menu');
+        \yii\helpers\FileHelper::createDirectory($dir, 0775);
+        $base = rtrim((string) (\Yii::$app->params['api.base'] ?? ''), '/');
+        if ($base === '' || str_contains($base, '127.0.0.1')) {
+            $base = 'https://api.startup';
+        }
+
+        $services = Service::find()->where(['business_id' => $bid])->orderBy(['id' => SORT_ASC])->all();
+        $count = count($pool);
+        $i = 0;
+        $n = 0;
+        foreach ($services as $svc) {
+            $name = mb_strtolower((string) $svc->name);
+            $isDrink = false;
+            if (str_contains($name, 'choy') || str_contains($name, 'tea')) {
+                $primary = $ingredient('Tea');
+                $isDrink = true;
+            } elseif (str_contains($name, 'kofe') || str_contains($name, 'kapuchino')) {
+                $primary = $ingredient('Coffee');
+                $isDrink = true;
+            } elseif (str_contains($name, 'kompot') || str_contains($name, 'apelsin') || str_contains($name, 'fresh') || str_contains($name, 'cola')) {
+                $primary = $ingredient('Orange');
+                $isDrink = true;
+            } else {
+                $primary = $pool[($i * 7) % $count];
+            }
+
+            $gallery = [];
+            $main = $this->saveImage($primary, $dir, 'rest-' . $svc->id, $base);
+            if ($main === null) {
+                $this->stdout("  skip {$svc->name} (download failed)\n");
+                continue;
+            }
+            $gallery[] = $main;
+            if (!$isDrink) {
+                foreach ([2, 3] as $k) {
+                    $extra = $this->saveImage($pool[(($i * 7) + $k * 13) % $count], $dir, 'rest-' . $svc->id . '-' . $k, $base);
+                    if ($extra !== null) {
+                        $gallery[] = $extra;
+                    }
+                }
+            }
+            $i++;
+
+            $svc->image = $main;
+            $svc->gallery = $gallery;
+            $svc->description = $this->dishDescription((string) $svc->name);
+            $svc->save(false, ['image', 'gallery', 'description']);
+            $n++;
+        }
+
+        $this->stdout("Restaurant '{$business->name}' menu + photos ready ($n items).\n");
         return ExitCode::OK;
     }
 
