@@ -191,7 +191,7 @@ const detailImages = computed(() => {
         </div>
         <div class="brand-info">
           <h1>{{ business.name }}</h1>
-          <div class="sub">Onlayn buyurtma</div>
+          <div class="sub">{{ business.tagline || 'Onlayn buyurtma' }}</div>
         </div>
       </div>
       <div v-if="bizCategory || bizPhone" class="brand-chips">

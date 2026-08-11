@@ -26,6 +26,7 @@ use yii\db\ActiveQuery;
  * @property string|null $cover
  * @property string|null $brand_color
  * @property string|null $brand_color_2
+ * @property string|null $tagline
  * @property int $created_at
  * @property int $updated_at
  *
@@ -89,6 +90,7 @@ class Business extends ActiveRecord
             [['telegram_bot_token'], 'string', 'max' => 80],
             [['telegram_bot_username'], 'string', 'max' => 64],
             [['telegram_bot_token'], 'match', 'pattern' => '/^\d{6,}:[A-Za-z0-9_-]{20,}$/', 'message' => 'Bot token formati noto\'g\'ri.', 'skipOnEmpty' => true],
+            [['tagline'], 'string', 'max' => 160],
             [['logo', 'cover'], 'string', 'max' => 500],
             [['brand_color', 'brand_color_2'], 'string', 'max' => 9],
             [['brand_color', 'brand_color_2'], 'match', 'pattern' => '/^#[0-9a-fA-F]{6}$/', 'message' => 'Rang #RRGGBB formatida bo\'lishi kerak.', 'skipOnEmpty' => true],
@@ -118,6 +120,7 @@ class Business extends ActiveRecord
             'cover' => 'Fon rasmi',
             'brand_color' => 'Asosiy rang',
             'brand_color_2' => 'Qo\'shimcha rang',
+            'tagline' => 'Sarlavha ostidagi matn',
             'created_at' => 'Yaratilgan sana',
             'updated_at' => 'Yangilangan sana',
         ];

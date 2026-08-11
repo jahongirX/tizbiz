@@ -54,6 +54,7 @@ class SlotEngine implements EngineInterface
             'phone' => $business->phone,
             'timezone' => $business->timezone,
             'online_booking_enabled' => (bool) $business->online_booking_enabled,
+            'tagline' => $business->tagline,
             // Branding (nullable) — the public storefront themes itself from these.
             'logo' => $business->logo,
             'cover' => $business->cover,

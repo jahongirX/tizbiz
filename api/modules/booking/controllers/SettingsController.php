@@ -24,6 +24,19 @@ class SettingsController extends Controller
 
         $model = $this->business();
 
+        // Business profile: name (required — blank is rejected), phone, tagline.
+        if (($v = $this->body('name')) !== null) {
+            $model->name = trim((string) $v);
+        }
+        if (array_key_exists('phone', $this->body())) {
+            $v = $this->body('phone');
+            $model->phone = ($v === null || trim((string) $v) === '') ? null : trim((string) $v);
+        }
+        if (array_key_exists('tagline', $this->body())) {
+            $v = $this->body('tagline');
+            $model->tagline = ($v === null || trim((string) $v) === '') ? null : trim((string) $v);
+        }
+
         // Slug (public subdomain). The Business `unique` rule excludes self, so
         // saving the same slug is a no-op; a taken one returns 422.
         if (($v = $this->body('slug')) !== null) {
@@ -68,6 +81,8 @@ class SettingsController extends Controller
     {
         return [
             'name' => $b->name,
+            'phone' => $b->phone,
+            'tagline' => $b->tagline,
             'slug' => $b->slug,
             'online_booking_enabled' => (bool) $b->online_booking_enabled,
             'booking_lead_min' => (int) $b->booking_lead_min,

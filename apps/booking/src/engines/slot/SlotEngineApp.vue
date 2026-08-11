@@ -170,7 +170,7 @@ function restart() {
         </div>
         <div class="brand-info">
           <h1>{{ business.name }}</h1>
-          <div class="sub">Onlayn navbat olish</div>
+          <div class="sub">{{ business.tagline || 'Onlayn navbat olish' }}</div>
         </div>
       </div>
       <div v-if="bizCategory || bizPhone" class="brand-chips">

@@ -19,8 +19,39 @@ const form = ref({
   booking_horizon_days: 30,
 })
 
+// Business profile (name / phone / storefront subtitle).
+const info = reactive({ name: '', phone: '', tagline: '' })
+const infoSaving = ref(false)
+const infoSaved = ref(false)
+const infoError = ref('')
+
+async function saveInfo() {
+  infoError.value = ''
+  infoSaved.value = false
+  if (!info.name.trim()) {
+    infoError.value = 'Biznes nomini kiriting'
+    return
+  }
+  infoSaving.value = true
+  try {
+    const res = await api.put('/v1/settings/booking', {
+      name: info.name.trim(),
+      phone: info.phone.trim(),
+      tagline: info.tagline.trim(),
+    })
+    info.name = res.name || ''
+    info.phone = res.phone || ''
+    info.tagline = res.tagline || ''
+    infoSaved.value = true
+    setTimeout(() => (infoSaved.value = false), 2500)
+  } catch (e) {
+    infoError.value = e instanceof ApiError ? e.message : 'Saqlab bo\'lmadi'
+  } finally {
+    infoSaving.value = false
+  }
+}
+
 // Branding (logo / cover / brand colors) — applied to the public storefront.
-const bizName = ref('')
 const brand = reactive({ logo: '', cover: '', brand_color: '', brand_color_2: '' })
 const brandSaving = ref(false)
 const brandSaved = ref(false)
@@ -42,7 +73,7 @@ function applyPreset([c1, c2]) {
 }
 
 const initials = computed(() =>
-  String(bizName.value || '?')
+  String(info.name || '?')
     .trim()
     .split(/\s+/)
     .slice(0, 2)
@@ -105,7 +136,9 @@ async function load() {
       booking_lead_min: Number(res.booking_lead_min ?? 60),
       booking_horizon_days: Number(res.booking_horizon_days ?? 30),
     }
-    bizName.value = res.name || ''
+    info.name = res.name || ''
+    info.phone = res.phone || ''
+    info.tagline = res.tagline || ''
     brand.logo = res.logo || ''
     brand.cover = res.cover || ''
     brand.brand_color = res.brand_color || ''
@@ -181,7 +214,8 @@ onMounted(load)
     <div v-if="error" class="alert alert-error">{{ error }}</div>
     <div v-if="loading" class="loading-block"><span class="spinner"></span> Yuklanmoqda…</div>
 
-    <section v-else class="card" style="max-width: 520px">
+    <div v-else class="settings-grid">
+      <section class="card">
       <div v-if="formError" class="alert alert-error">{{ formError }}</div>
 
       <form @submit.prevent="save">
@@ -242,10 +276,38 @@ onMounted(load)
           <span v-if="saved" style="color: var(--success); font-weight: 600">✓ Saqlandi</span>
         </div>
       </form>
-    </section>
+      </section>
 
-    <!-- Branding -->
-    <section v-if="!loading" class="card brand-card" style="max-width: 520px; margin-top: 18px">
+      <!-- Business profile -->
+      <section class="card">
+        <h2 class="sec-h">Biznes ma'lumotlari</h2>
+        <div v-if="infoError" class="alert alert-error" style="margin-bottom: 12px">{{ infoError }}</div>
+
+        <div class="field">
+          <label>Biznes nomi</label>
+          <input v-model="info.name" placeholder="Shirin Tort" />
+        </div>
+        <div class="field">
+          <label>Telefon</label>
+          <input v-model="info.phone" placeholder="+998 90 123 45 67" />
+          <span class="muted" style="font-size: 12px">Sayt sarlavhasida va aloqa uchun ko‘rinadi.</span>
+        </div>
+        <div class="field">
+          <label>Sarlavha ostidagi matn</label>
+          <input v-model="info.tagline" placeholder="Onlayn buyurtma" maxlength="160" />
+          <span class="muted" style="font-size: 12px">Biznes nomi ostida ko‘rinadi (masalan: "Onlayn buyurtma").</span>
+        </div>
+
+        <div class="row" style="gap: 12px; margin-top: 8px; align-items: center">
+          <button class="btn btn-primary" :disabled="infoSaving" @click="saveInfo">
+            {{ infoSaving ? 'Saqlanmoqda…' : 'Saqlash' }}
+          </button>
+          <span v-if="infoSaved" style="color: var(--success); font-weight: 600">✓ Saqlandi</span>
+        </div>
+      </section>
+
+      <!-- Branding -->
+      <section class="card brand-card">
       <div class="tg-head">
         <span class="tg-ico">🎨</span>
         <div>
@@ -316,8 +378,8 @@ onMounted(load)
           <span v-else>{{ initials }}</span>
         </div>
         <div class="bp-txt">
-          <strong>{{ bizName || 'Biznes nomi' }}</strong>
-          <span>Onlayn buyurtma</span>
+          <strong>{{ info.name || 'Biznes nomi' }}</strong>
+          <span>{{ info.tagline || 'Onlayn buyurtma' }}</span>
         </div>
       </div>
 
@@ -327,10 +389,10 @@ onMounted(load)
         </button>
         <span v-if="brandSaved" style="color: var(--success); font-weight: 600">✓ Saqlandi</span>
       </div>
-    </section>
+      </section>
 
-    <!-- Telegram bot -->
-    <section v-if="!loading" class="card tg-card" style="max-width: 520px; margin-top: 18px">
+      <!-- Telegram bot -->
+      <section class="card tg-card">
       <div class="tg-head">
         <span class="tg-ico">✈️</span>
         <div>
@@ -383,11 +445,26 @@ onMounted(load)
         ⓘ Bot ishga tushishi uchun serverda ochiq (HTTPS) webhook manzil kerak. Token saqlangach,
         deploy paytida bot avtomatik ulanadi.
       </p>
-    </section>
+      </section>
+    </div>
   </div>
 </template>
 
 <style scoped>
+/* Two-column card layout on wide screens; single column when narrow. */
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 460px));
+  gap: 18px;
+  align-items: start;
+}
+.settings-grid > .card {
+  margin: 0;
+}
+.sec-h {
+  font-size: 17px;
+  margin: 0 0 14px;
+}
 .slug-row {
   display: flex;
   align-items: center;

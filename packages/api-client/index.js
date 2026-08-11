@@ -16,10 +16,16 @@ export const config = {
 export function publicSiteUrl(slug) {
   const s = String(slug || '').trim()
   const base = config.publicBase
+  let url
   if (base) {
-    return base.includes('{slug}') ? base.split('{slug}').join(s) : base.replace(/\/$/, '') + '/?slug=' + encodeURIComponent(s)
+    url = base.includes('{slug}')
+      ? base.split('{slug}').join(s)
+      : base.replace(/\/$/, '') + '/?slug=' + encodeURIComponent(s)
+  } else {
+    url = `https://${s}.${config.rootDomain}`
   }
-  return `https://${s}.${config.rootDomain}`
+  // Prefer https for public links (named local hosts serve SSL); leave localhost.
+  return url.replace(/^http:\/\/(?!localhost|127\.0\.0\.1)/i, 'https://')
 }
 
 const TOKEN_KEY = 'tizbiz_token'
