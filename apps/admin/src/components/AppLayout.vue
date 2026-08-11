@@ -142,7 +142,12 @@ async function onSwitch(e) {
   <div class="shell" :style="{ '--primary': vertical.accent, '--primary-soft': accentSoft }">
     <aside class="sidebar" :class="{ open: menuOpen }">
       <div class="brand">
-        <img :src="logoUrl" alt="TizBiz" class="brand-logo" />
+        <!-- The business's own logo (branding settings) when set; else the TizBiz mark. -->
+        <div v-if="auth.activeBusiness?.logo" class="brand-row">
+          <img :src="auth.activeBusiness.logo" :alt="auth.businessName" class="biz-logo" />
+          <span class="biz-name">{{ auth.businessName }}</span>
+        </div>
+        <img v-else :src="logoUrl" alt="TizBiz" class="brand-logo" />
         <span class="vbadge">
           <component :is="vertical.icon" :size="12" />
           {{ vertical.short }}
@@ -274,6 +279,28 @@ async function onSwitch(e) {
   height: 30px;
   width: auto;
   display: block;
+}
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.biz-logo {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--surface-2, rgba(127, 127, 127, 0.1));
+}
+.biz-name {
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .vbadge {
   display: inline-flex;

@@ -265,6 +265,7 @@ class AuthController extends Controller
                 'slug' => $business->slug,
                 'category' => $business->category,
                 'engine' => $business->engine,
+                'logo' => $business->logo,
                 'role' => (string) $m->role,
             ];
         }
