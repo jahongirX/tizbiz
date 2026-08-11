@@ -53,7 +53,18 @@ const nav = computed(() => {
       label: t.appointments,
       icon: ClipboardList,
     },
-    { type: 'link', to: '/loyalty', label: 'Loyallik', icon: Gift },
+    {
+      type: 'group',
+      key: 'loyalty',
+      label: 'Loyallik',
+      icon: Gift,
+      children: [
+        { to: '/loyalty/cards', label: 'Loyallik kartalari' },
+        { to: '/loyalty/certificates', label: 'Sertifikatlar' },
+        { to: '/loyalty/subscriptions', label: 'Abonementlar' },
+        { to: '/loyalty/deposits', label: 'Depozitlar' },
+      ],
+    },
     {
       type: 'group',
       key: 'clients',
