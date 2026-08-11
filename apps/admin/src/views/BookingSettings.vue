@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { api, ApiError, publicSiteUrl } from '@tizbiz/api-client'
 import { ExternalLink } from 'lucide-vue-next'
+import ImageUpload from '../components/ImageUpload.vue'
 
 const publicUrl = computed(() => publicSiteUrl((form.value.slug || '').trim() || 'demo'))
 
@@ -17,6 +18,73 @@ const form = ref({
   booking_lead_min: 60,
   booking_horizon_days: 30,
 })
+
+// Branding (logo / cover / brand colors) — applied to the public storefront.
+const bizName = ref('')
+const brand = reactive({ logo: '', cover: '', brand_color: '', brand_color_2: '' })
+const brandSaving = ref(false)
+const brandSaved = ref(false)
+const brandError = ref('')
+
+// Ready-made brand palettes (primary, secondary).
+const PRESETS = [
+  ['#5850ec', '#7c6cff'],
+  ['#2563eb', '#38bdf8'],
+  ['#f2721c', '#fb9a3c'],
+  ['#8b5cf6', '#a78bfa'],
+  ['#e11d48', '#fb7185'],
+  ['#059669', '#34d399'],
+  ['#0f172a', '#334155'],
+]
+function applyPreset([c1, c2]) {
+  brand.brand_color = c1
+  brand.brand_color_2 = c2
+}
+
+const initials = computed(() =>
+  String(bizName.value || '?')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join('')
+    .toUpperCase(),
+)
+const previewStyle = computed(() => {
+  const c1 = brand.brand_color || '#5850ec'
+  const c2 = brand.brand_color_2 || c1
+  return brand.cover
+    ? {
+        backgroundImage: `linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,.5)), url('${brand.cover}')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }
+    : { backgroundImage: `linear-gradient(135deg, ${c1}, ${c2})` }
+})
+
+async function saveBranding() {
+  brandError.value = ''
+  brandSaved.value = false
+  brandSaving.value = true
+  try {
+    const res = await api.put('/v1/settings/booking', {
+      logo: brand.logo || '',
+      cover: brand.cover || '',
+      brand_color: brand.brand_color || '',
+      brand_color_2: brand.brand_color_2 || '',
+    })
+    brand.logo = res.logo || ''
+    brand.cover = res.cover || ''
+    brand.brand_color = res.brand_color || ''
+    brand.brand_color_2 = res.brand_color_2 || ''
+    brandSaved.value = true
+    setTimeout(() => (brandSaved.value = false), 2500)
+  } catch (e) {
+    brandError.value = e instanceof ApiError ? e.message : 'Saqlab bo\'lmadi'
+  } finally {
+    brandSaving.value = false
+  }
+}
 
 // Telegram bot connection (token is write-only; server returns only status).
 const tgToken = ref('')
@@ -37,6 +105,11 @@ async function load() {
       booking_lead_min: Number(res.booking_lead_min ?? 60),
       booking_horizon_days: Number(res.booking_horizon_days ?? 30),
     }
+    bizName.value = res.name || ''
+    brand.logo = res.logo || ''
+    brand.cover = res.cover || ''
+    brand.brand_color = res.brand_color || ''
+    brand.brand_color_2 = res.brand_color_2 || ''
     telegramConnected.value = !!res.telegram_connected
     telegramUsername.value = res.telegram_bot_username || null
   } catch (e) {
@@ -169,6 +242,91 @@ onMounted(load)
           <span v-if="saved" style="color: var(--success); font-weight: 600">✓ Saqlandi</span>
         </div>
       </form>
+    </section>
+
+    <!-- Branding -->
+    <section v-if="!loading" class="card brand-card" style="max-width: 520px; margin-top: 18px">
+      <div class="tg-head">
+        <span class="tg-ico">🎨</span>
+        <div>
+          <h2>Brendlash</h2>
+          <p class="muted" style="margin: 2px 0 0; font-size: 13px">
+            Logotip, fon rasmi va brend ranglari — public saytingizga qo‘llanadi.
+          </p>
+        </div>
+      </div>
+
+      <div v-if="brandError" class="alert alert-error" style="margin-bottom: 12px">{{ brandError }}</div>
+
+      <div class="field">
+        <label>Logotip</label>
+        <ImageUpload v-model="brand.logo" :size="76" />
+        <span class="muted" style="font-size: 12px">Sayt sarlavhasida ko‘rinadi. Kvadrat PNG tavsiya etiladi.</span>
+      </div>
+
+      <div class="field">
+        <label>Fon rasmi (cover)</label>
+        <ImageUpload v-model="brand.cover" :width="240" :height="96" />
+        <span class="muted" style="font-size: 12px">Sayt yuqorisidagi fon. Keng (gorizontal) rasm.</span>
+      </div>
+
+      <div class="field">
+        <label>Brend ranglari</label>
+        <div class="field-row" style="margin-top: 6px">
+          <div class="color-field">
+            <span class="muted" style="font-size: 12px">Asosiy</span>
+            <div class="color-row">
+              <input
+                type="color"
+                :value="brand.brand_color || '#5850ec'"
+                @input="brand.brand_color = $event.target.value"
+              />
+              <input v-model="brand.brand_color" class="hex" placeholder="#5850ec" maxlength="7" />
+            </div>
+          </div>
+          <div class="color-field">
+            <span class="muted" style="font-size: 12px">Qo‘shimcha</span>
+            <div class="color-row">
+              <input
+                type="color"
+                :value="brand.brand_color_2 || '#7c6cff'"
+                @input="brand.brand_color_2 = $event.target.value"
+              />
+              <input v-model="brand.brand_color_2" class="hex" placeholder="#7c6cff" maxlength="7" />
+            </div>
+          </div>
+        </div>
+        <div class="swatches">
+          <button
+            v-for="p in PRESETS"
+            :key="p[0]"
+            type="button"
+            class="swatch"
+            :style="{ background: `linear-gradient(135deg, ${p[0]}, ${p[1]})` }"
+            :title="p[0]"
+            @click="applyPreset(p)"
+          ></button>
+        </div>
+      </div>
+
+      <!-- Live preview -->
+      <div class="brand-preview" :style="previewStyle">
+        <div class="bp-logo">
+          <img v-if="brand.logo" :src="brand.logo" alt="" />
+          <span v-else>{{ initials }}</span>
+        </div>
+        <div class="bp-txt">
+          <strong>{{ bizName || 'Biznes nomi' }}</strong>
+          <span>Onlayn buyurtma</span>
+        </div>
+      </div>
+
+      <div class="row" style="gap: 12px; margin-top: 14px; align-items: center">
+        <button class="btn btn-primary" :disabled="brandSaving" @click="saveBranding">
+          {{ brandSaving ? 'Saqlanmoqda…' : 'Saqlash' }}
+        </button>
+        <span v-if="brandSaved" style="color: var(--success); font-weight: 600">✓ Saqlandi</span>
+      </div>
     </section>
 
     <!-- Telegram bot -->
@@ -315,5 +473,98 @@ onMounted(load)
   font-size: 12px;
   margin: 14px 0 0;
   line-height: 1.5;
+}
+
+/* Branding */
+.color-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px 8px 4px 4px;
+}
+.color-row input[type='color'] {
+  width: 38px;
+  height: 34px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+.color-row .hex {
+  border: none;
+  background: transparent;
+  flex: 1;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+.color-row .hex:focus {
+  outline: none;
+}
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.swatch {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  padding: 0;
+}
+.swatch:hover {
+  transform: scale(1.08);
+}
+.brand-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 16px;
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+.bp-logo {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  border-radius: 13px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.2);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+.bp-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.bp-txt {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+.bp-txt strong {
+  font-size: 16px;
+}
+.bp-txt span {
+  font-size: 12px;
+  opacity: 0.9;
 }
 </style>

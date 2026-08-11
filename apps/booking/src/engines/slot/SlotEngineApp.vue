@@ -64,6 +64,17 @@ const bizCategory = computed(
   () => business.value?.category || business.value?.category_name || '',
 )
 
+// Optional cover image behind the branded header (dark overlay keeps text legible).
+const coverStyle = computed(() =>
+  business.value?.cover
+    ? {
+        backgroundImage: `linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.55)), url('${business.value.cover}')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }
+    : {},
+)
+
 // ---- Navigation ----
 function pickService(s) {
   sel.service = s
@@ -151,9 +162,12 @@ function restart() {
 
 <template>
   <div class="shell">
-    <header class="brand">
+    <header class="brand" :style="coverStyle">
       <div class="brand-top">
-        <div class="brand-logo">{{ brandInitials }}</div>
+        <div class="brand-logo">
+          <img v-if="business.logo" :src="business.logo" alt="" />
+          <template v-else>{{ brandInitials }}</template>
+        </div>
         <div class="brand-info">
           <h1>{{ business.name }}</h1>
           <div class="sub">Onlayn navbat olish</div>

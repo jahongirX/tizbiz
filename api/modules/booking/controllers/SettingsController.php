@@ -38,6 +38,13 @@ class SettingsController extends Controller
         if (($v = $this->body('booking_horizon_days')) !== null) {
             $model->booking_horizon_days = (int) $v;
         }
+        // Branding: logo / cover URLs (empty string clears) + brand colors.
+        foreach (['logo', 'cover', 'brand_color', 'brand_color_2'] as $attr) {
+            if (array_key_exists($attr, $this->body())) {
+                $v = $this->body($attr);
+                $model->$attr = ($v === null || trim((string) $v) === '') ? null : trim((string) $v);
+            }
+        }
         // Telegram bot token: empty string clears it; otherwise the model rule
         // validates the @BotFather token format.
         $tok = $this->body('telegram_bot_token');
@@ -60,10 +67,15 @@ class SettingsController extends Controller
     private function payload(Business $b): array
     {
         return [
+            'name' => $b->name,
             'slug' => $b->slug,
             'online_booking_enabled' => (bool) $b->online_booking_enabled,
             'booking_lead_min' => (int) $b->booking_lead_min,
             'booking_horizon_days' => (int) $b->booking_horizon_days,
+            'logo' => $b->logo,
+            'cover' => $b->cover,
+            'brand_color' => $b->brand_color,
+            'brand_color_2' => $b->brand_color_2,
             // Never echo the raw token back to the client — expose only status.
             'telegram_connected' => $b->telegram_bot_token !== null && $b->telegram_bot_token !== '',
             'telegram_bot_username' => $b->telegram_bot_username,

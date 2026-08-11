@@ -23,15 +23,40 @@ const THEMES = {
   rental: { brand: '#8b5cf6', brand2: '#a78bfa', ink: '#ffffff', soft: '#f1ebff', softDark: '#221a3a' },
 }
 
-function applyTheme(engine) {
+// White or dark ink depending on the brand colour's luminance (WCAG-ish).
+function contrastInk(hex) {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex || '')
+  if (!m) return '#ffffff'
+  const n = parseInt(m[1], 16)
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
+    const c = v / 255
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  })
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+  return lum > 0.45 ? '#14172a' : '#ffffff'
+}
+
+// Per-engine default theme, overridden by the business's own brand colours.
+function applyTheme(engine, business) {
   const t = THEMES[engine] || THEMES.slot
   const isDark = typeof window !== 'undefined'
     && window.matchMedia('(prefers-color-scheme: dark)').matches
   const root = document.documentElement.style
-  root.setProperty('--brand', t.brand)
-  root.setProperty('--brand-2', t.brand2)
-  root.setProperty('--brand-ink', t.ink)
-  root.setProperty('--brand-soft', isDark ? t.softDark : t.soft)
+
+  const brand = business?.brand_color || t.brand
+  const custom = !!business?.brand_color
+  const brand2 =
+    business?.brand_color_2 ||
+    (custom ? `color-mix(in srgb, ${brand} 78%, #ffffff)` : t.brand2)
+  const ink = custom ? contrastInk(brand) : t.ink
+  const soft = custom
+    ? `color-mix(in srgb, ${brand} 15%, ${isDark ? '#0c0e15' : '#ffffff'})`
+    : isDark ? t.softDark : t.soft
+
+  root.setProperty('--brand', brand)
+  root.setProperty('--brand-2', brand2)
+  root.setProperty('--brand-ink', ink)
+  root.setProperty('--brand-soft', soft)
 }
 
 const slug =
@@ -51,7 +76,7 @@ onMounted(async () => {
     if (!data.business) notFound.value = true
     else {
       payload.value = data
-      applyTheme(data.engine || 'slot')
+      applyTheme(data.engine || 'slot', data.business)
     }
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) notFound.value = true

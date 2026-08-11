@@ -137,6 +137,12 @@ button:disabled {
   letter-spacing: -0.02em;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
 }
+.brand-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
 .brand-info {
   min-width: 0;
   flex: 1;

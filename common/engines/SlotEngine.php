@@ -54,6 +54,11 @@ class SlotEngine implements EngineInterface
             'phone' => $business->phone,
             'timezone' => $business->timezone,
             'online_booking_enabled' => (bool) $business->online_booking_enabled,
+            // Branding (nullable) — the public storefront themes itself from these.
+            'logo' => $business->logo,
+            'cover' => $business->cover,
+            'brand_color' => $business->brand_color,
+            'brand_color_2' => $business->brand_color_2,
         ];
     }
 

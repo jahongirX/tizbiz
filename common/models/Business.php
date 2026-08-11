@@ -22,6 +22,10 @@ use yii\db\ActiveQuery;
  * @property int|null $branches_count
  * @property string|null $telegram_bot_token
  * @property string|null $telegram_bot_username
+ * @property string|null $logo
+ * @property string|null $cover
+ * @property string|null $brand_color
+ * @property string|null $brand_color_2
  * @property int $created_at
  * @property int $updated_at
  *
@@ -85,6 +89,9 @@ class Business extends ActiveRecord
             [['telegram_bot_token'], 'string', 'max' => 80],
             [['telegram_bot_username'], 'string', 'max' => 64],
             [['telegram_bot_token'], 'match', 'pattern' => '/^\d{6,}:[A-Za-z0-9_-]{20,}$/', 'message' => 'Bot token formati noto\'g\'ri.', 'skipOnEmpty' => true],
+            [['logo', 'cover'], 'string', 'max' => 500],
+            [['brand_color', 'brand_color_2'], 'string', 'max' => 9],
+            [['brand_color', 'brand_color_2'], 'match', 'pattern' => '/^#[0-9a-fA-F]{6}$/', 'message' => 'Rang #RRGGBB formatida bo\'lishi kerak.', 'skipOnEmpty' => true],
             [['features'], 'safe'],
         ];
     }
@@ -107,6 +114,10 @@ class Business extends ActiveRecord
             'branches_count' => 'Filiallar soni',
             'telegram_bot_token' => 'Telegram bot token',
             'telegram_bot_username' => 'Telegram bot foydalanuvchi nomi',
+            'logo' => 'Logotip',
+            'cover' => 'Fon rasmi',
+            'brand_color' => 'Asosiy rang',
+            'brand_color_2' => 'Qo\'shimcha rang',
             'created_at' => 'Yaratilgan sana',
             'updated_at' => 'Yangilangan sana',
         ];

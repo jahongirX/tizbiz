@@ -8,6 +8,9 @@ import { ImagePlus, X } from 'lucide-vue-next'
 const props = defineProps({
   modelValue: { type: String, default: '' },
   size: { type: Number, default: 72 },
+  // Optional non-square thumbnail (e.g. a wide cover). Fall back to `size`.
+  width: { type: Number, default: null },
+  height: { type: Number, default: null },
 })
 const emit = defineEmits(['update:modelValue'])
 
@@ -40,7 +43,11 @@ function clear() {
 
 <template>
   <div class="img-up">
-    <div class="thumb" :style="{ width: size + 'px', height: size + 'px' }" @click="pick">
+    <div
+      class="thumb"
+      :style="{ width: (width || size) + 'px', height: (height || size) + 'px' }"
+      @click="pick"
+    >
       <img v-if="modelValue" :src="modelValue" alt="" />
       <span v-else class="ph"><ImagePlus :size="20" /></span>
       <span v-if="busy" class="ov">
