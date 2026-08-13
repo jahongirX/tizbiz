@@ -1,8 +1,8 @@
 <script setup>
 import logoUrl from '../assets/logo.png'
 
-const LOGIN_URL = 'https://b.startup/'
-const REGISTER_URL = 'https://b.startup/app/register'
+const LOGIN_URL = 'https://admin.tizbiz.uz/app/login'
+const REGISTER_URL = 'https://admin.tizbiz.uz/app/register'
 const YEAR = 2026
 </script>
 

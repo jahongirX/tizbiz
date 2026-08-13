@@ -3,8 +3,8 @@ import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import logoUrl from '../assets/logo.png'
 
-const LOGIN_URL = 'https://b.startup/'
-const REGISTER_URL = 'https://b.startup/app/register'
+const LOGIN_URL = 'https://admin.tizbiz.uz/app/login'
+const REGISTER_URL = 'https://admin.tizbiz.uz/app/register'
 
 const route = useRoute()
 const scrolled = ref(false)

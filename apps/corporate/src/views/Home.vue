@@ -2,7 +2,7 @@
 import { RouterLink } from 'vue-router'
 import { posts, formatDate } from '../data/posts'
 
-const REGISTER_URL = 'https://b.startup/app/register'
+const REGISTER_URL = 'https://admin.tizbiz.uz/app/register'
 
 const steps = [
   {
