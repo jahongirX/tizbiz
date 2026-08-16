@@ -92,3 +92,25 @@ subdomain'ni Host header'dan aniqlaydi (`common\web\SpaController`).
 - **Float** — prepayment/zakaz ustidan olinadigan kichik platforma ustamasi.
 - **AI-seller** — biznes ma'lumotidan javob beruvchi 24/7 savdo-yordamchi bot.
 - **Provider** — uy-xizmat mutaxassisi (hamshira, massajist, usta).
+
+## 9. Ish taqsimoti — bizning zona: barber vertikali
+
+Bu repoda bir nechta odam ishlaydi. **Bizning javobgarlik zonamiz — barber vertikali
+(`barber` / `salon` → `slot` engine).** O'sha vertikalga tegishli hamma narsaga biz javob
+beramiz: backend, admin UI, booking sayti, migratsiya, seed, dizayn.
+
+**Boshqa vertikallarga (cafe/restoran → `catalog` engine, medical va h.k.) tegilmaydi** —
+ular boshqa branch egalarining ishi. Ularning fayllarini tuzatmaymiz, refactor qilmaymiz,
+"yo'l-yo'lakay yaxshilamaymiz". Bug ko'rsak — aytamiz, lekin o'zimiz tuzatmaymiz.
+
+Bizning zonamizdagi asosiy joylar:
+- `common/engines/SlotEngine.php`, `common/engines/EngineFactory.php` (faqat `slot` qismi)
+- `apps/booking/src/engines/slot/` — booking SPA'ning slot engine'i
+- `apps/admin/src/lib/verticals.js` — `barber` yozuvi
+- Barber uchun booking/CRM/loyallik API oqimlari (`api/modules/*` — barber ssenariysi)
+
+**Umumiy (shared) kod** — `common/`, `api/modules/auth`, layout, tokenlar, router — barcha
+vertikallarga tegadi. Bunday joyni o'zgartirish kerak bo'lsa: o'zgarish minimal va orqaga
+mos (backward-compatible) bo'lsin, boshqa engine'lar xatti-harakati o'zgarmasin.
+
+Branch: barcha ish `jalol` branch'ida; `main`ga merge — admin ishi.

@@ -1,0 +1,234 @@
+# Barber vertikali — ish jurnali (branch `jalol`)
+
+> Bizning zonamizdagi (barber / `slot` engine) o'zgarishlar shu yerda yozib boriladi.
+> Maqsad: prezentatsiya va PR tavsifi uchun tayyor material. Yangi yozuv — tepaga.
+> Zona qoidalari: [CLAUDE.md §9](../CLAUDE.md).
+
+---
+
+## 2026-08-17 — barber optimizatsiyasi (1-3 to'lqin)
+
+Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
+
+### 8. Demo ma'lumot: `php yii seed/barber [slug]`
+
+Yangi konsol komandasi barber biznesini real ma'lumot bilan to'ldiradi: 3 usta
+(foizi bilan), 3 kategoriya + 10 xizmat (narx tiyinda), 8 mijoz (kartada usta
+eslab qoladigan izohlar — "Mashinka #2", "Fade"), kecha/bugun/ertangi yozuvlar
+(bittasi `no_show`), 5% keshbek qoidasi va **tanaffusli ish jadvali**
+(Du-Sha 09:00-13:00 + 14:00-20:00). Qayta ishga tushirish xavfsiz: mavjud
+yozuvlarga tegmaydi. Fayl: `console/controllers/SeedController.php`.
+
+### 9. Ish jadvali: kunga bir necha oraliq (tushlik tanaffusi)
+
+`working_hours` bazasi kuniga bir nechta qatorni allaqachon qo'llardi, lekin UI
+kuniga faqat bitta oraliq berardi — tushlikni yopishning iloji yo'q edi.
+Endi har kunda "+ Tanaffus" (bitta blokni ikkiga bo'ladi) va "+ Oraliq"
+tugmalari bor; yuklashda qatorlar kun bo'yicha guruhlanadi.
+Fayl: `apps/admin/src/views/Schedule.vue`.
+
+**Tekshiruv.** Availability 18 slot qaytardi, 13:00-13:30 oralig'i yo'q.
+
+### 10. Jonli navbat — "Hozir keldi" (walk-in)
+
+Sartaroshxonaga mijozlarning ko'pchiligi yozilmasdan keladi. Jadval sahifasida
+yangi tugma bitta ekran ochadi: usta + xizmat (chip'lar), telefon **ixtiyoriy**,
+vaqt = hozir (5 daqiqagacha yaxlitlangan), status `arrived`. Sana/vaqt tanlash
+yo'q. Backend o'zgarmadi — `POST /v1/appointments` allaqachon `client_id` siz va
+admin tomonidan berilgan status bilan ishlaydi.
+Fayl: `apps/admin/src/components/WalkInForm.vue`, `views/Timetable.vue`.
+
+### 11. Booking oqimi: 5 qadam → 2-3 qadam
+
+- Biznesda **bitta usta** bo'lsa "Mutaxassis" qadami umuman ko'rsatilmaydi.
+- **"Farqi yo'q"** varianti: barcha ustalarning bo'sh vaqti birlashtiriladi,
+  tanlangan vaqt ustani ham belgilaydi (`DateTimeStep` endi `staff-ids` massivini
+  oladi va so'rovlarni parallel yuboradi).
+- "Ma'lumotlaringiz" qadami **tasdiqlash ekraniga birlashdi** (`InfoStep.vue`
+  o'chirildi). Qaytgan mijozning ismi/telefoni `localStorage` dan tiklanadi va
+  faqat "O'zgartirish" bosilganda tahrirlanadi.
+
+Natija: qaytgan mijoz uchun **xizmat → vaqt → tasdiqlash**.
+Fayllar: `apps/booking/src/engines/slot/SlotEngineApp.vue`, `components/{StaffStep,DateTimeStep,ConfirmStep}.vue`.
+
+### 12. Takroriy yozuv (rebooking)
+
+Yozuv "Bajarildi" ga o'tkazilganda darhol so'raladi: "Keyingi safarga yozamizmi?"
+— rozi bo'lsa forma o'sha usta / xizmat / mijoz bilan, **3 hafta keyingi** o'sha
+vaqtga to'ldirilgan holda ochiladi. Yozuv oynasida "Takror yozish" tugmasi ham bor.
+`AppointmentForm` endi `serviceId`/`clientId`/`client` bilan ham to'ldiriladi.
+
+### 13. No-show belgisi
+
+`GET /v1/clients` javobiga `no_shows` agregati qo'shildi (orqaga mos — qo'shimcha
+maydon). Mijozlar ro'yxatida 2 va undan ko'p bo'lsa qizil "2× kelmagan" belgisi
+chiqadi. Fayllar: `api/modules/crm/controllers/ClientController.php`,
+`apps/admin/src/views/Clients.vue`.
+
+### 14. Nav tozalash + rol tekshiruvi + o'zbekcha xato
+
+- "Sertifikatlar" `category = barber` bo'lganda yashiriladi (salonda qoladi).
+- `Staff.vue` da "Yangi xodim" / "Tahrir" / "O'chirish" endi faqat
+  `business_owner` va `business_admin` ga ko'rinadi — 403 ga urilish tugadi.
+- `common/rest/Controller.php`: "Insufficient role for this action." →
+  "Bu amal uchun ruxsatingiz yetarli emas."
+
+### 15. API shartnomasi mustahkamlandi (texnik qarz)
+
+Ikkita himoya, `days`/`items` bug'i sinfini yopadi:
+
+1. `packages/api-client` da nomlangan funksiya — `booking.saveWorkingHours(staffId, days)`
+   payload'ni bitta joyda quradi; `Schedule.vue` endi shuni chaqiradi.
+2. `ScheduleController::actionUpdateWorkingHours` bo'sh ro'yxatni **rad etadi**
+   (400). Butun haftani tozalash uchun `?clear=1` kerak — ilgari bo'sh payload
+   jimgina hamma narsani o'chirib, 200 qaytarardi.
+
+**Tekshiruv.** `{"days":[]}` → 400; tanaffusli payload → 2 qator saqlandi.
+
+---
+
+## 2026-08-16
+
+### 5. Go'zallik saloni "Barber" deb belgilanardi (vertikal moslash)
+
+**Muammo.** Sidebar'dagi badge har doim vertikalning nomini (`Barber`) ko'rsatardi.
+`barber` vertikali esa ikki xil biznesni qamraydi — sartaroshxona va go'zallik saloni.
+Salon egasi o'z kabinetida "Barber" yozuvini ko'rardi. Bundan tashqari ro'yxatdan
+o'tishda salon o'zini salon deb belgilay olmasdi: sehrgar doim `category: 'barber'`
+yuborardi.
+
+**Yechim.**
+- `apps/admin/src/lib/verticals.js` — `barber` vertikaliga `subCategories`
+  (`barber` / `salon`) va `categoryLabel(business)` funksiyasi qo'shildi. O'z yorlig'i
+  yo'q kategoriyalar avvalgidek vertikalning `short` nomiga tushadi — boshqa
+  vertikallar uchun hech nima o'zgarmaydi.
+- `apps/admin/src/views/Register.vue` — 2-qadamda "Biznes turi" tanlovi (faqat
+  `subCategories` bor vertikallarda ko'rinadi), tanlangan qiymat `category` sifatida
+  yuboriladi. `engine` avvalgidek `slot`.
+- `apps/admin/src/components/AppLayout.vue` — badge endi `categoryLabel()` dan
+  o'qiydi: sartaroshxona → "Barber", salon → "Salon".
+
+Backend'ga tegilmadi: `category` ixtiyoriy satr, `salon` esa `CATEGORY_ALIAS` orqali
+o'sha barber vertikaliga (`slot` engine) tushadi.
+
+### 7. Placeholder va yordamchi matnlar barber/salonga moslandi
+
+**Muammo.** Admin formalaridagi namunalar kafe/tort vertikalidan qolgan edi: xizmat
+kategoriyasi — "Tortlar", biznes nomi — "Shirin Tort", slug — "aziza-tortlari",
+sarlavha ostidagi matn — "Onlayn buyurtma", tavsif — "Mahsulot haqida...".
+Sartaroshxona egasi uchun bular chalg'ituvchi.
+
+**Yechim.** `apps/admin/src/lib/verticals.js` ga `samplesFor(business)` qo'shildi:
+`SAMPLES_DEFAULT` (bugungi matnlar) ← vertikal `samples` ← sub-kategoriya `samples`.
+Ya'ni **o'z `samples` i yo'q vertikallarda matn bir harf ham o'zgarmaydi**.
+
+Barber/salon uchun: nomi "Barber King" / "Aziza Beauty", slug `barber-king` /
+`aziza-beauty`, kategoriya "Soch olish" / "Soch parvarishi", mutaxassislik
+"Usta / Sartarosh" / "Usta / Stilist", tagline "Onlayn navbat olish", tavsif
+"Xizmat haqida qisqacha ma'lumot", kategoriya bo'sh bo'lgandagi maslahat
+"Xizmatlarni bo'limlarga ajrating".
+
+**Ulangan joylar:** `Services.vue` (nomi, tavsif, kategoriya nomi, bo'sh holat matni),
+`Staff.vue` (mutaxassislik), `BookingSettings.vue` (biznes nomi, slug, tagline +
+ko'rinish preview'i), `Register.vue` (biznes nomi, slug — tanlangan yo'nalish va
+biznes turiga qarab).
+
+### 6. Mavjud biznes o'z turini o'zgartira oladi (Sozlamalar)
+
+Ro'yxatdan o'tgan biznes keyinchalik "Barber ↔ Salon" ni almashtira olmasdi.
+
+- `api/modules/booking/controllers/SettingsController.php` — `PUT /v1/settings/booking`
+  endi ixtiyoriy `category` ni qabul qiladi va uni `GET` javobida qaytaradi. **`engine`
+  ga tegilmaydi**, ya'ni mavjud bizneslarning booking oqimi o'zgarmaydi; maydon
+  yuborilmasa xatti-harakat avvalgidek qoladi (backward-compatible).
+- `apps/admin/src/views/BookingSettings.vue` — "Biznes ma'lumotlari" kartasida
+  "Biznes turi" tanlovi (faqat sub-kategoriyasi bor vertikallarda ko'rinadi).
+  Saqlagandan keyin `auth.fetchMe()` chaqiriladi — sidebar badge darhol yangilanadi.
+
+**Tekshiruv.** `PUT {"category":"salon"}` → javobda `category: salon`, bazada `engine`
+o'zgarmagan (`slot`).
+
+### 4. "Ombor" barber menyusidan olib tashlandi (UX / vertikal moslash)
+
+**Muammo.** Sartaroshxonada ombor moduli ishlatilmaydi — menyuda turgan bo'sh
+"0 / 0 / 0 so'm" sahifa mahsulot tugallanmagandek taassurot qoldiradi.
+
+**Qaror.** Kod o'chirilmadi, faqat `slot` engine uchun nav elementi yashirildi.
+Sabab: `barber` vertikali go'zallik salonini ham qamraydi, u yerda ombor (bo'yoq,
+kosmetika, sotuv) kerak. Kelajakda biznes sozlamalarida "Ombor moduli" tugmasi
+bo'ladi — salon yoqadi, sartaroshxonada o'chiq turadi.
+
+**O'zgarish.** `apps/admin/src/components/AppLayout.vue` — Katalog guruhidagi
+`/ombor` elementi faqat `engine !== 'slot'` bo'lganda qo'shiladi. Route va sahifa
+joyida: `/app/ombor` to'g'ridan-to'g'ri ochiladi. Boshqa vertikallarga (cafe →
+`catalog`, medical) ta'sir yo'q.
+
+### 1. Ish jadvali saqlanmayotgan edi — API shartnomasi mos emasdi (bug)
+
+**Muammo.** Admin → *Ish jadvali* da kunlarni belgilab "Saqlash" bosilganda hech nima
+saqlanmasdi: xato ko'rinmasdi, log toza, bazada esa qator yo'q edi. Natijada public
+booking saytida hamma sanaga "Bu kunga bo'sh vaqt yo'q" chiqardi.
+
+**Sabab.** Frontend backend kutgan formatdan boshqa format yuborardi:
+
+| | Frontend yuborardi | Backend kutadi |
+|---|---|---|
+| Ro'yxat kaliti | `days` | `items` |
+| Vaqt maydonlari | `start` / `end` | `start_time` / `end_time` |
+| Yakshanba raqami | `0` | `7` (ISO-8601) |
+
+`ScheduleController::extractItems()` `items` topolmay bo'sh massiv qaytarardi. Keyingi
+kod esa avval **xodimning butun jadvalini o'chirib**, so'ng bo'sh ro'yxatni yozardi va
+**200 OK** qaytarardi — shuning uchun UI "saqlandi" deb ko'rsatardi. Ya'ni har bosishda
+mavjud jadval ham yo'q qilinardi.
+
+**Yechim.** `apps/admin/src/views/Schedule.vue` — to'g'ri `items` payload'i,
+`start_time`/`end_time` (`HH:MM:00`), yakshanba `7`, faqat yoqilgan kunlar yuboriladi.
+Backend'ga tegilmadi (u o'z shartnomasiga muvofiq ishlayotgan edi).
+
+**Tekshiruv.** `PUT /v1/staff/1/working-hours` → 6 qator bazaga yozildi.
+
+### 2. Ish jadvaliga "Barcha kunlar" tugmasi (UX)
+
+Har kunni alohida belgilash o'rniga:
+- **Barcha kunlar** — bitta checkbox bilan hammasini yoqish/o'chirish (qisman
+  belgilangan holatda `indeterminate` ko'rinadi).
+- **Vaqtni hammasiga qo'llash** — birinchi yoqilgan kunning soatlarini qolgan
+  yoqilgan kunlarga nusxalaydi.
+
+Fayl: `apps/admin/src/views/Schedule.vue`.
+
+### 3. Mini-kalendarda kun raqami markazda emasdi (UI)
+
+**Sabab.** `{{ d.day }}` shablonda alohida qatorda turgani uchun tugma ichida raqam
+oldi/ortida bo'sh joy (whitespace) matn tugunlari qolgan — raqam markazdan siljigan.
+Bundan tashqari brauzerning `<button>` uchun standart `padding: 1px 6px` i qolgan edi.
+
+**Yechim.** `apps/admin/src/components/MiniCalendar.vue` — interpolyatsiya bo'sh joysiz
+(`>{{ d.day }}</button>`), `padding: 0`, `line-height: 1`, `display: grid` o'rniga aniq
+`flex` + `align-items/justify-content: center` (Safari ba'zi versiyalarda `<button>` da
+`display: grid` ni e'tiborsiz qoldiradi).
+
+---
+
+## Aniqlangan, lekin hali tuzatilmagan
+
+- **Xodimlar sahifasi `staff` roliga ham "Yangi xodim" tugmasini ko'rsatadi** —
+  bosilganda faqat 403 (`Insufficient role for this action`) chiqadi. `Team.vue` dagidek
+  `auth.role` bo'yicha yashirish kerak. Fayl: `apps/admin/src/views/Staff.vue`.
+- **API xato matnlari inglizcha** (`Insufficient role for this action`), UI esa o'zbekcha.
+
+---
+
+## Lokal ishga tushirish (dev eslatma)
+
+Bu qismlar kodga emas, muhitga tegishli — README dagi buyruqlarga qo'shimcha:
+
+- `ROOT_DOMAIN=lvh.me` — `*.lvh.me` 127.0.0.1 ga ishora qiladi, `/etc/hosts` shart emas.
+- `PUBLIC_BASE=http://127.0.0.1:8082` — bo'lmasa admin'dagi "Saytni ochish" havolasi
+  prod formulasi bilan (`https://{slug}.tizbiz.uz`) yasaladi va localda ochilmaydi.
+  Booking SPA `?slug=` fallback'ini qo'llab-quvvatlaydi.
+- SPA tierlar (`frontend`/`backend`/`tenant`) PHP built-in server uchun history-fallback
+  router talab qiladi; repoda faqat `api/web/router.php` bor.
+- `corepack pnpm` bu mashinada imzo tekshiruvida yiqiladi — global `pnpm` ishlatiladi.
+- Portlar: API `8899`, corporate `8080`, admin `8081`, tenant `8082`.
