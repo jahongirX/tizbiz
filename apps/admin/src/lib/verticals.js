@@ -17,6 +17,43 @@ export const VERTICALS = [
     accent: '#3b82f6',
     terms: { services: 'Xizmatlar', staff: 'Ustalar', appointments: 'Navbatlar' },
     demoPhone: '+998901111111',
+    // One engine, two business types — the owner picks which one they are so the
+    // shell doesn't label a beauty salon "Barber".
+    // `label` is for the picker, `short` for the sidebar badge.
+    subCategories: [
+      {
+        value: 'barber',
+        label: 'Sartaroshxona / Barber',
+        short: 'Barber',
+        samples: {
+          bizName: 'Barber King',
+          slug: 'barber-king',
+          serviceCategory: 'Soch olish',
+          staffRole: 'Usta / Sartarosh',
+        },
+      },
+      {
+        value: 'salon',
+        label: 'Go‘zallik saloni',
+        short: 'Salon',
+        samples: {
+          bizName: 'Aziza Beauty',
+          slug: 'aziza-beauty',
+          serviceCategory: 'Soch parvarishi',
+          staffRole: 'Usta / Stilist',
+        },
+      },
+    ],
+    samples: {
+      bizName: 'Barber King',
+      slug: 'barber-king',
+      tagline: 'Onlayn navbat olish',
+      serviceName: 'Soch olish',
+      serviceDesc: 'Xizmat haqida qisqacha ma’lumot',
+      serviceCategory: 'Soch olish',
+      staffRole: 'Usta / Sartarosh',
+      catalogWord: 'Xizmatlar',
+    },
   },
   {
     key: 'cafe',
@@ -76,6 +113,43 @@ export function verticalFor(business) {
   if (cat && CATEGORY_ALIAS[cat] && BY_KEY[CATEGORY_ALIAS[cat]]) return BY_KEY[CATEGORY_ALIAS[cat]]
   if (business.engine && BY_ENGINE[business.engine]) return BY_ENGINE[business.engine]
   return VERTICALS[0]
+}
+
+/**
+ * Short label for the business's own category, not just its vertical: a salon
+ * runs on the barber vertical but must not be badged "Barber". Categories
+ * without their own label fall back to the vertical's short name.
+ */
+const CATEGORY_LABEL = Object.fromEntries(
+  VERTICALS.flatMap((v) => (v.subCategories || []).map((s) => [s.value, s.short || s.label])),
+)
+
+/**
+ * Example texts (placeholders, hints) shown in forms. The defaults are what the
+ * admin has always shown; a vertical — and, more precisely, a sub-category —
+ * overrides only the lines that would read wrong for it. Verticals without their
+ * own `samples` keep the defaults untouched.
+ */
+const SAMPLES_DEFAULT = {
+  bizName: 'Shirin Tort',
+  slug: 'aziza-tortlari',
+  tagline: 'Onlayn buyurtma',
+  serviceName: 'Soch olish',
+  serviceDesc: 'Mahsulot haqida qisqacha ma’lumot',
+  serviceCategory: 'Tortlar',
+  staffRole: 'Usta / Shifokor / Registratura',
+  catalogWord: 'Menyu/xizmatlar',
+}
+
+export function samplesFor(business) {
+  const vertical = verticalFor(business)
+  const sub = (vertical.subCategories || []).find((s) => s.value === business?.category)
+  return { ...SAMPLES_DEFAULT, ...(vertical.samples || {}), ...(sub?.samples || {}) }
+}
+
+export function categoryLabel(business) {
+  const vertical = verticalFor(business)
+  return CATEGORY_LABEL[business?.category] || vertical.short
 }
 
 export { BY_KEY as VERTICAL_BY_KEY }

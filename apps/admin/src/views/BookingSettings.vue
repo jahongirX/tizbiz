@@ -3,6 +3,15 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { api, ApiError, publicSiteUrl } from '@tizbiz/api-client'
 import { ExternalLink } from 'lucide-vue-next'
 import ImageUpload from '../components/ImageUpload.vue'
+import { useAuthStore } from '../stores/auth'
+import { samplesFor, verticalFor } from '../lib/verticals'
+
+const auth = useAuthStore()
+// Verticals that cover more than one business type (barber vs beauty salon)
+// expose the choice here; the rest simply don't render the field.
+const subCategories = computed(() => verticalFor(auth.activeBusiness).subCategories || null)
+// Example texts in the form follow the business type (barber/salon vs cafe…).
+const samples = computed(() => samplesFor(auth.activeBusiness))
 
 const publicUrl = computed(() => publicSiteUrl((form.value.slug || '').trim() || 'demo'))
 
@@ -20,7 +29,7 @@ const form = ref({
 })
 
 // Business profile (name / phone / storefront subtitle).
-const info = reactive({ name: '', phone: '', tagline: '' })
+const info = reactive({ name: '', phone: '', tagline: '', category: '' })
 const infoSaving = ref(false)
 const infoSaved = ref(false)
 const infoError = ref('')
@@ -38,10 +47,14 @@ async function saveInfo() {
       name: info.name.trim(),
       phone: info.phone.trim(),
       tagline: info.tagline.trim(),
+      ...(subCategories.value ? { category: info.category } : {}),
     })
     info.name = res.name || ''
     info.phone = res.phone || ''
     info.tagline = res.tagline || ''
+    info.category = res.category || ''
+    // Refresh the shell so the sidebar badge/terminology follow the new type.
+    await auth.fetchMe().catch(() => {})
     infoSaved.value = true
     setTimeout(() => (infoSaved.value = false), 2500)
   } catch (e) {
@@ -139,6 +152,7 @@ async function load() {
     info.name = res.name || ''
     info.phone = res.phone || ''
     info.tagline = res.tagline || ''
+    info.category = res.category || ''
     brand.logo = res.logo || ''
     brand.cover = res.cover || ''
     brand.brand_color = res.brand_color || ''
@@ -222,7 +236,7 @@ onMounted(load)
         <div class="field">
           <label>Sayt manzili (slug)</label>
           <div class="slug-row">
-            <input v-model="form.slug" placeholder="aziza-tortlari" />
+            <input v-model="form.slug" :placeholder="samples.slug" />
             <span class="slug-suffix">.tizbiz.uz</span>
           </div>
           <span class="muted" style="font-size: 12px">
@@ -285,7 +299,16 @@ onMounted(load)
 
         <div class="field">
           <label>Biznes nomi</label>
-          <input v-model="info.name" placeholder="Shirin Tort" />
+          <input v-model="info.name" :placeholder="samples.bizName" />
+        </div>
+        <div v-if="subCategories" class="field">
+          <label>Biznes turi</label>
+          <select v-model="info.category">
+            <option v-for="s in subCategories" :key="s.value" :value="s.value">{{ s.label }}</option>
+          </select>
+          <span class="muted" style="font-size: 12px">
+            Kabinetdagi nomlanishga ta'sir qiladi; navbat olish tartibi o‘zgarmaydi.
+          </span>
         </div>
         <div class="field">
           <label>Telefon</label>
@@ -294,8 +317,8 @@ onMounted(load)
         </div>
         <div class="field">
           <label>Sarlavha ostidagi matn</label>
-          <input v-model="info.tagline" placeholder="Onlayn buyurtma" maxlength="160" />
-          <span class="muted" style="font-size: 12px">Biznes nomi ostida ko‘rinadi (masalan: "Onlayn buyurtma").</span>
+          <input v-model="info.tagline" :placeholder="samples.tagline" maxlength="160" />
+          <span class="muted" style="font-size: 12px">Biznes nomi ostida ko‘rinadi (masalan: "{{ samples.tagline }}").</span>
         </div>
 
         <div class="row" style="gap: 12px; margin-top: 8px; align-items: center">
@@ -379,7 +402,7 @@ onMounted(load)
         </div>
         <div class="bp-txt">
           <strong>{{ info.name || 'Biznes nomi' }}</strong>
-          <span>{{ info.tagline || 'Onlayn buyurtma' }}</span>
+          <span>{{ info.tagline || samples.tagline }}</span>
         </div>
       </div>
 

@@ -6,6 +6,12 @@ import { confirm } from '../composables/useConfirm'
 import Modal from '../components/Modal.vue'
 import ImageUpload from '../components/ImageUpload.vue'
 import { Pencil, Trash2 } from 'lucide-vue-next'
+import { useAuthStore } from '../stores/auth'
+import { samplesFor } from '../lib/verticals'
+
+// Placeholder texts follow the business's vertical (barber/salon vs cafe…).
+const auth = useAuthStore()
+const samples = computed(() => samplesFor(auth.activeBusiness))
 
 const loading = ref(true)
 const error = ref('')
@@ -175,7 +181,7 @@ onMounted(load)
           <button class="btn btn-sm btn-primary" @click="openCatCreate">+ Kategoriya</button>
         </div>
         <p v-if="!categories.length" class="muted" style="margin: 0; font-size: 13px">
-          Kategoriya yo‘q. Menyu/xizmatlarni bo‘limlarga ajrating.
+          Kategoriya yo‘q. {{ samples.catalogWord }}ni bo‘limlarga ajrating.
         </p>
         <div v-else class="cat-list">
           <div v-for="c in categories" :key="c.id" class="cat-item">
@@ -261,11 +267,11 @@ onMounted(load)
         </div>
         <div class="field">
           <label>Nomi</label>
-          <input v-model="form.name" placeholder="Soch olish" required />
+          <input v-model="form.name" :placeholder="samples.serviceName" required />
         </div>
         <div class="field">
           <label>Tavsif</label>
-          <textarea v-model="form.description" rows="3" placeholder="Mahsulot haqida qisqacha ma'lumot"></textarea>
+          <textarea v-model="form.description" rows="3" :placeholder="samples.serviceDesc"></textarea>
         </div>
         <div class="field-row">
           <div class="field">
@@ -316,7 +322,7 @@ onMounted(load)
         </div>
         <div class="field">
           <label>Nomi</label>
-          <input v-model="catForm.name" placeholder="Tortlar" required />
+          <input v-model="catForm.name" :placeholder="samples.serviceCategory" required />
         </div>
       </form>
       <template #footer>

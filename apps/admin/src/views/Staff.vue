@@ -1,8 +1,17 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { api, ApiError } from '@tizbiz/api-client'
 import { confirm } from '../composables/useConfirm'
 import Modal from '../components/Modal.vue'
+import { useAuthStore } from '../stores/auth'
+import { samplesFor } from '../lib/verticals'
+
+// Placeholder texts follow the business's vertical (barber/salon vs cafe…).
+const auth = useAuthStore()
+const samples = computed(() => samplesFor(auth.activeBusiness))
+// Only owners/admins may change the team — hide the actions instead of letting
+// the API answer with 403 after the form is filled in.
+const canManage = computed(() => ['business_owner', 'business_admin'].includes(auth.role))
 
 const loading = ref(true)
 const error = ref('')
@@ -82,7 +91,7 @@ onMounted(load)
   <div>
     <div class="page-head">
       <h1>Xodimlar</h1>
-      <button class="btn btn-primary" @click="openCreate">+ Yangi xodim</button>
+      <button v-if="canManage" class="btn btn-primary" @click="openCreate">+ Yangi xodim</button>
     </div>
 
     <div v-if="error" class="alert alert-error">{{ error }}</div>
@@ -113,8 +122,11 @@ onMounted(load)
                 </span>
               </td>
               <td style="text-align: right">
-                <button class="btn btn-sm btn-ghost" @click="openEdit(s)">Tahrir</button>
-                <button class="btn btn-sm btn-danger" @click="remove(s)">O'chirish</button>
+                <template v-if="canManage">
+                  <button class="btn btn-sm btn-ghost" @click="openEdit(s)">Tahrir</button>
+                  <button class="btn btn-sm btn-danger" @click="remove(s)">O'chirish</button>
+                </template>
+                <span v-else class="muted">—</span>
               </td>
             </tr>
           </tbody>
@@ -131,7 +143,7 @@ onMounted(load)
         </div>
         <div class="field">
           <label>Mutaxassisligi</label>
-          <input v-model="form.specialization" placeholder="Usta / Shifokor / Registratura" />
+          <input v-model="form.specialization" :placeholder="samples.staffRole" />
         </div>
         <label class="row" style="gap: 8px; cursor: pointer">
           <input v-model="form.is_active" type="checkbox" style="width: auto" />

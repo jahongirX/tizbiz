@@ -1,6 +1,6 @@
 <script setup>
-import { ref, watch, onMounted } from 'vue'
-import { api, ApiError } from '@tizbiz/api-client'
+import { computed, ref, watch, onMounted } from 'vue'
+import { api, ApiError, booking } from '@tizbiz/api-client'
 import { confirm } from '../composables/useConfirm'
 
 const WEEKDAYS = [
@@ -10,7 +10,7 @@ const WEEKDAYS = [
   { n: 4, l: 'Payshanba' },
   { n: 5, l: 'Juma' },
   { n: 6, l: 'Shanba' },
-  { n: 0, l: 'Yakshanba' },
+  { n: 7, l: 'Yakshanba' }, // ISO-8601: 1 = Monday … 7 = Sunday (matches WorkingHours)
 ]
 
 const staff = ref([])
@@ -27,12 +27,13 @@ const timeOff = ref([])
 const toForm = ref({ starts_at: '', ends_at: '', reason: '' })
 const savingOff = ref(false)
 
+// A day holds one or more intervals, so a lunch break is just a gap between
+// two of them (09:00-13:00 + 14:00-20:00). The API stores one row per interval.
 function defaultHours() {
   return WEEKDAYS.map((d) => ({
     weekday: d.n,
     enabled: d.n >= 1 && d.n <= 6,
-    start: '09:00',
-    end: '18:00',
+    intervals: [{ start: '09:00', end: '18:00' }],
   }))
 }
 
@@ -67,17 +68,16 @@ async function loadSchedule() {
     ])
     const rows = Array.isArray(wh) ? wh : wh?.items || wh?.days || []
     hours.value = WEEKDAYS.map((d) => {
-      const found = rows.find((r) => Number(r.weekday ?? r.day) === d.n)
-      if (found) {
-        const enabled = found.enabled ?? found.is_working ?? !(found.is_off ?? false)
-        return {
-          weekday: d.n,
-          enabled: !!enabled && !!(found.start || found.start_time),
-          start: hhmm(found.start || found.start_time || '09:00'),
-          end: hhmm(found.end || found.end_time || '18:00'),
-        }
-      }
-      return { weekday: d.n, enabled: false, start: '09:00', end: '18:00' }
+      const dayRows = rows
+        .filter((r) => Number(r.weekday ?? r.day) === d.n)
+        .map((r) => ({
+          start: hhmm(r.start || r.start_time || '09:00'),
+          end: hhmm(r.end || r.end_time || '18:00'),
+        }))
+        .sort((a, b) => a.start.localeCompare(b.start))
+      return dayRows.length
+        ? { weekday: d.n, enabled: true, intervals: dayRows }
+        : { weekday: d.n, enabled: false, intervals: [{ start: '09:00', end: '18:00' }] }
     })
     timeOff.value = Array.isArray(off) ? off : off?.items || []
   } catch (e) {
@@ -87,20 +87,52 @@ async function loadSchedule() {
   }
 }
 
+/** Header checkbox: on = every weekday enabled, off = none. */
+const allEnabled = computed({
+  get: () => hours.value.length > 0 && hours.value.every((h) => h.enabled),
+  set: (on) => hours.value.forEach((h) => (h.enabled = on)),
+})
+const someEnabled = computed(() => hours.value.some((h) => h.enabled) && !allEnabled.value)
+
+/** Copy the first enabled day's intervals onto every enabled day. */
+function applyTimesToAll() {
+  const src = hours.value.find((h) => h.enabled) || hours.value[0]
+  if (!src) return
+  hours.value.forEach((h) => {
+    if (h.enabled && h !== src) {
+      h.intervals = src.intervals.map((iv) => ({ ...iv }))
+    }
+  })
+}
+
+function addInterval(h) {
+  const last = h.intervals[h.intervals.length - 1]
+  h.intervals.push({ start: last?.end || '14:00', end: '20:00' })
+}
+
+function removeInterval(h, i) {
+  h.intervals.splice(i, 1)
+  if (!h.intervals.length) h.intervals.push({ start: '09:00', end: '18:00' })
+}
+
+/** Split a single working block into morning + afternoon around a lunch hour. */
+function addBreak(h) {
+  if (h.intervals.length !== 1) return
+  const [iv] = h.intervals
+  h.intervals = [
+    { start: iv.start, end: '13:00' },
+    { start: '14:00', end: iv.end },
+  ]
+}
+
+const hasBreak = (h) => h.intervals.length > 1
+
 async function saveHours() {
   savingHours.value = true
   error.value = ''
   hoursSaved.value = false
   try {
-    const payload = {
-      days: hours.value.map((h) => ({
-        weekday: h.weekday,
-        enabled: h.enabled,
-        start: h.enabled ? h.start : null,
-        end: h.enabled ? h.end : null,
-      })),
-    }
-    await api.put(`/v1/staff/${staffId.value}/working-hours`, payload)
+    await booking.saveWorkingHours(staffId.value, hours.value)
     hoursSaved.value = true
     setTimeout(() => (hoursSaved.value = false), 2500)
   } catch (e) {
@@ -171,26 +203,69 @@ onMounted(async () => {
 
       <div v-else class="grid">
         <section class="card">
-          <h2 style="font-size: 16px">Haftalik ish vaqti</h2>
-          <table class="hours">
-            <tbody>
-              <tr v-for="(h, i) in hours" :key="h.weekday">
-                <td class="day">
-                  <label class="row" style="gap: 8px; margin: 0; cursor: pointer">
-                    <input v-model="h.enabled" type="checkbox" style="width: auto" />
-                    <span>{{ WEEKDAYS[i].l }}</span>
-                  </label>
-                </td>
-                <td>
-                  <input v-model="h.start" type="time" :disabled="!h.enabled" />
-                </td>
-                <td class="dash">–</td>
-                <td>
-                  <input v-model="h.end" type="time" :disabled="!h.enabled" />
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="hours-head">
+            <h2 style="font-size: 16px; margin: 0">Haftalik ish vaqti</h2>
+            <div class="row" style="gap: 12px">
+              <label class="row check-all" style="gap: 8px; margin: 0; cursor: pointer">
+                <input
+                  v-model="allEnabled"
+                  type="checkbox"
+                  style="width: auto"
+                  :indeterminate="someEnabled"
+                />
+                <span>Barcha kunlar</span>
+              </label>
+              <button type="button" class="btn btn-sm" @click="applyTimesToAll">
+                Vaqtni hammasiga qo'llash
+              </button>
+            </div>
+          </div>
+          <div class="hours">
+            <div v-for="(h, i) in hours" :key="h.weekday" class="day-row" :class="{ off: !h.enabled }">
+              <label class="day" style="cursor: pointer">
+                <input v-model="h.enabled" type="checkbox" style="width: auto" />
+                <span>{{ WEEKDAYS[i].l }}</span>
+              </label>
+
+              <div class="ivs">
+                <div v-for="(iv, k) in h.intervals" :key="k" class="iv">
+                  <input v-model="iv.start" type="time" :disabled="!h.enabled" />
+                  <span class="dash">–</span>
+                  <input v-model="iv.end" type="time" :disabled="!h.enabled" />
+                  <button
+                    v-if="h.intervals.length > 1"
+                    type="button"
+                    class="iv-x"
+                    :disabled="!h.enabled"
+                    title="Oraliqni o'chirish"
+                    @click="removeInterval(h, k)"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div class="iv-actions">
+                  <button
+                    v-if="!hasBreak(h)"
+                    type="button"
+                    class="link-btn"
+                    :disabled="!h.enabled"
+                    @click="addBreak(h)"
+                  >
+                    + Tanaffus
+                  </button>
+                  <button
+                    type="button"
+                    class="link-btn"
+                    :disabled="!h.enabled"
+                    @click="addInterval(h)"
+                  >
+                    + Oraliq
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="row" style="margin-top: 16px; gap: 12px">
             <button class="btn btn-primary" :disabled="savingHours" @click="saveHours">
               {{ savingHours ? 'Saqlanmoqda…' : 'Saqlash' }}
@@ -249,24 +324,93 @@ onMounted(async () => {
 @media (max-width: 820px) {
   .grid { grid-template-columns: 1fr; }
 }
-.hours {
-  width: 100%;
-  border-collapse: collapse;
+.hours-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
 }
-.hours td {
-  padding: 6px 4px;
+.check-all {
+  font-weight: 550;
+  white-space: nowrap;
+}
+.hours {
+  display: flex;
+  flex-direction: column;
+}
+.day-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}
+.day-row:first-child {
+  border-top: 0;
+}
+.day-row.off {
+  opacity: 0.55;
 }
 .hours .day {
-  width: 46%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 118px;
+  padding-top: 7px;
   font-weight: 550;
 }
+.ivs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+.iv {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .hours .dash {
-  width: 18px;
-  text-align: center;
   color: var(--text-muted);
 }
 .hours input[type='time'] {
   padding: 6px 8px;
+  width: auto;
+}
+.iv-x {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+.iv-x:hover {
+  color: var(--danger, #ef4444);
+  border-color: currentColor;
+}
+.iv-actions {
+  display: flex;
+  gap: 12px;
+}
+.link-btn {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.link-btn:disabled {
+  color: var(--text-muted);
+  cursor: default;
 }
 .off-list {
   list-style: none;

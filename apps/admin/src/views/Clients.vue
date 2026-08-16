@@ -387,6 +387,14 @@ onMounted(() => {
                     <span v-if="c.tags && c.tags.length" class="tags-inline">
                       <span v-for="t in c.tags" :key="t" class="tag-chip sm">{{ t }}</span>
                     </span>
+                    <!-- Repeat no-shows: the master should see this before giving a slot. -->
+                    <span
+                      v-if="(c.no_shows || 0) >= 2"
+                      class="noshow-chip"
+                      :title="c.no_shows + ' marta kelmagan'"
+                    >
+                      {{ c.no_shows }}× kelmagan
+                    </span>
                   </td>
                   <td>{{ c.phone || '—' }}</td>
                   <td>{{ c.email || '—' }}</td>
@@ -781,5 +789,16 @@ table.data tbody tr.active {
   height: 9px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+.noshow-chip {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 650;
+  background: color-mix(in srgb, var(--danger, #ef4444) 18%, transparent);
+  color: var(--danger, #ef4444);
+  white-space: nowrap;
 }
 </style>

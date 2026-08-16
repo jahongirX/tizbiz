@@ -17,6 +17,8 @@ import {
 } from '../lib/datetime'
 import Modal from '../components/Modal.vue'
 import AppointmentForm from '../components/AppointmentForm.vue'
+import WalkInForm from '../components/WalkInForm.vue'
+import { confirm } from '../composables/useConfirm'
 import { selectedDate, setSelectedDate } from '../composables/useCalendar'
 
 const HOUR_PX = 56
@@ -299,10 +301,22 @@ async function setStatus(status) {
   if (!detail.value) return
   savingStatus.value = true
   detailError.value = ''
+  const finished = status === 'completed' ? detail.value : null
   try {
     await api.patch('/v1/appointments/' + detail.value.id, { status })
     closeDetail()
     await load()
+    // A barbershop client comes back every few weeks — the cheapest moment to
+    // book that visit is right after this one is finished.
+    if (finished?.client_id) {
+      const again = await confirm({
+        title: 'Keyingi safarga yozamizmi?',
+        message: `${finished.client_name || 'Mijoz'} — ${REBOOK_WEEKS} haftadan keyin, o'sha usta va xizmat bilan.`,
+        confirmText: 'Ha, yozamiz',
+        cancelText: 'Keyinroq',
+      })
+      if (again) rebook(finished)
+    }
   } catch (e) {
     detailError.value = e instanceof ApiError ? e.message : 'Holatni o\'zgartirib bo\'lmadi'
   } finally {
@@ -317,6 +331,30 @@ const createInitial = ref({})
 function openCreate(dateStr, hhmm) {
   createInitial.value = { staffId: staffId.value, date: dateStr, time: hhmm }
   showCreate.value = true
+}
+
+// Rebooking: prefill the same master/service/client a few weeks out.
+const REBOOK_WEEKS = 3
+function rebook(appt) {
+  createInitial.value = {
+    staffId: appt.staff_id ?? staffId.value,
+    serviceId: appt.service_id ?? '',
+    clientId: appt.client_id ?? '',
+    client: appt.client_id
+      ? { id: appt.client_id, name: appt.client_name, phone: appt.client_phone }
+      : null,
+    date: addDays(localDateInput(appt.starts_at), REBOOK_WEEKS * 7),
+    time: minutesToHhmm(localMinutes(appt.starts_at)),
+  }
+  showCreate.value = true
+}
+
+// Walk-in: most barbershop clients arrive without booking.
+const showWalkIn = ref(false)
+function onWalkInCreated() {
+  showWalkIn.value = false
+  goToday()
+  load()
 }
 
 function onColClick(e, dayStr) {
@@ -351,9 +389,12 @@ onBeforeUnmount(() => {
   <div class="tt">
     <div class="page-head">
       <h1>Jadval</h1>
-      <button class="btn btn-primary" :disabled="!staffId" @click="openCreate(today, '09:00')">
-        + Yangi yozuv
-      </button>
+      <div class="row" style="gap: 10px">
+        <button class="btn" @click="showWalkIn = true">Hozir keldi</button>
+        <button class="btn btn-primary" :disabled="!staffId" @click="openCreate(today, '09:00')">
+          + Yangi yozuv
+        </button>
+      </div>
     </div>
 
     <div v-if="error" class="alert alert-error">{{ error }}</div>
@@ -502,6 +543,9 @@ onBeforeUnmount(() => {
 
       <template #footer>
         <button class="btn" @click="closeDetail">Yopish</button>
+        <button v-if="detail.client_id" class="btn" @click="rebook(detail); closeDetail()">
+          Takror yozish
+        </button>
         <button
           v-for="s in detailTransitions"
           :key="s"
@@ -513,6 +557,15 @@ onBeforeUnmount(() => {
           {{ statusLabel[s] }}
         </button>
       </template>
+    </Modal>
+
+    <!-- Walk-in: client is already here, starts now -->
+    <Modal v-if="showWalkIn" title="Hozir keldi" @close="showWalkIn = false">
+      <WalkInForm
+        :staff-id="staffId || ''"
+        @created="onWalkInCreated"
+        @cancel="showWalkIn = false"
+      />
     </Modal>
 
     <!-- Create appointment (rich 3-column form) -->

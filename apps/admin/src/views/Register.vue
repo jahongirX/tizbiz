@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { api, ApiError } from '@tizbiz/api-client'
 import { UserPlus, ArrowLeft, ArrowRight, Check, X } from 'lucide-vue-next'
 import { useAuthStore } from '../stores/auth'
-import { VERTICALS } from '../lib/verticals'
+import { VERTICALS, samplesFor } from '../lib/verticals'
 import PhoneInput from '../components/PhoneInput.vue'
 import logoUrl from '../assets/logo.png'
 
@@ -14,6 +14,11 @@ const router = useRouter()
 const STEPS = ['Yo‘nalish', 'Biznes', 'Manzil', 'Egasi']
 const step = ref(1)
 const vertical = ref(null)
+const subCategory = ref(null)
+// Placeholders follow the vertical (and sub-category) chosen in step 1/2.
+const samples = computed(() =>
+  samplesFor(vertical.value ? { category: subCategory.value, engine: vertical.value.engine } : null),
+)
 const form = ref({
   bizName: '',
   staffCount: '',
@@ -72,6 +77,9 @@ const accent = computed(() => vertical.value?.accent || 'var(--primary)')
 
 function pickVertical(v) {
   vertical.value = v
+  // Verticals that cover more than one business type (barber vs beauty salon)
+  // start on their first sub-category; step 2 lets the owner change it.
+  subCategory.value = v?.subCategories?.[0]?.value || v?.category || null
   error.value = ''
 }
 
@@ -127,7 +135,7 @@ async function submit() {
       business: {
         name: form.value.bizName.trim(),
         slug: form.value.slug.trim(),
-        category: vertical.value?.category,
+        category: subCategory.value || vertical.value?.category,
         engine: vertical.value?.engine,
         phone: form.value.phone.trim() || undefined,
         staff_count: form.value.staffCount !== '' ? Number(form.value.staffCount) : undefined,
@@ -203,7 +211,15 @@ async function submit() {
       <div v-else-if="step === 2" class="step">
         <div class="field">
           <label for="bn">Biznes nomi</label>
-          <input id="bn" v-model="form.bizName" placeholder="Aziza Beauty" autofocus />
+          <input id="bn" v-model="form.bizName" :placeholder="samples.bizName" autofocus />
+        </div>
+        <div v-if="vertical?.subCategories" class="field">
+          <label for="sub">Biznes turi</label>
+          <select id="sub" v-model="subCategory">
+            <option v-for="s in vertical.subCategories" :key="s.value" :value="s.value">
+              {{ s.label }}
+            </option>
+          </select>
         </div>
         <div class="field-row">
           <div class="field">
@@ -226,7 +242,7 @@ async function submit() {
             <input
               id="slug"
               v-model="form.slug"
-              placeholder="aziza-tortlari"
+              :placeholder="samples.slug"
               @input="slugEdited = true; checkSlug()"
             />
             <span class="slug-suffix">.tizbiz.uz</span>

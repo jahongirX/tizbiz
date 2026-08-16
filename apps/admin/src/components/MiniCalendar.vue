@@ -97,9 +97,7 @@ function pick(d) {
         :aria-current="d.isToday ? 'date' : undefined"
         :aria-pressed="d.isSelected"
         @click="pick(d)"
-      >
-        {{ d.day }}
-      </button>
+      >{{ d.day }}</button>
     </div>
   </div>
 </template>
@@ -159,8 +157,12 @@ function pick(d) {
 }
 .mc-day {
   aspect-ratio: 1 / 1;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  text-align: center;
   border: 1px solid transparent;
   background: transparent;
   color: var(--text);

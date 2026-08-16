@@ -19,7 +19,8 @@ import {
 } from 'lucide-vue-next'
 
 const props = defineProps({
-  // { staffId, date, time } — prefill from the clicked empty slot.
+  // { staffId, serviceId, clientId, date, time } — prefill from the clicked
+  // empty slot, or from a finished appointment when rebooking the same client.
   initial: { type: Object, default: () => ({}) },
 })
 const emit = defineEmits(['created', 'cancel'])
@@ -44,7 +45,7 @@ const tab = ref('services') // 'services' | 'products'
 
 const services = ref([])
 const serviceSearch = ref('')
-const serviceId = ref('')
+const serviceId = ref(props.initial.serviceId ?? '')
 
 const products = ref([])
 const productSearch = ref('')
@@ -54,8 +55,8 @@ const clientMode = ref('existing') // 'existing' | 'new'
 const clientSearch = ref('')
 const clientResults = ref([])
 const clientSearching = ref(false)
-const clientId = ref('')
-const selectedClient = ref(null)
+const clientId = ref(props.initial.clientId ?? '')
+const selectedClient = ref(props.initial.client || null)
 const recentClients = ref([])
 const newClient = ref({ name: '', phone: '', email: '' })
 

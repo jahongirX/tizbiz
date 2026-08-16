@@ -15,7 +15,7 @@ import {
   Gift,
 } from 'lucide-vue-next'
 import { useAuthStore } from '../stores/auth'
-import { verticalFor } from '../lib/verticals'
+import { categoryLabel, verticalFor } from '../lib/verticals'
 import MiniCalendar from './MiniCalendar.vue'
 import logoUrl from '../assets/logo.png'
 
@@ -25,6 +25,7 @@ const route = useRoute()
 // The active business's vertical drives the accent colour and the terminology
 // (services -> "Menyu"/"Buyumlar", staff -> "Shifokorlar", etc.).
 const vertical = computed(() => verticalFor(auth.activeBusiness))
+const bizType = computed(() => categoryLabel(auth.activeBusiness))
 const accentSoft = computed(() => `color-mix(in srgb, ${vertical.value.accent} 14%, transparent)`)
 const switching = ref(false)
 const menuOpen = ref(false)
@@ -60,7 +61,10 @@ const nav = computed(() => {
       icon: Gift,
       children: [
         { to: '/loyalty/cards', label: 'Loyallik kartalari' },
-        { to: '/loyalty/certificates', label: 'Sertifikatlar' },
+        // Gift certificates are a salon thing; a barbershop never sells them.
+        ...(auth.activeBusiness?.category === 'barber'
+          ? []
+          : [{ to: '/loyalty/certificates', label: 'Sertifikatlar' }]),
         { to: '/loyalty/subscriptions', label: 'Abonementlar' },
         { to: '/loyalty/deposits', label: 'Depozitlar' },
       ],
@@ -84,7 +88,9 @@ const nav = computed(() => {
         { to: '/services', label: t.services },
         { to: '/staff', label: t.staff },
         { to: '/schedule', label: 'Ish jadvali' },
-        { to: '/ombor', label: 'Ombor' },
+        // Barbershops don't track stock; salons do, but that will be a
+        // per-business toggle. The /ombor route itself stays reachable.
+        ...(vertical.value.engine === 'slot' ? [] : [{ to: '/ombor', label: 'Ombor' }]),
       ],
     },
     {
@@ -162,7 +168,7 @@ async function onSwitch(e) {
         <img v-else :src="logoUrl" alt="TizBiz" class="brand-logo" />
         <span class="vbadge">
           <component :is="vertical.icon" :size="12" />
-          {{ vertical.short }}
+          {{ bizType }}
         </span>
       </div>
 
