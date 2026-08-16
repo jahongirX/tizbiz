@@ -8,7 +8,6 @@ import { api, ApiError } from '@tizbiz/api-client'
 import ServiceStep from '../../components/ServiceStep.vue'
 import StaffStep from '../../components/StaffStep.vue'
 import DateTimeStep from '../../components/DateTimeStep.vue'
-import InfoStep from '../../components/InfoStep.vue'
 import ConfirmStep from '../../components/ConfirmStep.vue'
 import DoneStep from '../../components/DoneStep.vue'
 
@@ -25,10 +24,23 @@ const staff = computed(() => (props.staff || []).filter((s) => s.is_active !== f
 const business = computed(() => props.business)
 
 // ---- Wizard state ----
-// steps: 'service' | 'staff' | 'datetime' | 'info' | 'confirm' | 'done'
+// steps: 'service' | 'staff' | 'datetime' | 'confirm' | 'done'
+// The staff step only exists when there is a choice to make, and the client's
+// details live on the confirm screen — a returning client books in two taps.
 const step = ref('service')
 const sel = reactive({ service: null, staff: null, slot: null })
-const client = reactive({ name: '', phone: '' })
+
+const CLIENT_KEY = 'tizbiz_client'
+function rememberedClient() {
+  try {
+    const raw = localStorage.getItem(CLIENT_KEY)
+    const v = raw ? JSON.parse(raw) : null
+    return v && v.phone ? { name: String(v.name || ''), phone: String(v.phone) } : null
+  } catch {
+    return null
+  }
+}
+const client = reactive(rememberedClient() || { name: '', phone: '' })
 
 const submitting = ref(false)
 const submitError = ref('')
@@ -37,18 +49,30 @@ const appointment = ref(null)
 const payLoading = ref(false)
 const payError = ref('')
 
-const STEP_ORDER = ['service', 'staff', 'datetime', 'info', 'confirm']
+// One master -> no reason to ask which one.
+const needsStaffStep = computed(() => staff.value.length > 1)
+const STEP_ORDER = computed(() =>
+  needsStaffStep.value
+    ? ['service', 'staff', 'datetime', 'confirm']
+    : ['service', 'datetime', 'confirm'],
+)
 const STEP_TITLES = {
   service: 'Xizmat',
   staff: 'Mutaxassis',
   datetime: 'Vaqt',
-  info: 'Ma’lumot',
   confirm: 'Tasdiqlash',
 }
 const progress = computed(() => {
-  if (step.value === 'done') return STEP_ORDER.length
-  return STEP_ORDER.indexOf(step.value) + 1
+  if (step.value === 'done') return STEP_ORDER.value.length
+  return STEP_ORDER.value.indexOf(step.value) + 1
 })
+
+// 'any' -> availability is merged across every master; the picked slot decides.
+const ANY_STAFF = 'any'
+const anyStaff = ref(false)
+const availabilityStaffIds = computed(() =>
+  anyStaff.value || !sel.staff ? staff.value.map((m) => m.id) : [sel.staff.id],
+)
 
 const brandInitials = computed(() => {
   return String(business.value?.name || '?')
@@ -79,22 +103,40 @@ const coverStyle = computed(() =>
 function pickService(s) {
   sel.service = s
   sel.slot = null // duration/availability depends on service
-  step.value = 'staff'
+  if (needsStaffStep.value) {
+    step.value = 'staff'
+  } else {
+    sel.staff = staff.value[0] || null
+    anyStaff.value = false
+    step.value = 'datetime'
+  }
 }
 function pickStaff(m) {
-  sel.staff = m
+  if (m === ANY_STAFF) {
+    anyStaff.value = true
+    sel.staff = null
+  } else {
+    anyStaff.value = false
+    sel.staff = m
+  }
   sel.slot = null
   step.value = 'datetime'
 }
 function pickSlot(slot) {
   sel.slot = slot
-  step.value = 'info'
-}
-function submitInfo(info) {
-  client.name = info.name
-  client.phone = info.phone
+  // With "farqi yo'q" the chosen time also chooses the master.
+  if (anyStaff.value && slot.staff_id) {
+    sel.staff = staff.value.find((m) => m.id === slot.staff_id) || null
+  }
   submitError.value = ''
   step.value = 'confirm'
+}
+function backFromDatetime() {
+  step.value = needsStaffStep.value ? 'staff' : 'service'
+}
+function updateClient(info) {
+  client.name = info.name
+  client.phone = info.phone
 }
 
 async function confirm() {
@@ -108,6 +150,12 @@ async function confirm() {
       client: { name: client.name, phone: client.phone },
     })
     appointment.value = appt
+    // Next time this device books, the details are already filled in.
+    try {
+      localStorage.setItem(CLIENT_KEY, JSON.stringify({ name: client.name, phone: client.phone }))
+    } catch {
+      /* private mode — booking still works, we just won't remember */
+    }
     step.value = 'done'
   } catch (e) {
     if (e instanceof ApiError && e.status === 409) {
@@ -151,8 +199,7 @@ function restart() {
   sel.service = null
   sel.staff = null
   sel.slot = null
-  client.name = ''
-  client.phone = ''
+  anyStaff.value = false
   appointment.value = null
   submitError.value = ''
   payError.value = ''
@@ -218,26 +265,18 @@ function restart() {
         <StaffStep
           v-else-if="step === 'staff'"
           :staff="staff"
-          :selected-id="sel.staff?.id ?? null"
+          :selected-id="anyStaff ? 'any' : (sel.staff?.id ?? null)"
           @select="pickStaff"
           @back="step = 'service'"
         />
 
         <DateTimeStep
           v-else-if="step === 'datetime'"
-          :staff-id="sel.staff.id"
+          :staff-ids="availabilityStaffIds"
           :service-id="sel.service.id"
           :selected-start="sel.slot?.start_utc ?? null"
           @select="pickSlot"
-          @back="step = 'staff'"
-        />
-
-        <InfoStep
-          v-else-if="step === 'info'"
-          :name="client.name"
-          :phone="client.phone"
-          @submit="submitInfo"
-          @back="step = 'datetime'"
+          @back="backFromDatetime"
         />
 
         <ConfirmStep
@@ -249,8 +288,9 @@ function restart() {
           :client="client"
           :submitting="submitting"
           :error="submitError"
+          @update:client="updateClient"
           @confirm="confirm"
-          @back="step = 'info'"
+          @back="step = 'datetime'"
         />
 
         <DoneStep

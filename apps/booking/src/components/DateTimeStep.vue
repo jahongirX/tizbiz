@@ -4,7 +4,9 @@ import { api, ApiError } from '@tizbiz/api-client'
 import { isoDate, slotTime, dayStrip, slotBucket } from '../format.js'
 
 const props = defineProps({
-  staffId: { type: [Number, String], required: true },
+  // One or more masters: with "farqi yo'q" every master's availability is
+  // merged, and each slot remembers which master can actually take it.
+  staffIds: { type: Array, required: true },
   serviceId: { type: [Number, String], required: true },
   selectedStart: { type: [String, null], default: null },
 })
@@ -35,8 +37,20 @@ async function load() {
   slots.value = []
   try {
     const q = new URLSearchParams({ date: date.value, service_id: String(props.serviceId) })
-    const res = await api.get(`/v1/staff/${props.staffId}/availability?${q}`)
-    slots.value = Array.isArray(res?.slots) ? res.slots : []
+    const lists = await Promise.all(
+      props.staffIds.map((id) =>
+        api
+          .get(`/v1/staff/${id}/availability?${q}`)
+          .then((res) => (Array.isArray(res?.slots) ? res.slots : []).map((s) => ({ ...s, staff_id: id })))
+          .catch(() => []),
+      ),
+    )
+    // Same clock time offered by two masters shows once; the first one takes it.
+    const byStart = new Map()
+    for (const slot of lists.flat()) {
+      if (!byStart.has(slot.start_utc)) byStart.set(slot.start_utc, slot)
+    }
+    slots.value = [...byStart.values()].sort((a, b) => a.start_utc.localeCompare(b.start_utc))
   } catch (e) {
     error.value = e instanceof ApiError ? e.message : 'Bo‘sh vaqtlarni yuklab bo‘lmadi.'
   } finally {
@@ -46,6 +60,7 @@ async function load() {
 
 onMounted(load)
 watch(date, load)
+watch(() => props.staffIds, load)
 </script>
 
 <template>
