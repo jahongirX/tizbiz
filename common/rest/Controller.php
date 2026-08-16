@@ -71,7 +71,7 @@ class Controller extends WebController
     {
         $user = $this->currentUser();
         if ($user === null || !in_array($user->activeRole, $roles, true)) {
-            throw new ForbiddenHttpException('Insufficient role for this action.');
+            throw new ForbiddenHttpException('Bu amal uchun ruxsatingiz yetarli emas.');
         }
     }
 

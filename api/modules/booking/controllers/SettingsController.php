@@ -36,6 +36,13 @@ class SettingsController extends Controller
             $v = $this->body('tagline');
             $model->tagline = ($v === null || trim((string) $v) === '') ? null : trim((string) $v);
         }
+        // Business type within the same vertical (e.g. barber <-> salon). Only the
+        // label/terminology follows it; `engine` is not touched, so the booking
+        // flow of an existing business never changes.
+        if (array_key_exists('category', $this->body())) {
+            $v = $this->body('category');
+            $model->category = ($v === null || trim((string) $v) === '') ? null : trim((string) $v);
+        }
 
         // Slug (public subdomain). The Business `unique` rule excludes self, so
         // saving the same slug is a no-op; a taken one returns 422.
@@ -83,6 +90,7 @@ class SettingsController extends Controller
             'name' => $b->name,
             'phone' => $b->phone,
             'tagline' => $b->tagline,
+            'category' => $b->category,
             'slug' => $b->slug,
             'online_booking_enabled' => (bool) $b->online_booking_enabled,
             'booking_lead_min' => (int) $b->booking_lead_min,

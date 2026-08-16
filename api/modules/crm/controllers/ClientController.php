@@ -48,7 +48,11 @@ class ClientController extends Controller
         $done = Yii::$app->db->quoteValue(Appointment::STATUS_COMPLETED);
         $lostCutoff = gmdate('Y-m-d H:i:s', time() - 60 * 86400);
 
+        $noShow = Yii::$app->db->quoteValue(Appointment::STATUS_NO_SHOW);
+
         $visitsExpr = "COUNT(DISTINCT CASE WHEN a.status = $done THEN a.id END)";
+        // Repeat no-shows are what a master wants to see before giving a slot away.
+        $noShowExpr = "COUNT(DISTINCT CASE WHEN a.status = $noShow THEN a.id END)";
         $spentExpr = "COALESCE(SUM(CASE WHEN a.status = $done THEN s.price_tiyin ELSE 0 END), 0)";
         $lastExpr = "MAX(CASE WHEN a.status = $done THEN a.starts_at END)";
 
@@ -88,6 +92,7 @@ class ClientController extends Controller
                 'tags' => 'c.tags',
                 'created_at' => 'c.created_at',
                 'visits' => new Expression($visitsExpr),
+                'no_shows' => new Expression($noShowExpr),
                 'spent_tiyin' => new Expression($spentExpr),
                 'last_visit' => new Expression($lastExpr),
             ])
@@ -103,6 +108,7 @@ class ClientController extends Controller
 
         foreach ($rows as &$r) {
             $r['visits'] = (int) $r['visits'];
+            $r['no_shows'] = (int) $r['no_shows'];
             $r['spent_tiyin'] = (int) $r['spent_tiyin'];
             $r['tags'] = is_string($r['tags']) ? (json_decode($r['tags'], true) ?: []) : ($r['tags'] ?? []);
             $r['categories'] = $categoriesByClient[(int) $r['id']] ?? [];

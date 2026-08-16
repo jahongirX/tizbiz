@@ -7,6 +7,7 @@ use common\models\TimeOff;
 use common\models\WorkingHours;
 use common\rest\Controller;
 use Yii;
+use yii\web\BadRequestHttpException;
 use yii\web\NotFoundHttpException;
 
 /**
@@ -37,6 +38,17 @@ class ScheduleController extends Controller
         $staff = $this->findStaff($id);
 
         $items = $this->extractItems();
+
+        // An empty set wipes the master's whole week. That is a legitimate
+        // request ("this master no longer works"), but it is also exactly what a
+        // client sending the wrong payload shape produces — and the old code
+        // answered 200, so the mistake looked like a successful save. Require it
+        // to be explicit: ?clear=1.
+        if ($items === [] && !Yii::$app->request->get('clear')) {
+            throw new BadRequestHttpException(
+                'Ish vaqti ro\'yxati bo\'sh. Butun haftani tozalash uchun ?clear=1 qo\'shing.'
+            );
+        }
 
         // Validate all rows first (fail before deleting anything).
         $models = [];

@@ -117,4 +117,41 @@ export const api = {
   upload,
 }
 
+/**
+ * Named endpoint wrappers. A raw `api.put(path, payload)` lets the caller invent
+ * a payload shape the server silently ignores — that is how the working-hours
+ * "saved but empty" bug happened. Anything with a non-obvious contract gets a
+ * function here so the shape is built in exactly one place.
+ */
+export const booking = {
+  /**
+   * Replace a master's whole week. `days` is the UI shape
+   * ([{weekday, enabled, intervals:[{start,end}]}]); it is flattened into the
+   * one-row-per-interval contract the API expects.
+   */
+  async saveWorkingHours(staffId, days) {
+    const items = (days || [])
+      .filter((d) => d.enabled)
+      .flatMap((d) =>
+        (d.intervals || [])
+          .filter((iv) => iv.start && iv.end && iv.start < iv.end)
+          .map((iv) => ({
+            weekday: Number(d.weekday),
+            start_time: withSeconds(iv.start),
+            end_time: withSeconds(iv.end),
+          })),
+      )
+    return api.put(`/v1/staff/${staffId}/working-hours`, { items })
+  },
+
+  /** Weekly set as stored, one row per interval. */
+  workingHours(staffId) {
+    return api.get(`/v1/staff/${staffId}/working-hours`)
+  },
+}
+
+function withSeconds(hhmm) {
+  return /^\d{2}:\d{2}$/.test(hhmm) ? `${hhmm}:00` : hhmm
+}
+
 export default api

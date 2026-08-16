@@ -854,6 +854,191 @@ class SeedController extends Controller
         return $p;
     }
 
+    /**
+     * Fill a barbershop/salon business with realistic working data: masters with
+     * their commission, service categories + services, a week of working hours
+     * WITH a lunch break, clients (incl. a repeat no-show) and appointments
+     * around today. Safe to re-run: existing rows of a kind are left alone.
+     * Usage: php yii seed/barber [slug]   (default slug: jalolbek)
+     */
+    public function actionBarber(string $slug = 'jalolbek'): int
+    {
+        $business = Business::findOne(['slug' => $slug]);
+        if ($business === null) {
+            $this->stderr("Business '{$slug}' not found.\n");
+            return ExitCode::UNSPECIFIED_ERROR;
+        }
+        $bid = (int) $business->id;
+
+        // --- Masters (commission is how a barbershop actually pays) ---
+        $masterDefs = [
+            ['Jahongir Nazarov', 'Usta / Sartarosh', 50],
+            ['Sanjar Qodirov', 'Usta / Fade mutaxassisi', 45],
+            ['Aziz Tursunov', 'Yosh usta', 35],
+        ];
+        $masters = [];
+        foreach ($masterDefs as [$name, $spec, $percent]) {
+            $m = Staff::findOne(['business_id' => $bid, 'name' => $name]);
+            if ($m === null) {
+                $m = $this->save(new Staff([
+                    'business_id' => $bid, 'name' => $name, 'specialization' => $spec,
+                    'is_active' => 1, 'commission_percent' => $percent,
+                ]));
+            }
+            $masters[] = $m;
+        }
+        // Masters that already existed (e.g. the owner) also get a schedule.
+        foreach (Staff::find()->where(['business_id' => $bid, 'is_active' => 1])->all() as $m) {
+            if (!in_array($m->id, array_map(fn ($x) => $x->id, $masters), true)) {
+                $masters[] = $m;
+            }
+        }
+
+        // --- Working hours: Mon..Sat 09:00-13:00 and 14:00-20:00 (lunch break) ---
+        foreach ($masters as $m) {
+            if (WorkingHours::find()->where(['staff_id' => $m->id])->exists()) {
+                continue;
+            }
+            for ($weekday = 1; $weekday <= 6; $weekday++) {
+                $this->save(new WorkingHours([
+                    'staff_id' => $m->id, 'weekday' => $weekday,
+                    'start_time' => '09:00:00', 'end_time' => '13:00:00',
+                ]));
+                $this->save(new WorkingHours([
+                    'staff_id' => $m->id, 'weekday' => $weekday,
+                    'start_time' => '14:00:00', 'end_time' => '20:00:00',
+                ]));
+            }
+        }
+
+        // --- Categories + services (prices in tiyin: 1 so'm = 100 tiyin) ---
+        $catalog = [
+            'Soch olish' => [
+                ['Klassik soch olish', 30, 5000000, 'Mashinka + qaychi, yuvish bilan'],
+                ['Fade / mashinka bilan', 40, 7000000, 'Tekis o‘tish, #0-#4'],
+                ['Bolalar sochi', 25, 4000000, '12 yoshgacha'],
+                ['Soch olish + yuvish + styling', 50, 9000000, 'To‘liq xizmat'],
+            ],
+            'Soqol va yuz' => [
+                ['Soqol olish (ustara)', 20, 3000000, 'Issiq sochiq bilan'],
+                ['Soqol shakllantirish', 25, 4000000, null],
+                ['Soch + soqol', 50, 7500000, 'Eng ko‘p buyurtma qilinadigan to‘plam'],
+            ],
+            'Qo‘shimcha' => [
+                ['Qosh olish', 10, 1500000, null],
+                ['Yuz parvarishi (maska)', 30, 6000000, null],
+                ['Soch bo‘yash', 60, 12000000, 'Formula mijoz kartasida saqlanadi'],
+            ],
+        ];
+        $services = [];
+        $sort = 0;
+        foreach ($catalog as $catName => $items) {
+            $cat = ServiceCategory::findOne(['business_id' => $bid, 'name' => $catName]);
+            if ($cat === null) {
+                $cat = $this->save(new ServiceCategory([
+                    'business_id' => $bid, 'name' => $catName, 'sort' => $sort++,
+                ]));
+            }
+            foreach ($items as [$name, $dur, $price, $desc]) {
+                $svc = Service::findOne(['business_id' => $bid, 'name' => $name]);
+                if ($svc === null) {
+                    $svc = $this->save(new Service([
+                        'business_id' => $bid, 'category_id' => $cat->id, 'name' => $name,
+                        'duration_min' => $dur, 'price_tiyin' => $price,
+                        'deposit_tiyin' => $price >= 9000000 ? 2000000 : null,
+                        'description' => $desc, 'is_active' => 1, 'online_bookable' => 1,
+                    ]));
+                }
+                $services[] = $svc;
+            }
+        }
+
+        // --- Clients. Notes carry what a barber actually remembers. ---
+        $people = [
+            ['Aziz Karimov', '+998901234511', 'Mashinka #2, yon tomonlar kalta'],
+            ['Sardor Aliyev', '+998901234512', 'Fade, tepasi uzun qoladi'],
+            ['Jasur Toshpulatov', '+998901234513', 'Soqolni ustara bilan'],
+            ['Bekzod Rahimov', '+998901234514', 'Mashinka #1, juda kalta'],
+            ['Otabek Yo‘ldoshev', '+998901234515', null],
+            ['Doniyor Ergashev', '+998901234516', '2 marta kelmagan — oldindan tasdiqlansin'],
+            ['Shohruh Nazarov', '+998901234517', 'Bolasi bilan keladi (2 kishi)'],
+            ['Ulug‘bek Sattorov', '+998901234518', null],
+        ];
+        $clients = [];
+        foreach ($people as [$name, $phone, $note]) {
+            $c = Client::findOne(['business_id' => $bid, 'phone' => $phone]);
+            if ($c === null) {
+                $c = $this->save(new Client([
+                    'business_id' => $bid, 'name' => $name, 'phone' => $phone,
+                    'notes' => $note, 'tags' => [],
+                ]));
+            }
+            $clients[] = $c;
+        }
+
+        // --- Appointments: yesterday (done + one no-show), today, tomorrow ---
+        $made = 0;
+        // Only fill the timetable when it is essentially empty, so a real
+        // business's own bookings are never mixed with demo rows.
+        if (\common\models\Appointment::find()->where(['business_id' => $bid])->count() < 5) {
+            // Local 09:00 = 04:00 UTC (Asia/Tashkent, UTC+5).
+            $dayStart = static fn (int $offsetDays): int =>
+                strtotime(gmdate('Y-m-d', time() + $offsetDays * 86400) . ' 04:00:00 UTC');
+
+            $plan = [
+                // [day offset, hour offset from 09:00, master idx, service idx, client idx, status]
+                [-1, 0, 0, 0, 0, \common\models\Appointment::STATUS_COMPLETED],
+                [-1, 1, 0, 6, 1, \common\models\Appointment::STATUS_COMPLETED],
+                [-1, 2, 1, 1, 5, \common\models\Appointment::STATUS_NO_SHOW],
+                [-1, 3, 1, 4, 2, \common\models\Appointment::STATUS_COMPLETED],
+                [0, 0, 0, 0, 3, \common\models\Appointment::STATUS_COMPLETED],
+                [0, 1, 1, 1, 4, \common\models\Appointment::STATUS_COMPLETED],
+                [0, 6, 0, 6, 6, \common\models\Appointment::STATUS_CONFIRMED],
+                [0, 7, 1, 2, 7, \common\models\Appointment::STATUS_CONFIRMED],
+                [0, 8, 2, 0, 0, \common\models\Appointment::STATUS_PENDING],
+                [1, 0, 0, 3, 1, \common\models\Appointment::STATUS_CONFIRMED],
+                [1, 2, 1, 6, 2, \common\models\Appointment::STATUS_CONFIRMED],
+                [1, 5, 2, 7, 3, \common\models\Appointment::STATUS_CONFIRMED],
+                [2, 1, 0, 9, 4, \common\models\Appointment::STATUS_CONFIRMED],
+                [2, 4, 1, 0, 5, \common\models\Appointment::STATUS_CONFIRMED],
+            ];
+            foreach ($plan as [$dayOff, $hourOff, $mIdx, $sIdx, $cIdx, $status]) {
+                $master = $masters[$mIdx % count($masters)];
+                $service = $services[$sIdx % count($services)];
+                $client = $clients[$cIdx % count($clients)];
+                $startTs = $dayStart($dayOff) + $hourOff * 3600;
+                $appt = new \common\models\Appointment([
+                    'business_id' => $bid,
+                    'client_id' => $client->id,
+                    'staff_id' => $master->id,
+                    'service_id' => $service->id,
+                    'starts_at' => gmdate('Y-m-d H:i:s', $startTs),
+                    'ends_at' => gmdate('Y-m-d H:i:s', $startTs + (int) $service->duration_min * 60),
+                    'status' => $status,
+                    'source' => $dayOff >= 1 ? 'site' : 'admin',
+                ]);
+                $appt->save(false);
+                $made++;
+            }
+        }
+
+        // --- Loyalty: 5% cashback ---
+        if (!LoyaltyRule::find()->where(['business_id' => $bid])->exists()) {
+            $this->save(new LoyaltyRule([
+                'business_id' => $bid, 'earn_rate' => 500, 'active' => 1,
+                'gift_config' => ['referral_bonus_tiyin' => 2000000, 'referral_bonus_points' => 20],
+            ]));
+        }
+
+        $this->stdout(sprintf(
+            "Barber seed for '%s': %d masters, %d services, %d clients, %d appointments.\n",
+            $slug, count($masters), count($services), count($clients), $made
+        ));
+        $this->stdout("  Working hours: Mon-Sat 09:00-13:00 + 14:00-20:00 (lunch break)\n");
+
+        return ExitCode::OK;
+    }
+
     /** Save a model or abort with its validation errors. */
     private function save(ActiveRecord $model, ?callable $before = null): ActiveRecord
     {
