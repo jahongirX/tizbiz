@@ -11,6 +11,9 @@ const routes = [
       { path: 'devices', name: 'devices', component: () => import('../views/Devices.vue') },
       { path: 'send', name: 'send', component: () => import('../views/Send.vue') },
       { path: 'messages', name: 'messages', component: () => import('../views/Messages.vue') },
+      { path: 'templates', name: 'templates', component: () => import('../views/Templates.vue') },
+      { path: 'contacts', name: 'contacts', component: () => import('../views/Contacts.vue') },
+      { path: 'blacklist', name: 'blacklist', component: () => import('../views/Blacklist.vue') },
     ],
   },
 ]

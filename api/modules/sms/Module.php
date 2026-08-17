@@ -25,6 +25,20 @@ class Module extends BaseModule implements BootstrapInterface
             'GET v1/sms/messages' => 'sms/message/index',
             'POST v1/sms/send' => 'sms/send/send',
             'GET v1/sms/stats' => 'sms/stats/index',
+
+            'GET v1/sms/templates' => 'sms/template/index',
+            'POST v1/sms/templates' => 'sms/template/create',
+            'PATCH v1/sms/templates/<id:\d+>' => 'sms/template/update',
+            'DELETE v1/sms/templates/<id:\d+>' => 'sms/template/delete',
+
+            'GET v1/sms/contacts' => 'sms/contact/index',
+            'POST v1/sms/contacts' => 'sms/contact/create',
+            'PATCH v1/sms/contacts/<id:\d+>' => 'sms/contact/update',
+            'DELETE v1/sms/contacts/<id:\d+>' => 'sms/contact/delete',
+
+            'GET v1/sms/blacklist' => 'sms/blacklist/index',
+            'POST v1/sms/blacklist' => 'sms/blacklist/create',
+            'DELETE v1/sms/blacklist/<id:\d+>' => 'sms/blacklist/delete',
         ], false);
     }
 }

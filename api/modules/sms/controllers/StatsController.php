@@ -2,8 +2,11 @@
 
 namespace api\modules\sms\controllers;
 
+use common\models\SmsBlacklist;
+use common\models\SmsContact;
 use common\models\SmsDevice;
 use common\models\SmsMessage;
+use common\models\SmsTemplate;
 
 /**
  * Dashboard counters for the account: totals by status, today's volume, and
@@ -30,6 +33,11 @@ class StatsController extends BaseController
                 'total' => (int) SmsDevice::find()->where(['user_id' => $uid])->count(),
                 'active' => (int) SmsDevice::find()->where(['user_id' => $uid, 'is_active' => true])->count(),
                 'online' => (int) SmsDevice::find()->where(['user_id' => $uid, 'status' => SmsDevice::STATUS_ONLINE])->count(),
+            ],
+            'library' => [
+                'templates' => (int) SmsTemplate::find()->where(['user_id' => $uid])->count(),
+                'contacts' => (int) SmsContact::find()->where(['user_id' => $uid])->count(),
+                'blacklist' => (int) SmsBlacklist::find()->where(['user_id' => $uid])->count(),
             ],
         ];
     }

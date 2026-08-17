@@ -28,10 +28,16 @@ onMounted(async () => {
       <div class="card stat"><span class="k">Bugun</span><span class="v">{{ s.messages.today }}</span></div>
     </div>
 
-    <div class="grid stat-grid">
+    <div class="grid stat-grid" style="margin-bottom: 16px">
       <div class="card stat"><span class="k">Serverlar</span><span class="v">{{ s.devices.total }}</span></div>
       <div class="card stat"><span class="k">Faol</span><span class="v ok">{{ s.devices.active }}</span></div>
       <div class="card stat"><span class="k">Online</span><span class="v">{{ s.devices.online }}</span></div>
+    </div>
+
+    <div v-if="s.library" class="grid stat-grid">
+      <div class="card stat"><span class="k">Shablonlar</span><span class="v">{{ s.library.templates }}</span></div>
+      <div class="card stat"><span class="k">Kontaktlar</span><span class="v">{{ s.library.contacts }}</span></div>
+      <div class="card stat"><span class="k">Qora ro‘yxat</span><span class="v bad">{{ s.library.blacklist }}</span></div>
     </div>
   </template>
 </template>

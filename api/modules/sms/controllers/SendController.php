@@ -3,6 +3,7 @@
 namespace api\modules\sms\controllers;
 
 use api\modules\notify\services\AndroidSmsSender;
+use common\models\SmsBlacklist;
 use common\models\SmsDevice;
 use common\models\SmsMessage;
 use Yii;
@@ -37,6 +38,24 @@ class SendController extends BaseController
         ), static fn ($p) => $p !== '')));
         if ($phones === []) {
             throw new BadRequestHttpException('Raqam kiritilmagan.');
+        }
+
+        // Drop blacklisted recipients before doing any work.
+        $blocklist = SmsBlacklist::digitSetFor($this->uid());
+        $blocked = 0;
+        if ($blocklist !== []) {
+            $allowed = [];
+            foreach ($phones as $phone) {
+                if (isset($blocklist[SmsBlacklist::digits($phone)])) {
+                    $blocked++;
+                    continue;
+                }
+                $allowed[] = $phone;
+            }
+            $phones = $allowed;
+        }
+        if ($phones === []) {
+            return ['sent' => 0, 'failed' => 0, 'blocked' => $blocked, 'messages' => []];
         }
 
         $device = $this->resolveDevice();
@@ -74,7 +93,7 @@ class SendController extends BaseController
             $results[] = $msg;
         }
 
-        return ['sent' => $sent, 'failed' => $failed, 'device_id' => (int) $device->id, 'messages' => $results];
+        return ['sent' => $sent, 'failed' => $failed, 'blocked' => $blocked, 'device_id' => (int) $device->id, 'messages' => $results];
     }
 
     /** Resolve the device to send through: explicit device_id, else first active. */
