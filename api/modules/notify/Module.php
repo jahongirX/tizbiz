@@ -14,6 +14,10 @@ class Module extends \yii\base\Module implements BootstrapInterface
     public function bootstrap($app): void
     {
         $app->getUrlManager()->addRules([
+            // Per-business webhook: the {biz} path segment tells us which bot
+            // (token) the update belongs to. The legacy no-id route is kept for
+            // backward compatibility (linking-only, no per-business replies).
+            'POST v1/webhooks/telegram/<biz:\d+>' => 'notify/telegram-webhook/update',
             'POST v1/webhooks/telegram' => 'notify/telegram-webhook/update',
         ], false);
     }

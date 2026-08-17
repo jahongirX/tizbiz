@@ -2,6 +2,7 @@
 
 namespace api\modules\notify\services;
 
+use common\models\Business;
 use common\models\Client;
 use common\models\Notification;
 use common\models\TelegramLink;
@@ -59,7 +60,9 @@ class NotificationService
 
         if ($n->channel === Notification::CHANNEL_TELEGRAM) {
             $chatId = self::telegramChatFor($n->client_id);
-            $ok = $chatId !== null && TelegramSender::send($chatId, $text);
+            $token = self::telegramTokenFor($n->business_id);
+            $ok = $chatId !== null && $token !== null
+                && TelegramBotService::sendMessage($token, $chatId, $text);
         } elseif ($n->channel === Notification::CHANNEL_SMS) {
             $phone = self::phoneFor($n->client_id);
             $ok = $phone !== null && SmsSender::send($phone, $text);
@@ -89,6 +92,17 @@ class NotificationService
             ->one();
 
         return $link !== null ? (int) $link->tg_chat_id : null;
+    }
+
+    /** The business's own Telegram bot token, or null if it has no bot. */
+    private static function telegramTokenFor(?int $businessId): ?string
+    {
+        if ($businessId === null) {
+            return null;
+        }
+        $business = Business::findOne($businessId);
+        $token = $business !== null ? (string) ($business->telegram_bot_token ?? '') : '';
+        return $token !== '' ? $token : null;
     }
 
     /** Phone number for a client (SMS fallback), or null. */

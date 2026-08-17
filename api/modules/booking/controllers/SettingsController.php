@@ -2,6 +2,7 @@
 
 namespace api\modules\booking\controllers;
 
+use api\modules\notify\services\TelegramBotService;
 use common\models\Business;
 use common\rest\Controller;
 use Yii;
@@ -58,28 +59,49 @@ class SettingsController extends Controller
                 $model->$attr = ($v === null || trim((string) $v) === '') ? null : trim((string) $v);
             }
         }
-        // Telegram bot token: empty string clears it; otherwise the model rule
-        // validates the @BotFather token format.
+        // Telegram bot connect / disconnect.
+        //  - empty token -> disconnect: drop the webhook on Telegram, clear creds
+        //  - a token     -> validate live via getMe (reject 422 if bad) and store
+        //                   it; the webhook is (re)registered after save() below.
+        $connect = false;
         $tok = $this->body('telegram_bot_token');
         if ($tok !== null) {
             $tok = trim((string) $tok);
             if ($tok === '') {
+                $old = (string) ($model->telegram_bot_token ?? '');
+                if ($old !== '') {
+                    TelegramBotService::deleteWebhook($old);
+                }
                 $model->telegram_bot_token = null;
                 $model->telegram_bot_username = null;
             } else {
+                $me = TelegramBotService::getMe($tok);
+                if (!$me['ok']) {
+                    $model->addError('telegram_bot_token', 'Bot token noto‘g‘ri: ' . ($me['error'] ?? 'Telegram bilan bog‘lanib bo‘lmadi'));
+                    return $this->fail422($model);
+                }
                 $model->telegram_bot_token = $tok;
+                $model->telegram_bot_username = $me['username'];
+                $connect = true;
             }
         }
 
         if (!$model->save()) {
             return $this->fail422($model);
         }
-        return $this->payload($model);
+
+        // Register/refresh the webhook only after the token is persisted, so a
+        // failed save never leaves a live webhook pointing at unsaved state.
+        $webhook = $connect
+            ? TelegramBotService::setWebhook((string) $model->telegram_bot_token, (int) $model->id)
+            : null;
+
+        return $this->payload($model, $webhook);
     }
 
-    private function payload(Business $b): array
+    private function payload(Business $b, ?array $webhook = null): array
     {
-        return [
+        $data = [
             'name' => $b->name,
             'phone' => $b->phone,
             'tagline' => $b->tagline,
@@ -95,6 +117,12 @@ class SettingsController extends Controller
             'telegram_connected' => $b->telegram_bot_token !== null && $b->telegram_bot_token !== '',
             'telegram_bot_username' => $b->telegram_bot_username,
         ];
+        // Present only right after a (re)connect: did webhook registration stick?
+        if ($webhook !== null) {
+            $data['telegram_webhook_ok'] = (bool) $webhook['ok'];
+            $data['telegram_error'] = $webhook['error'] ?? null;
+        }
+        return $data;
     }
 
     private function business(): Business

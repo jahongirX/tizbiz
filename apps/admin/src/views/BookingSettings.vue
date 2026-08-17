@@ -193,8 +193,17 @@ async function saveTelegram(clear = false) {
     telegramConnected.value = !!res.telegram_connected
     telegramUsername.value = res.telegram_bot_username || null
     tgToken.value = ''
-    tgSaved.value = telegramConnected.value ? '✓ Token saqlandi' : '✓ O‘chirildi'
-    setTimeout(() => (tgSaved.value = ''), 2500)
+    if (clear) {
+      tgSaved.value = '✓ Uzildi'
+    } else if (res.telegram_webhook_ok === false) {
+      // Token is valid + saved, but Telegram could not reach our webhook URL.
+      tgError.value =
+        'Token saqlandi, lekin webhook ulanmadi: ' +
+        (res.telegram_error || 'server ochiq HTTPS manzilda bo‘lishi kerak')
+    } else {
+      tgSaved.value = '✓ Ulandi'
+    }
+    setTimeout(() => (tgSaved.value = ''), 3000)
   } catch (e) {
     tgError.value = e instanceof ApiError ? e.message : 'Saqlab bo\'lmadi'
   } finally {
@@ -442,8 +451,8 @@ onMounted(load)
       </div>
 
       <p class="muted tg-note">
-        ⓘ Bot ishga tushishi uchun serverda ochiq (HTTPS) webhook manzil kerak. Token saqlangach,
-        deploy paytida bot avtomatik ulanadi.
+        ⓘ Token saqlanganda bot Telegram'ga avtomatik ulanadi (webhook o‘rnatiladi). Buning uchun
+        server ochiq HTTPS manzilda bo‘lishi shart — mahalliy serverda webhook ishlamaydi.
       </p>
       </section>
     </div>
