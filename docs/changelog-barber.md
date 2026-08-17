@@ -10,6 +10,21 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 21. Jadvalda usta tanlash: select o'rniga tab, tanlov esda qoladi
+
+**Muammo.** Ustani almashtirgandan keyin sahifa yangilansa, tanlov birinchi
+ustaga qaytardi. Bundan tashqari 3-5 ta usta uchun ochiladigan select ortiqcha
+bosish talab qilardi.
+
+**Yechim.**
+- Usta tanlash **tab** ko'rinishida: rasm (yoki ism harflari) + ism +
+  mutaxassislik. Bitta bosish, kim tanlanganini bir qarashda ko'rinadi.
+- Tanlov `localStorage` da **biznes bo'yicha** saqlanadi
+  (`tizbiz_tt_staff_<businessId>`) — bitta hisobda bir nechta biznes bo'lsa
+  aralashmaydi. Saqlangan usta o'chirilgan bo'lsa, birinchi faol ustaga tushadi.
+
+Fayl: `apps/admin/src/views/Timetable.vue`.
+
 ### 20. Mijoz kategoriyalari — nima uchunligi endi ko'rinadi
 
 **Muammo.** Kategoriyalar sahifasida faqat nom, rang va tartib bor edi. Mijozni

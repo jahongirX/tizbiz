@@ -19,6 +19,7 @@ import Modal from '../components/Modal.vue'
 import AppointmentForm from '../components/AppointmentForm.vue'
 import WalkInForm from '../components/WalkInForm.vue'
 import { confirm } from '../composables/useConfirm'
+import { useAuthStore } from '../stores/auth'
 import { selectedDate, setSelectedDate } from '../composables/useCalendar'
 
 const HOUR_PX = 56
@@ -53,6 +54,26 @@ const TRANSITIONS = {
 const staff = ref([])
 const services = ref([])
 const staffId = ref(null)
+
+// The master a shop looks at rarely changes, so remember it across reloads —
+// per business, since one account may hold several.
+const auth = useAuthStore()
+const staffKey = computed(() => `tizbiz_tt_staff_${auth.active?.business_id ?? 0}`)
+function rememberStaff(id) {
+  try {
+    if (id) localStorage.setItem(staffKey.value, String(id))
+    else localStorage.removeItem(staffKey.value)
+  } catch {
+    /* private mode — the picker just won't be remembered */
+  }
+}
+function rememberedStaff() {
+  try {
+    return Number(localStorage.getItem(staffKey.value)) || null
+  } catch {
+    return null
+  }
+}
 const loadingStaff = ref(true)
 const loading = ref(false)
 const error = ref('')
@@ -227,8 +248,10 @@ async function loadStaff() {
     staff.value = list
     services.value = Array.isArray(sv) ? sv : sv?.items || []
     if (staffId.value == null) {
+      const saved = rememberedStaff()
+      const savedRow = saved ? list.find((s) => s.id === saved) : null
       const firstActive = list.find((s) => s.is_active) || list[0]
-      staffId.value = firstActive ? firstActive.id : null
+      staffId.value = (savedRow || firstActive)?.id ?? null
     }
   } catch (e) {
     error.value = e instanceof ApiError ? e.message : 'Xodimlarni yuklab bo\'lmadi'
@@ -280,6 +303,7 @@ function goToday() {
 }
 
 watch([staffId, monday], load)
+watch(staffId, rememberStaff)
 
 /* ---------- detail popover ---------- */
 const detail = ref(null) // the appointment
@@ -357,6 +381,16 @@ function onWalkInCreated() {
   load()
 }
 
+function staffInitials(name) {
+  return String(name || '?')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join('')
+    .toUpperCase()
+}
+
 function onColClick(e, dayStr) {
   const rect = e.currentTarget.getBoundingClientRect()
   const y = e.clientY - rect.top
@@ -407,13 +441,24 @@ onBeforeUnmount(() => {
     <template v-else>
       <!-- Toolbar -->
       <div class="tt-toolbar card">
-        <div class="field tt-staff">
-          <label>Xodim</label>
-          <select v-model="staffId">
-            <option v-for="s in staff" :key="s.id" :value="s.id">
-              {{ s.name }}<template v-if="s.specialization"> · {{ s.specialization }}</template>
-            </option>
-          </select>
+        <div class="tt-staff" role="tablist" aria-label="Xodim">
+          <button
+            v-for="s in staff"
+            :key="s.id"
+            role="tab"
+            type="button"
+            class="staff-tab"
+            :class="{ active: s.id === staffId }"
+            :aria-selected="s.id === staffId"
+            @click="staffId = s.id"
+          >
+            <img v-if="s.avatar" :src="s.avatar" alt="" class="staff-tab-ava" />
+            <span v-else class="staff-tab-ava fallback">{{ staffInitials(s.name) }}</span>
+            <span class="staff-tab-txt">
+              <span class="staff-tab-name">{{ s.name }}</span>
+              <span v-if="s.specialization" class="staff-tab-spec">{{ s.specialization }}</span>
+            </span>
+          </button>
         </div>
         <div class="tt-nav">
           <button class="btn btn-sm" aria-label="Oldingi hafta" @click="prevWeek">‹</button>
@@ -587,15 +632,70 @@ onBeforeUnmount(() => {
 
 .tt-toolbar {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 18px;
   flex-wrap: wrap;
   padding: 14px 16px;
   margin-bottom: 16px;
 }
 .tt-staff {
-  margin-bottom: 0;
-  min-width: 220px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+.staff-tab {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 12px 6px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+.staff-tab:hover {
+  border-color: var(--primary);
+  color: var(--text);
+}
+.staff-tab.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--text);
+}
+.staff-tab-ava {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  box-shadow: inset 0 0 0 1px var(--border);
+  flex: 0 0 auto;
+}
+.staff-tab.active .staff-tab-ava {
+  color: var(--primary);
+}
+.staff-tab-txt {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  text-align: left;
+}
+.staff-tab-name {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.staff-tab-spec {
+  font-size: 11px;
+  color: var(--text-muted);
 }
 .tt-nav {
   display: flex;
