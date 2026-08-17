@@ -1015,7 +1015,10 @@ class SeedController extends Controller
                     'starts_at' => gmdate('Y-m-d H:i:s', $startTs),
                     'ends_at' => gmdate('Y-m-d H:i:s', $startTs + (int) $service->duration_min * 60),
                     'status' => $status,
-                    'source' => $dayOff >= 1 ? 'site' : 'admin',
+                    // Public booking link vs. entered by the shop (see Appointment::SOURCE_*).
+                    'source' => $dayOff >= 1
+                        ? \common\models\Appointment::SOURCE_LINK
+                        : \common\models\Appointment::SOURCE_ADMIN,
                 ]);
                 $appt->save(false);
                 $made++;

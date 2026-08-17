@@ -10,6 +10,25 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 16. Yozuv holatini o'zgartirib bo'lmasdi — seed'dagi noto'g'ri `source` (bug)
+
+**Muammo.** Navbatlar ro'yxatida holatni "Tasdiqlangan" dan "Keldi" ga o'zgartirsa,
+qizil "Manba noto'g'ri." xatosi chiqib, holat saqlanmasdi.
+
+**Sabab.** `seed/barber` public saytdan kelgan yozuvlarga `source = 'site'` yozgan edi,
+model esa faqat `admin` / `link` / `telegram` ni qabul qiladi
+(`Appointment::SOURCE_*`). Seed `save(false)` bilan yozgani uchun validatsiya
+o'tkazib yuborilgan va yaroqsiz qiymat bazaga tushgan. Keyin har qanday tahrirda
+model **barcha** maydonlarni tekshiradi va aynan shu eski qiymatda yiqilardi.
+
+**Yechim.** Seed endi `Appointment::SOURCE_LINK` konstantasini ishlatadi (satr emas).
+Bazadagi mavjud `'site'` qatorlari `'link'` ga tuzatildi.
+
+**Tekshiruv.** `source=admin` va `source=link` yozuvlarida holat o'zgarishi saqlandi.
+
+**Saboq.** Seed'da `save(false)` validatsiyani o'chiradi — konstantalar o'rniga qo'lda
+yozilgan satrlar shu yo'l bilan bazaga kirib qoladi va keyin boshqa joyda portlaydi.
+
 ### 8. Demo ma'lumot: `php yii seed/barber [slug]`
 
 Yangi konsol komandasi barber biznesini real ma'lumot bilan to'ldiradi: 3 usta
