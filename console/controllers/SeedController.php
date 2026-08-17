@@ -372,10 +372,7 @@ class SeedController extends Controller
         $services = Service::find()->where(['business_id' => $bid])->all();
         $dir = \Yii::getAlias('@api/web/uploads/menu');
         \yii\helpers\FileHelper::createDirectory($dir, 0775);
-        $base = rtrim((string) (\Yii::$app->params['api.base'] ?? ''), '/');
-        if ($base === '' || str_contains($base, '127.0.0.1')) {
-            $base = 'https://api.startup'; // console default is not the MAMP host
-        }
+        $base = $this->assetBase();
 
         $n = 0;
         foreach ($services as $svc) {
@@ -414,10 +411,7 @@ class SeedController extends Controller
 
         $dir = \Yii::getAlias('@api/web/uploads/menu');
         \yii\helpers\FileHelper::createDirectory($dir, 0775);
-        $base = rtrim((string) (\Yii::$app->params['api.base'] ?? ''), '/');
-        if ($base === '' || str_contains($base, '127.0.0.1')) {
-            $base = 'https://api.startup';
-        }
+        $base = $this->assetBase();
 
         $services = Service::find()->where(['business_id' => $bid])->orderBy(['id' => SORT_ASC])->all();
         $count = count($desserts);
@@ -544,10 +538,7 @@ class SeedController extends Controller
 
         $dir = \Yii::getAlias('@api/web/uploads/menu');
         \yii\helpers\FileHelper::createDirectory($dir, 0775);
-        $base = rtrim((string) (\Yii::$app->params['api.base'] ?? ''), '/');
-        if ($base === '' || str_contains($base, '127.0.0.1')) {
-            $base = 'https://api.startup';
-        }
+        $base = $this->assetBase();
 
         $services = Service::find()->where(['business_id' => $bid])->orderBy(['id' => SORT_ASC])->all();
         $count = count($pool);
@@ -655,10 +646,7 @@ class SeedController extends Controller
 
         $dir = \Yii::getAlias('@api/web/uploads/menu');
         \yii\helpers\FileHelper::createDirectory($dir, 0775);
-        $base = rtrim((string) (\Yii::$app->params['api.base'] ?? ''), '/');
-        if ($base === '' || str_contains($base, '127.0.0.1')) {
-            $base = 'https://api.startup';
-        }
+        $base = $this->assetBase();
 
         $services = Service::find()->where(['business_id' => $bid])->orderBy(['id' => SORT_ASC])->all();
         $n = 0;
@@ -676,6 +664,27 @@ class SeedController extends Controller
 
         $this->stdout("Clinic '{$business->name}' catalog + images ready ($n services).\n");
         return ExitCode::OK;
+    }
+
+    /**
+     * Absolute base for generated asset URLs. Prefers the ASSET_BASE env, then
+     * the configured api.base; a protocol-relative api.base (//host) is promoted
+     * to https. Falls back to the local MAMP host so console seeding still works.
+     */
+    private function assetBase(): string
+    {
+        $base = trim((string) (getenv('ASSET_BASE') ?: ''));
+        if ($base === '') {
+            $base = (string) (\Yii::$app->params['api.base'] ?? '');
+        }
+        if (str_starts_with($base, '//')) {
+            $base = 'https:' . $base;
+        }
+        $base = rtrim($base, '/');
+        if ($base === '' || str_contains($base, '127.0.0.1')) {
+            $base = 'https://api.startup';
+        }
+        return $base;
     }
 
     private function medicalDescription(string $name): string
