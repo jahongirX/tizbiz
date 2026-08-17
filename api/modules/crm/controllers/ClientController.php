@@ -31,6 +31,7 @@ class ClientController extends Controller
      * Tenant-scoped client base with per-client aggregates (visits, total spent,
      * last visit) and segment filters — like the YClients client base.
      *   segment: new (<=1 visit) | repeat (>=2 visits) | lost (no visit in 60 days)
+     *   category: only clients carrying that client-category id
      * search matches name OR phone OR email (LIKE).
      */
     public function actionIndex(): array
@@ -39,6 +40,7 @@ class ClientController extends Controller
 
         $search = trim((string) Yii::$app->request->get('search', ''));
         $segment = (string) Yii::$app->request->get('segment', '');
+        $categoryId = (int) Yii::$app->request->get('category', 0);
         $page = max(1, (int) Yii::$app->request->get('page', 1));
         $perPage = min(100, max(1, (int) Yii::$app->request->get('per_page', self::PAGE_SIZE)));
 
@@ -62,6 +64,14 @@ class ClientController extends Controller
             ->leftJoin(['s' => Service::tableName()], 's.id = a.service_id')
             ->where(['c.business_id' => $businessId])
             ->groupBy('c.id');
+
+        if ($categoryId > 0) {
+            $base->innerJoin(
+                ['cca' => \common\models\ClientCategoryAssignment::tableName()],
+                'cca.client_id = c.id AND cca.category_id = :cat',
+                [':cat' => $categoryId]
+            );
+        }
 
         if ($search !== '') {
             $base->andWhere(['or',

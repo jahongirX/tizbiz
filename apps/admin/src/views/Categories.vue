@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { api, ApiError } from '@tizbiz/api-client'
 import { confirm } from '../composables/useConfirm'
 import Modal from '../components/Modal.vue'
+import { RouterLink } from 'vue-router'
 
 const loading = ref(true)
 const error = ref('')
@@ -109,7 +110,12 @@ onMounted(load)
     </div>
 
     <p class="muted" style="margin-top: -6px; margin-bottom: 16px">
-      Mijozlarni guruhlash uchun kategoriyalar. Har biriga rang bering.
+      Mijozlarni guruhlash uchun kategoriyalar — VIP, Doimiy, Yangi va h.k. Guruh nomi
+      mijoz ismi yonida rangli belgi bo‘lib chiqadi.
+      Mijozni guruhga qo‘shish: <RouterLink to="/clients">Mijozlar → Baza</RouterLink> →
+      mijozni oching → «Kategoriyalar» dan tanlang.
+      Avtomatik biriktirish (masalan, 5 tashrifdan keyin «Doimiy»):
+      <RouterLink to="/loyalty/cards">Loyallik kartalari</RouterLink>.
     </p>
 
     <div v-if="error" class="alert alert-error">{{ error }}</div>
@@ -127,6 +133,7 @@ onMounted(load)
               <th style="width: 44px"></th>
               <th>Nomi</th>
               <th>Rang</th>
+              <th style="text-align: right">Mijozlar</th>
               <th style="text-align: right">Tartib</th>
               <th></th>
             </tr>
@@ -142,6 +149,14 @@ onMounted(load)
                 </span>
               </td>
               <td><span class="muted">{{ c.color || '—' }}</span></td>
+              <td style="text-align: right">
+                <RouterLink
+                  v-if="c.clients_count"
+                  :to="{ path: '/clients', query: { category: c.id } }"
+                  class="count-link"
+                >{{ c.clients_count }} ta</RouterLink>
+                <span v-else class="muted">0</span>
+              </td>
               <td style="text-align: right">{{ c.sort ?? 0 }}</td>
               <td style="text-align: right">
                 <button class="btn btn-sm btn-ghost" @click="openEdit(c)">Tahrir</button>
@@ -244,5 +259,9 @@ onMounted(load)
 .pal-dot.on {
   border-color: var(--text);
   box-shadow: 0 0 0 2px var(--surface);
+}
+.count-link {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 </style>

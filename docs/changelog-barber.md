@@ -10,6 +10,27 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 20. Mijoz kategoriyalari — nima uchunligi endi ko'rinadi
+
+**Muammo.** Kategoriyalar sahifasida faqat nom, rang va tartib bor edi. Mijozni
+guruhga qanday qo'shish kerakligi hech qayerda aytilmagan (u aslida Mijozlar →
+Baza → mijoz kartasida), guruhda kimdir bor-yo'qligi ham bilinmasdi.
+
+**Yechim.**
+- Sahifa boshida qisqa izoh: kategoriya nima uchun kerak, mijozni qayerda
+  biriktiriladi va avtomatik qoidalar qayerda (Loyallik kartalari) — havolalar bilan.
+- `GET /v1/client-categories` javobiga `clients_count` qo'shildi; jadvalda
+  "Mijozlar" ustuni chiqadi va bosilganda o'sha guruh bo'yicha filtrlangan baza
+  ochiladi.
+- `GET /v1/clients` endi `category` parametrini qabul qiladi. Mijozlar sahifasida
+  faol filtr rangli chip bo'lib turadi, × bilan tozalanadi.
+
+Ikkala backend o'zgarishi ham qo'shimcha (additive) — parametr yuborilmasa
+xatti-harakat avvalgidek.
+
+**Tekshiruv.** Kategoriya yaratildi → mijozga biriktirildi → `clients_count: 1`,
+`?category=2` bo'yicha ro'yxatda 1 ta mijoz.
+
 ### 19. Xato matnlari o'zbekchada + yozuv o'zi yakunlanadi
 
 **Xato matnlari.** Holat o'zgarishi rad etilganda texnik kalitlar chiqardi:

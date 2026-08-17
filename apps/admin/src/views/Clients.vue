@@ -7,6 +7,7 @@ import { formatDateTime, parseUtc } from '../lib/datetime'
 import { confirm } from '../composables/useConfirm'
 import Modal from '../components/Modal.vue'
 import PhoneInput from '../components/PhoneInput.vue'
+import { useRoute, useRouter } from 'vue-router'
 
 // ---- List state ----
 const loading = ref(true)
@@ -16,6 +17,19 @@ const meta = ref({ page: 1, per_page: 20, total: 0, pages: 1 })
 
 const search = ref('')
 const segment = ref('')
+// Arriving from Kategoriyalar: /clients?category=3 shows just that group.
+const route = useRoute()
+const router = useRouter()
+const categoryId = ref(Number(route.query.category) || 0)
+const activeCategory = computed(
+  () => allCategories.value.find((c) => c.id === categoryId.value) || null,
+)
+function clearCategory() {
+  categoryId.value = 0
+  router.replace({ path: '/clients' })
+  page.value = 1
+  load()
+}
 const page = ref(1)
 let searchTimer = null
 
@@ -119,6 +133,7 @@ async function load() {
     const q = search.value.trim()
     if (q) params.set('search', q)
     if (segment.value) params.set('segment', segment.value)
+    if (categoryId.value) params.set('category', String(categoryId.value))
     params.set('page', String(page.value))
     params.set('per_page', String(meta.value.per_page || 20))
     const res = await api.get('/v1/clients?' + params.toString())
@@ -333,6 +348,15 @@ onMounted(() => {
           @input="onSearch"
         />
       </div>
+      <button v-if="categoryId" class="cat-filter" @click="clearCategory">
+        <span
+          class="cat-chip sm"
+          :style="activeCategory
+            ? { background: (activeCategory.color || '#64748b') + '22', color: activeCategory.color || '#94a3b8' }
+            : {}"
+        >{{ activeCategory ? activeCategory.name : 'Kategoriya' }}</span>
+        <span aria-hidden="true">×</span>
+      </button>
       <div class="segs">
         <button
           v-for="s in segments"
@@ -801,4 +825,18 @@ table.data tbody tr.active {
   color: var(--danger, #ef4444);
   white-space: nowrap;
 }
+.cat-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.cat-filter:hover { border-color: var(--primary); color: var(--text); }
 </style>

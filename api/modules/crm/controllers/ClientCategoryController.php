@@ -3,6 +3,7 @@
 namespace api\modules\crm\controllers;
 
 use common\models\ClientCategory;
+use common\models\ClientCategoryAssignment;
 use common\rest\Controller;
 use Yii;
 use yii\web\NotFoundHttpException;
@@ -28,6 +29,16 @@ class ClientCategoryController extends Controller
             ->orderBy(['sort' => SORT_ASC, 'id' => SORT_ASC])
             ->all();
 
+        // How many clients carry each category — otherwise the page is a list of
+        // names with no sign of whether anyone is in them.
+        $counts = ClientCategoryAssignment::find()
+            ->select(['category_id', 'total' => 'COUNT(*)'])
+            ->where(['category_id' => array_map(static fn ($c) => (int) $c->id, $rows)])
+            ->groupBy('category_id')
+            ->indexBy('category_id')
+            ->asArray()
+            ->all();
+
         $data = [];
         foreach ($rows as $c) {
             $data[] = [
@@ -35,6 +46,7 @@ class ClientCategoryController extends Controller
                 'name' => $c->name,
                 'color' => $c->color,
                 'sort' => (int) $c->sort,
+                'clients_count' => (int) ($counts[(int) $c->id]['total'] ?? 0),
             ];
         }
 
