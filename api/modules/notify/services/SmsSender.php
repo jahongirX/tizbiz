@@ -21,6 +21,13 @@ class SmsSender
     /** Send `text` to a phone number in international format. Returns true on success. */
     public static function send(string $phone, string $text): bool
     {
+        // Driver selector: 'android' routes through the Android SMS Gateway
+        // (a phone as modem); anything else uses the Eskiz-style HTTP gateway.
+        $driver = getenv('SMS_DRIVER') ?: (string) (Yii::$app->params['sms.driver'] ?? '');
+        if ($driver === 'android') {
+            return AndroidSmsSender::send($phone, $text);
+        }
+
         $endpoint = getenv('SMS_ENDPOINT') ?: '';
         $token = getenv('SMS_TOKEN') ?: '';
         $from = getenv('SMS_FROM') ?: '';
