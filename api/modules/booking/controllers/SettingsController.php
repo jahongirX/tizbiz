@@ -92,9 +92,18 @@ class SettingsController extends Controller
 
         // Register/refresh the webhook only after the token is persisted, so a
         // failed save never leaves a live webhook pointing at unsaved state.
-        $webhook = $connect
-            ? TelegramBotService::setWebhook((string) $model->telegram_bot_token, (int) $model->id)
-            : null;
+        $webhook = null;
+        if ($connect) {
+            $webhook = TelegramBotService::setWebhook((string) $model->telegram_bot_token, (int) $model->id);
+            // Persistent menu button that opens the catalog Mini App.
+            if ($model->slug) {
+                TelegramBotService::setChatMenuButton(
+                    (string) $model->telegram_bot_token,
+                    '🛍 Katalog',
+                    TelegramBotService::publicUrl((string) $model->slug)
+                );
+            }
+        }
 
         return $this->payload($model, $webhook);
     }

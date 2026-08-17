@@ -3,6 +3,7 @@
 namespace api\modules\catalog\controllers;
 
 use common\helpers\Phone;
+use common\helpers\TelegramWebApp;
 use common\models\Business;
 use common\models\Order;
 use common\models\OrderItem;
@@ -63,6 +64,18 @@ class OrderController extends Controller
         $note = trim((string) ($this->body('note', '') ?? ''));
         $source = (string) $this->body('source', 'site');
 
+        // If placed from the Telegram Mini App, verify the signed initData and
+        // tie the order to that Telegram user (for their order history).
+        $tgUserId = null;
+        $initData = (string) $this->body('init_data', '');
+        if ($initData !== '' && ($business->telegram_bot_token ?? '') !== '') {
+            $verified = TelegramWebApp::verify($initData, (string) $business->telegram_bot_token);
+            if ($verified !== null) {
+                $tgUserId = (int) $verified['user']['id'];
+                $source = 'bot';
+            }
+        }
+
         $tx = Yii::$app->db->beginTransaction();
         try {
             $order = new Order();
@@ -73,6 +86,11 @@ class OrderController extends Controller
                 : null;
             $order->note = $note !== '' ? $note : null;
             $order->source = in_array($source, Order::SOURCES, true) ? $source : 'site';
+            // Only touch tg_user_id when actually linked, so a plain web order
+            // never references the column (keeps working before the migration).
+            if ($tgUserId !== null) {
+                $order->tg_user_id = $tgUserId;
+            }
             $order->status = Order::STATUS_NEW;
             $order->total_tiyin = 0;
             if (!$order->save()) {

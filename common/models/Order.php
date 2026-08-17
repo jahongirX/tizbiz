@@ -63,7 +63,7 @@ class Order extends ActiveRecord
             [['note'], 'string', 'max' => 500],
             [['source'], 'in', 'range' => self::SOURCES],
             [['source'], 'default', 'value' => 'site'],
-            [['client_id'], 'integer'],
+            [['client_id', 'tg_user_id'], 'integer'],
         ];
     }
 

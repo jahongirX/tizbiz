@@ -19,6 +19,10 @@ class Module extends \yii\base\Module implements BootstrapInterface
             // backward compatibility (linking-only, no per-business replies).
             'POST v1/webhooks/telegram/<biz:\d+>' => 'notify/telegram-webhook/update',
             'POST v1/webhooks/telegram' => 'notify/telegram-webhook/update',
+
+            // Telegram Mini App (catalog running inside Telegram): initData-authed.
+            'POST v1/telegram/webapp-auth' => 'notify/webapp/auth',
+            'GET v1/telegram/orders' => 'notify/webapp/orders',
         ], false);
     }
 }

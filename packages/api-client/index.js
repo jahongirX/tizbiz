@@ -10,6 +10,9 @@ export const config = {
   tenantSlug: boot.tenantSlug ?? null,
   publicBase: boot.publicBase || '',
   rootDomain: boot.rootDomain || 'tizbiz.uz',
+  // Telegram Mini App: signed initData sent as a header so the API can identify
+  // the Telegram user without a JWT. Set by the booking SPA when run in Telegram.
+  telegramInitData: '',
 }
 
 /** Public storefront URL for a business slug (prod subdomain or local base). */
@@ -61,6 +64,7 @@ async function request(method, path, body) {
   const headers = { 'Content-Type': 'application/json' }
   const token = auth.token
   if (token) headers.Authorization = 'Bearer ' + token
+  if (config.telegramInitData) headers['X-Telegram-Init-Data'] = config.telegramInitData
 
   const res = await fetch(config.apiBase + path, {
     method,

@@ -108,6 +108,27 @@ class TelegramBotService
         return $ok && is_array($data) && !empty($data['ok']);
     }
 
+    /**
+     * Set the persistent chat menu button (next to the input field) to open the
+     * catalog Mini App. Applies to all of the bot's private chats.
+     */
+    public static function setChatMenuButton(string $token, string $text, string $url): bool
+    {
+        [$ok, $code, $body] = self::call($token, 'setChatMenuButton', [
+            'menu_button' => [
+                'type' => 'web_app',
+                'text' => $text,
+                'web_app' => ['url' => $url],
+            ],
+        ]);
+        $data = json_decode((string) $body, true);
+        if (!$ok || !is_array($data) || empty($data['ok'])) {
+            Yii::warning('Telegram setChatMenuButton failed: ' . self::describe($data, $code), 'notify');
+            return false;
+        }
+        return true;
+    }
+
     /** Send a text message, optionally with an inline keyboard. */
     public static function sendMessage(string $token, int $chatId, string $text, ?array $replyMarkup = null): bool
     {

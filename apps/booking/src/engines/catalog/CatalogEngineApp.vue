@@ -4,8 +4,8 @@
 // (shared .shell / .brand / .card / .btn / .dock from style.css). Browsing is a
 // category-grouped product list; the cart + checkout is a full-screen step-style
 // sheet. Data comes from the site payload (categories -> items).
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
-import { api, ApiError } from '@tizbiz/api-client'
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { api, ApiError, config } from '@tizbiz/api-client'
 import { soms } from '../../format'
 import PhoneInput from '../../components/PhoneInput.vue'
 
@@ -13,6 +13,8 @@ const props = defineProps({
   slug: { type: String, default: '' },
   business: { type: Object, default: null },
   payload: { type: Object, default: () => ({}) },
+  // Telegram Mini App context: { inTelegram, profile:{ name, phone } | null }.
+  tg: { type: Object, default: () => ({ inTelegram: false, profile: null }) },
 })
 
 const business = computed(() => props.business || props.payload?.business || {})
@@ -82,6 +84,18 @@ const submitting = ref(false)
 const orderError = ref('')
 const placedOrder = ref(null)
 
+// Inside Telegram: pre-fill the customer from the verified profile (name + the
+// phone they shared with the bot), so checkout is one tap.
+watch(
+  () => props.tg?.profile,
+  (p) => {
+    if (!p) return
+    if (p.name && !cust.name) cust.name = p.name
+    if (p.phone && !cust.phone) cust.phone = p.phone
+  },
+  { immediate: true },
+)
+
 function openCart() {
   if (!cartCount.value) return
   panel.value = 'cart'
@@ -114,7 +128,9 @@ async function placeOrder() {
       items: cartLines.value.map((l) => ({ service_id: l.item.id, qty: l.qty })),
       customer: { name: cust.name.trim(), phone: cust.phone.trim() },
       note: note.value.trim() || undefined,
-      source: 'site',
+      source: props.tg?.inTelegram ? 'bot' : 'site',
+      // Signed Telegram session → server ties the order to this user's history.
+      init_data: config.telegramInitData || undefined,
     })
     placedOrder.value = order
     panel.value = 'done'
@@ -130,9 +146,40 @@ function reset() {
   panel.value = 'cart'
   cartOpen.value = false
   placedOrder.value = null
-  cust.name = ''
-  cust.phone = ''
   note.value = ''
+}
+
+// ---- Order history (Telegram Mini App: the user's own past orders) ----
+const historyOpen = ref(false)
+const historyLoading = ref(false)
+const historyError = ref('')
+const historyOrders = ref([])
+
+const STATUS_LABEL = {
+  new: 'Yangi',
+  confirmed: 'Tasdiqlangan',
+  preparing: 'Tayyorlanmoqda',
+  ready: 'Tayyor',
+  delivered: 'Yetkazildi',
+  cancelled: 'Bekor qilindi',
+}
+
+async function openHistory() {
+  historyOpen.value = true
+  historyError.value = ''
+  historyLoading.value = true
+  try {
+    const res = await api.get('/v1/telegram/orders?slug=' + encodeURIComponent(props.slug || business.value.slug))
+    historyOrders.value = res.items || []
+  } catch (e) {
+    historyError.value = e instanceof ApiError ? e.message : 'Buyurtmalarni yuklab bo‘lmadi'
+  } finally {
+    historyLoading.value = false
+  }
+}
+function fmtDate(ts) {
+  if (!ts) return ''
+  return new Date(ts * 1000).toLocaleString('uz-UZ', { dateStyle: 'short', timeStyle: 'short' })
 }
 
 // ---- Scroll-spy: highlight the active category chip ----
@@ -194,7 +241,7 @@ const detailImages = computed(() => {
           <div class="sub">{{ business.tagline || 'Onlayn buyurtma' }}</div>
         </div>
       </div>
-      <div v-if="bizCategory || bizPhone" class="brand-chips">
+      <div v-if="bizCategory || bizPhone || tg?.inTelegram" class="brand-chips">
         <span v-if="bizCategory" class="brand-chip">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -210,6 +257,9 @@ const detailImages = computed(() => {
           </svg>
           {{ bizPhone }}
         </a>
+        <button v-if="tg?.inTelegram" type="button" class="brand-chip chip-btn" @click="openHistory">
+          🧾 Buyurtmalarim
+        </button>
       </div>
     </header>
 
@@ -368,6 +418,37 @@ const detailImages = computed(() => {
           <p>#{{ placedOrder?.id }} · {{ soms(placedOrder?.total_tiyin) }}</p>
         </div>
         <button class="btn" @click="reset">Yana buyurtma</button>
+      </template>
+    </div>
+  </div>
+  </Transition>
+
+  <!-- ORDER HISTORY sheet (Telegram Mini App) -->
+  <Transition name="slideup">
+  <div v-if="historyOpen" class="sheet">
+    <div class="shell">
+      <div class="step-head sheet-head">
+        <button class="back" aria-label="Orqaga" @click="historyOpen = false">←</button>
+        <h2>Buyurtmalarim</h2>
+      </div>
+      <div v-if="historyLoading" class="empty"><div class="spinner"></div></div>
+      <div v-else-if="historyError" class="alert">{{ historyError }}</div>
+      <div v-else-if="!historyOrders.length" class="empty">
+        <div class="emo">🧾</div>
+        Hali buyurtma yo‘q
+      </div>
+      <template v-else>
+        <article v-for="o in historyOrders" :key="o.id" class="card order-card">
+          <div class="grow">
+            <div class="oh-top">
+              <span class="title">#{{ o.id }}</span>
+              <span class="oh-status" :data-s="o.status">{{ STATUS_LABEL[o.status] || o.status }}</span>
+            </div>
+            <div class="meta">{{ fmtDate(o.created_at) }}</div>
+            <div class="oh-items">{{ (o.items || []).map((i) => i.name + ' ×' + i.qty).join(', ') }}</div>
+          </div>
+          <div class="oh-total">{{ soms(o.total_tiyin) }}</div>
+        </article>
       </template>
     </div>
   </div>
@@ -620,6 +701,57 @@ const detailImages = computed(() => {
 }
 .summary .row.total .v {
   font-size: 17px;
+}
+
+/* "Buyurtmalarim" chip is a button — strip native button chrome */
+.chip-btn {
+  font: inherit;
+  cursor: pointer;
+  appearance: none;
+}
+
+/* Order history cards */
+.order-card {
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+.order-card .grow {
+  min-width: 0;
+}
+.oh-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.oh-status {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  white-space: nowrap;
+}
+.oh-status[data-s='cancelled'] {
+  background: #fdecec;
+  color: #c0392b;
+}
+.oh-status[data-s='delivered'],
+.oh-status[data-s='ready'] {
+  background: #e7f7ec;
+  color: #1e8e4e;
+}
+.oh-items {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 4px;
+  line-height: 1.45;
+}
+.oh-total {
+  font-weight: 800;
+  font-size: 15px;
+  white-space: nowrap;
 }
 
 /* Product detail — bottom sheet, single column */

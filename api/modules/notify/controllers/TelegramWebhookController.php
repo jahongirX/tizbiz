@@ -68,30 +68,43 @@ class TelegramWebhookController extends Controller
         }
 
         $chatId = isset($message['chat']['id']) ? (int) $message['chat']['id'] : 0;
-        $text = isset($message['text']) ? trim((string) $message['text']) : '';
         if ($chatId === 0) {
             return;
         }
+        $fromId = isset($message['from']['id']) ? (int) $message['from']['id'] : $chatId;
+
+        // The user tapped the "share my phone" button.
+        if (isset($message['contact']) && is_array($message['contact'])) {
+            $this->storeContact($chatId, $fromId, $message['contact']);
+            $this->send($business, $chatId, '✅ Rahmat! Raqamingiz saqlandi — endi buyurtma berish tezroq.', null, true);
+            return;
+        }
+
+        $text = isset($message['text']) ? trim((string) $message['text']) : '';
 
         // /start <token> binds this chat to a client/user.
         if (preg_match('/^\/start(?:@\w+)?\s+(\S+)/', $text, $m)) {
             $parsed = TelegramLink::parseStartToken($m[1]);
             if ($parsed !== null) {
                 $this->linkChat($chatId, $parsed['client_id'], $parsed['user_id']);
-                $this->reply($business, $chatId, $this->linkedText($business), true);
+                $this->send($business, $chatId, $this->linkedText($business), $this->catalogMarkup($business));
                 return;
             }
             Yii::warning("Telegram /start with invalid token from chat $chatId.", 'notify');
         }
 
-        // Plain /start (or any message) → greet and offer the catalog.
+        // Plain /start (or any message) → greet + catalog, and ask for the phone
+        // once so future checkouts pre-fill it.
         if ($business !== null) {
-            $this->reply($business, $chatId, $this->welcomeText($business), true);
+            $this->send($business, $chatId, $this->welcomeText($business), $this->catalogMarkup($business));
+            if (!$this->hasPhone($fromId)) {
+                $this->send($business, $chatId, $this->contactText(), $this->contactMarkup());
+            }
         }
     }
 
-    /** Send a reply through the business's own bot token, if configured. */
-    private function reply(?Business $business, int $chatId, string $text, bool $withCatalog): void
+    /** Send a message via the business bot; removeKeyboard drops any reply keyboard. */
+    private function send(?Business $business, int $chatId, string $text, ?array $markup, bool $removeKeyboard = false): void
     {
         if ($business === null) {
             return;
@@ -100,14 +113,63 @@ class TelegramWebhookController extends Controller
         if ($token === '') {
             return;
         }
-
-        $markup = null;
-        if ($withCatalog && $business->slug) {
-            $markup = ['inline_keyboard' => [[
-                ['text' => '🛍 Katalogni ochish', 'url' => TelegramBotService::publicUrl($business->slug)],
-            ]]];
+        if ($removeKeyboard) {
+            $markup = ['remove_keyboard' => true];
         }
         TelegramBotService::sendMessage($token, $chatId, $text, $markup);
+    }
+
+    /** Inline button that opens the catalog as a Telegram Mini App. */
+    private function catalogMarkup(?Business $business): ?array
+    {
+        if ($business === null || !$business->slug) {
+            return null;
+        }
+        return ['inline_keyboard' => [[
+            ['text' => '🛍 Katalogni ochish', 'web_app' => ['url' => TelegramBotService::publicUrl($business->slug)]],
+        ]]];
+    }
+
+    /** Reply keyboard with a single "share my phone" button. */
+    private function contactMarkup(): array
+    {
+        return [
+            'keyboard' => [[['text' => '📱 Raqamni ulashish', 'request_contact' => true]]],
+            'resize_keyboard' => true,
+            'one_time_keyboard' => true,
+        ];
+    }
+
+    /** Whether we already stored a phone for this Telegram user. */
+    private function hasPhone(int $tgUserId): bool
+    {
+        return TelegramLink::find()
+            ->where(['tg_user_id' => $tgUserId])
+            ->andWhere(['not', ['phone' => null]])
+            ->exists();
+    }
+
+    /** Persist the phone the user shared, keyed by their Telegram user id. */
+    private function storeContact(int $chatId, int $fromId, array $contact): void
+    {
+        $tgUserId = isset($contact['user_id']) ? (int) $contact['user_id'] : $fromId;
+        $phone = isset($contact['phone_number']) ? (string) $contact['phone_number'] : '';
+        if ($phone === '') {
+            return;
+        }
+        $link = TelegramLink::find()->where(['tg_user_id' => $tgUserId])->one()
+            ?? TelegramLink::find()->where(['tg_chat_id' => $chatId])->one()
+            ?? new TelegramLink();
+        $link->tg_chat_id = $chatId;
+        $link->tg_user_id = $tgUserId;
+        $link->phone = $phone;
+        if (isset($contact['first_name'])) {
+            $link->first_name = (string) $contact['first_name'];
+        }
+        $link->verified_at = time();
+        if (!$link->save()) {
+            Yii::warning('Failed to save contact TelegramLink: ' . json_encode($link->getErrors()), 'notify');
+        }
     }
 
     private function welcomeText(Business $b): string
@@ -117,7 +179,12 @@ class TelegramWebhookController extends Controller
         if ($b->tagline) {
             $line .= "\n" . htmlspecialchars((string) $b->tagline, ENT_QUOTES, 'UTF-8');
         }
-        return $line . "\n\nKatalogni ko‘rish va buyurtma berish uchun quyidagi tugmani bosing.";
+        return $line . "\n\nKatalogni ko‘rish va buyurtma berish uchun quyidagi tugmani bosing 👇";
+    }
+
+    private function contactText(): string
+    {
+        return 'Buyurtma berishda telefon raqamingiz avtomatik to‘lishi uchun uni bir marta ulashing 👇';
     }
 
     private function linkedText(Business $b): string

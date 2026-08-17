@@ -4,8 +4,9 @@
 // a vertical = one entry in ENGINES + a component under ./engines/<key>/ ; the
 // slot engine is the current online-booking flow. Engines are lazy-loaded so a
 // visitor only downloads the layout their business actually uses.
-import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
+import { ref, reactive, computed, onMounted, defineAsyncComponent } from 'vue'
 import { api, config, ApiError } from '@tizbiz/api-client'
+import { inTelegram, applyTelegramChrome } from './telegram'
 
 const ENGINES = {
   slot: defineAsyncComponent(() => import('./engines/slot/SlotEngineApp.vue')),
@@ -70,6 +71,9 @@ const payload = ref(null)
 const engineKey = computed(() => payload.value?.engine || 'slot')
 const engineComp = computed(() => ENGINES[engineKey.value] || ENGINES.slot)
 
+// Telegram Mini App context handed to the engine (guest defaults outside Telegram).
+const tg = reactive({ inTelegram, profile: null })
+
 onMounted(async () => {
   try {
     const data = await api.get(`/v1/site/${encodeURIComponent(slug)}`)
@@ -77,6 +81,16 @@ onMounted(async () => {
     else {
       payload.value = data
       applyTheme(data.engine || 'slot', data.business)
+      const brand = getComputedStyle(document.documentElement).getPropertyValue('--brand').trim()
+      applyTelegramChrome(brand)
+      // Inside Telegram: identify the user (name + previously shared phone).
+      if (inTelegram) {
+        try {
+          tg.profile = await api.post('/v1/telegram/webapp-auth', { slug, init_data: config.telegramInitData })
+        } catch (_) {
+          /* fall back to guest checkout */
+        }
+      }
     }
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) notFound.value = true
@@ -123,5 +137,6 @@ onMounted(async () => {
     :services="payload.services || []"
     :staff="payload.staff || []"
     :payload="payload"
+    :tg="tg"
   />
 </template>
