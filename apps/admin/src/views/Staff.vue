@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { api, ApiError } from '@tizbiz/api-client'
 import { confirm } from '../composables/useConfirm'
 import Modal from '../components/Modal.vue'
+import ImageUpload from '../components/ImageUpload.vue'
 import { useAuthStore } from '../stores/auth'
 import { samplesFor } from '../lib/verticals'
 
@@ -24,7 +25,17 @@ const editing = ref(null)
 const form = ref(blank())
 
 function blank() {
-  return { name: '', specialization: '', is_active: true }
+  return { name: '', specialization: '', avatar: '', is_active: true }
+}
+
+function initials(name) {
+  return String(name || '?')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join('')
+    .toUpperCase()
 }
 
 async function load() {
@@ -49,7 +60,12 @@ function openCreate() {
 
 function openEdit(s) {
   editing.value = s
-  form.value = { name: s.name, specialization: s.specialization || '', is_active: s.is_active !== false }
+  form.value = {
+    name: s.name,
+    specialization: s.specialization || '',
+    avatar: s.avatar || '',
+    is_active: s.is_active !== false,
+  }
   formError.value = ''
   showModal.value = true
 }
@@ -61,6 +77,7 @@ async function save() {
     const payload = {
       name: form.value.name.trim(),
       specialization: form.value.specialization.trim() || null,
+      avatar: form.value.avatar || '',
       is_active: form.value.is_active,
     }
     if (editing.value) await api.patch('/v1/staff/' + editing.value.id, payload)
@@ -106,6 +123,7 @@ onMounted(load)
         <table class="data">
           <thead>
             <tr>
+              <th style="width: 52px"></th>
               <th>Ismi</th>
               <th>Mutaxassisligi</th>
               <th>Holat</th>
@@ -114,6 +132,10 @@ onMounted(load)
           </thead>
           <tbody>
             <tr v-for="s in staff" :key="s.id">
+              <td>
+                <img v-if="s.avatar" :src="s.avatar" :alt="s.name" class="staff-ava" />
+                <span v-else class="staff-ava fallback">{{ initials(s.name) }}</span>
+              </td>
               <td><strong>{{ s.name }}</strong></td>
               <td>{{ s.specialization || '—' }}</td>
               <td>
@@ -138,6 +160,13 @@ onMounted(load)
       <form @submit.prevent="save">
         <div v-if="formError" class="alert alert-error">{{ formError }}</div>
         <div class="field">
+          <label>Rasm</label>
+          <ImageUpload v-model="form.avatar" :size="88" />
+          <span class="muted" style="font-size: 12px">
+            Onlayn yozilish sahifasida mijoz ustani rasmi bo‘yicha tanlaydi.
+          </span>
+        </div>
+        <div class="field">
           <label>Ismi</label>
           <input v-model="form.name" placeholder="Dilnoza Rahimova" required />
         </div>
@@ -159,3 +188,19 @@ onMounted(load)
     </Modal>
   </div>
 </template>
+
+<style scoped>
+.staff-ava {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 650;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+</style>

@@ -15,6 +15,7 @@ use yii\db\ActiveQuery;
  * @property int|null $user_id
  * @property string $name
  * @property string|null $specialization
+ * @property string|null $avatar
  * @property bool $is_active
  * @property int $created_at
  * @property int $updated_at
@@ -44,6 +45,7 @@ class Staff extends ActiveRecord
             [['name'], 'required'],
             [['name'], 'string', 'max' => 128],
             [['specialization'], 'string', 'max' => 96],
+            [['avatar'], 'string', 'max' => 500],
             [['business_id', 'user_id'], 'integer'],
             [['commission_percent'], 'integer', 'min' => 0, 'max' => 100],
             [['commission_percent'], 'default', 'value' => 0],
@@ -57,6 +59,7 @@ class Staff extends ActiveRecord
         return [
             'name' => 'Ism',
             'specialization' => 'Mutaxassislik',
+            'avatar' => 'Rasm',
             'commission_percent' => 'Komissiya (%)',
             'is_active' => 'Faol',
             'created_at' => 'Yaratilgan sana',

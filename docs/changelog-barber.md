@@ -10,6 +10,27 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 18. Ustalarga rasm (avatar)
+
+Mijoz ustani ismidan emas, **yuzidan** taniydi — booking sahifasida esa faqat
+ism harflari ko'rinardi.
+
+- **Migratsiya** `m260817_100000_add_avatar_to_staff` — `staff` jadvaliga
+  nullable `avatar` (URL, 500 belgi). Additive: boshqa vertikallar o'zgarishsiz
+  ishlayveradi.
+- `common/models/Staff.php` — maydon va validatsiya qoidasi.
+- `StaffController::assign()` — `avatar` qabul qilinadi; bo'sh satr rasmni
+  o'chiradi (brending maydonlaridagi kabi).
+- `apps/admin/src/views/Staff.vue` — formada `ImageUpload` (mavjud
+  `POST /v1/uploads` orqali), ro'yxatda dumaloq avatar; rasm yo'q bo'lsa ism
+  harflari ko'rinadi.
+- `apps/booking/src/components/StaffStep.vue` — usta kartasida rasm.
+  Public payload allaqachon butun modelni qaytaradi, shuning uchun
+  `SiteController` ga tegilmadi.
+
+**Tekshiruv.** Rasm bilan yaratish → saqlandi; `{"avatar":""}` → `null`;
+public `/v1/site/{slug}` javobida maydon bor.
+
 ### 17. Mijoz kategoriyalari sahifasi bo'sh ochilardi (bug)
 
 **Muammo.** Mijozlar → Kategoriyalar bosilganda sahifa butunlay bo'sh edi: sarlavha

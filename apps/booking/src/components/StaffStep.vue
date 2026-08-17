@@ -57,7 +57,8 @@ function initials(name) {
       :class="{ selected: m.id === selectedId }"
       @click="emit('select', m)"
     >
-      <span class="avatar">{{ initials(m.name) }}</span>
+      <img v-if="m.avatar" :src="m.avatar" :alt="m.name" class="avatar photo" />
+      <span v-else class="avatar">{{ initials(m.name) }}</span>
       <div class="grow">
         <div class="title">{{ m.name }}</div>
         <div v-if="m.specialization" class="meta">{{ m.specialization }}</div>

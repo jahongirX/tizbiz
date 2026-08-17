@@ -68,6 +68,11 @@ class StaffController extends Controller
         if (array_key_exists('specialization', $this->body())) {
             $model->specialization = $this->body('specialization');
         }
+        // Empty string clears the photo, mirroring the branding fields.
+        if (array_key_exists('avatar', $this->body())) {
+            $v = $this->body('avatar');
+            $model->avatar = ($v === null || trim((string) $v) === '') ? null : trim((string) $v);
+        }
         if (array_key_exists('user_id', $this->body())) {
             $model->user_id = $this->body('user_id');
         }
