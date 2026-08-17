@@ -10,6 +10,25 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 17. Mijoz kategoriyalari sahifasi bo'sh ochilardi (bug)
+
+**Muammo.** Mijozlar → Kategoriyalar bosilganda sahifa butunlay bo'sh edi: sarlavha
+ham, "kategoriya qo'shilmagan" xabari ham chiqmasdi.
+
+**Sabab.** `Categories.vue` da `const form = ref(blank())` chaqiruvi `presets`
+massivi e'lon qilinishidan **oldin** turardi. `blank()` funksiyasi hoisting
+tufayli mavjud, lekin `presets` o'sha paytda hali TDZ (temporal dead zone) da —
+`ReferenceError: Cannot access 'presets' before initialization`. Xato `setup()`
+ichida yuz bergani uchun komponent umuman render bo'lmasdi; layout esa joyida
+qolgani uchun tashqaridan "sahifa bo'sh" bo'lib ko'rinardi.
+
+**Yechim.** `presets` va `blank()` `form` dan oldinga ko'chirildi.
+
+**Nima uchun kerak.** Bu sahifa mijozlarni ranglangan guruhlarga ajratadi (VIP,
+Doimiy, Yangi). Guruh mijozlar bazasida chip sifatida ko'rinadi va segment bo'yicha
+filtrlash uchun ishlatiladi. API (`/v1/client-categories`) ishlayotgan edi — faqat
+sahifa ochilmasdi.
+
 ### 16. Yozuv holatini o'zgartirib bo'lmasdi — seed'dagi noto'g'ri `source` (bug)
 
 **Muammo.** Navbatlar ro'yxatida holatni "Tasdiqlangan" dan "Keldi" ga o'zgartirsa,
