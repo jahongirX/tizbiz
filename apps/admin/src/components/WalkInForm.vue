@@ -24,7 +24,9 @@ const masterId = ref(props.staffId || '')
 const serviceId = ref('')
 const phone = ref('')
 const name = ref('')
-const withClient = ref(false)
+// Shown by default: a shop usually does take the number, and an extra click to
+// reveal the field is one the master will skip.
+const withClient = ref(true)
 
 const service = computed(() => services.value.find((s) => s.id === serviceId.value) || null)
 const canSubmit = computed(() => !!masterId.value && !!serviceId.value && !submitting.value)
