@@ -10,6 +10,35 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 19. Xato matnlari o'zbekchada + yozuv o'zi yakunlanadi
+
+**Xato matnlari.** Holat o'zgarishi rad etilganda texnik kalitlar chiqardi:
+*"Holatni 'canceled' dan 'completed' ga o'zgartirib bo'lmaydi."* Endi
+`Appointment::STATUS_LABELS` orqali:
+*«Bekor qilindi» holatidan «Bajarildi» holatiga o'tkazib bo'lmaydi.*
+Shu bilan birga `TenantContext` dagi oxirgi inglizcha xabar ham tarjima qilindi
+("No active business selected." → "Faol biznes tanlanmagan.").
+
+**Avtomatik yakunlash.** Yangi konsol komandasi
+`php yii appointment/auto-complete [graceMin]`: **"Keldi"** holatidagi yozuv
+xizmat vaqti tugagach o'zi **"Bajarildi"** ga o'tadi. Usta kompyuterga qaytib
+tugma bosmaydi.
+
+- Faqat `arrived` supuriladi. `pending`/`confirmed` tegilmaydi — bu mijoz
+  ro'yxatdan o'tmaganini bildiradi, uni yakunlash yo'q tushumni yozish bo'lardi.
+- `graceMin` — usta bir-ikki daqiqa cho'zsa kesib qo'ymasligi uchun.
+- Konsol ilovasiga `appointmentCompleted` hodisasi ulandi, ya'ni keshbek
+  API orqali yakunlangandagi kabi hisoblanadi.
+
+Cron (har 5 daqiqada):
+
+```
+*/5 * * * *  php /path/yii appointment/auto-complete
+```
+
+**Tekshiruv.** Vaqti o'tgan 3 ta "Keldi" yozuvi "Bajarildi" ga o'tdi; kelajakdagi
+yozuvlarga tegilmadi.
+
 ### 18. Ustalarga rasm (avatar)
 
 Mijoz ustani ismidan emas, **yuzidan** taniydi — booking sahifasida esa faqat

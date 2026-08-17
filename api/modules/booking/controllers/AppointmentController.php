@@ -280,7 +280,11 @@ class AppointmentController extends Controller
         }
         $allowed = self::TRANSITIONS[$current] ?? [];
         if (!in_array($next, $allowed, true)) {
-            throw new ConflictHttpException("Holatni '$current' dan '$next' ga o'zgartirib bo'lmaydi.");
+            throw new ConflictHttpException(sprintf(
+                '«%s» holatidan «%s» holatiga o\'tkazib bo\'lmaydi.',
+                Appointment::statusLabel($current),
+                Appointment::statusLabel($next)
+            ));
         }
 
         $model->status = $next;

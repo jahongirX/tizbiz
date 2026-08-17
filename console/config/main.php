@@ -18,6 +18,9 @@ return [
             ],
         ],
     ],
+    // Console-side auto-complete finishes appointments too, so cashback must be
+    // awarded there exactly as it is in the API.
+    'on appointmentCompleted' => [\api\modules\loyalty\services\LoyaltyService::class, 'onAppointmentCompleted'],
     'controllerMap' => [
         'migrate' => [
             'class' => \yii\console\controllers\MigrateController::class,

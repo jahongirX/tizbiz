@@ -28,7 +28,7 @@ class TenantContext extends Component
     public function require(): int
     {
         if ($this->id === null) {
-            throw new ForbiddenHttpException('No active business selected.');
+            throw new ForbiddenHttpException('Faol biznes tanlanmagan.');
         }
         return $this->id;
     }

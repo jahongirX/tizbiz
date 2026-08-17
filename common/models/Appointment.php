@@ -47,6 +47,21 @@ class Appointment extends ActiveRecord
         self::STATUS_CANCELED,
     ];
 
+    /** Uzbek labels — API errors are shown to the user as-is. */
+    public const STATUS_LABELS = [
+        self::STATUS_PENDING => 'Kutilmoqda',
+        self::STATUS_CONFIRMED => 'Tasdiqlangan',
+        self::STATUS_ARRIVED => 'Keldi',
+        self::STATUS_COMPLETED => 'Bajarildi',
+        self::STATUS_NO_SHOW => 'Kelmadi',
+        self::STATUS_CANCELED => 'Bekor qilindi',
+    ];
+
+    public static function statusLabel(?string $status): string
+    {
+        return self::STATUS_LABELS[$status] ?? (string) $status;
+    }
+
     /** Statuses that free up the slot (do not block overlapping bookings). */
     public const RELEASED_STATUSES = [
         self::STATUS_CANCELED,
