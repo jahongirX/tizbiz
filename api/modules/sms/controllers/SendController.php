@@ -3,6 +3,7 @@
 namespace api\modules\sms\controllers;
 
 use api\modules\notify\services\AndroidSmsSender;
+use common\models\SmsAccount;
 use common\models\SmsBlacklist;
 use common\models\SmsDevice;
 use common\models\SmsMessage;
@@ -58,6 +59,26 @@ class SendController extends BaseController
             return ['sent' => 0, 'failed' => 0, 'blocked' => $blocked, 'messages' => []];
         }
 
+        // Account status + monthly quota (SMS clients created by a superadmin).
+        // No account = unrestricted (local/demo use); an account gates sending.
+        $quotaBlocked = 0;
+        $account = SmsAccount::forUser($this->uid());
+        if ($account !== null) {
+            if (!$account->is_active) {
+                throw new UnprocessableEntityHttpException('SMS akkaunt bloklangan.');
+            }
+            $remaining = $account->remaining(); // null = unlimited
+            if ($remaining !== null) {
+                if ($remaining <= 0) {
+                    throw new UnprocessableEntityHttpException('Oylik SMS limiti tugagan.');
+                }
+                if (count($phones) > $remaining) {
+                    $quotaBlocked = count($phones) - $remaining;
+                    $phones = array_slice($phones, 0, $remaining);
+                }
+            }
+        }
+
         $device = $this->resolveDevice();
         $override = [
             'server' => $device->server,
@@ -93,7 +114,7 @@ class SendController extends BaseController
             $results[] = $msg;
         }
 
-        return ['sent' => $sent, 'failed' => $failed, 'blocked' => $blocked, 'device_id' => (int) $device->id, 'messages' => $results];
+        return ['sent' => $sent, 'failed' => $failed, 'blocked' => $blocked, 'quota_blocked' => $quotaBlocked, 'device_id' => (int) $device->id, 'messages' => $results];
     }
 
     /** Resolve the device to send through: explicit device_id, else first active. */

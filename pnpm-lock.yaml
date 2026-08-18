@@ -90,6 +90,31 @@ importers:
         specifier: ^6.0.7
         version: 6.4.3
 
+  apps/superadmin:
+    dependencies:
+      '@tizbiz/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
+      lucide-vue-next:
+        specifier: ^0.469.0
+        version: 0.469.0(vue@3.5.40)
+      pinia:
+        specifier: ^2.3.0
+        version: 2.3.1(vue@3.5.40)
+      vue:
+        specifier: ^3.5.13
+        version: 3.5.40
+      vue-router:
+        specifier: ^4.5.0
+        version: 4.6.4(vue@3.5.40)
+    devDependencies:
+      '@vitejs/plugin-vue':
+        specifier: ^5.2.1
+        version: 5.2.4(vite@6.4.3)(vue@3.5.40)
+      vite:
+        specifier: ^6.0.7
+        version: 6.4.3
+
   packages/api-client: {}
 
 packages:

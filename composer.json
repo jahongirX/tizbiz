@@ -29,7 +29,8 @@
             "frontend\\": "frontend/",
             "backend\\": "backend/",
             "tenant\\": "tenant/",
-            "sms\\": "sms/"
+            "sms\\": "sms/",
+            "superadmin\\": "superadmin/"
         },
         "exclude-from-classmap": [
             "/console/migrations/"

@@ -10,7 +10,7 @@ return [
     ],
     // Listing a module id in bootstrap triggers its Module::bootstrap(), which
     // self-registers that module's REST URL rules.
-    'bootstrap' => ['log', 'auth', 'booking', 'crm', 'loyalty', 'billing', 'notify', 'site', 'analytics', 'finance', 'payroll', 'inventory', 'catalog', 'sms'],
+    'bootstrap' => ['log', 'auth', 'booking', 'crm', 'loyalty', 'billing', 'notify', 'site', 'analytics', 'finance', 'payroll', 'inventory', 'catalog', 'sms', 'superadmin'],
     // When an appointment is completed, credit loyalty cashback for the client.
     'on appointmentCompleted' => [\api\modules\loyalty\services\LoyaltyService::class, 'onAppointmentCompleted'],
     // Answer CORS preflight (OPTIONS) before verb-scoped routing can 404 it.
@@ -67,6 +67,7 @@ return [
         'inventory' => ['class' => \api\modules\inventory\Module::class],
         'catalog' => ['class' => \api\modules\catalog\Module::class],
         'sms' => ['class' => \api\modules\sms\Module::class],
+        'superadmin' => ['class' => \api\modules\superadmin\Module::class],
     ],
     'params' => $params,
 ];
