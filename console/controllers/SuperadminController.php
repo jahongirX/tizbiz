@@ -16,6 +16,27 @@ use yii\helpers\Console;
  */
 class SuperadminController extends Controller
 {
+    /**
+     * Create (or update) a user and make them a superadmin in one step:
+     *   php yii superadmin/create +998901234567 secretpass "Full Name"
+     */
+    public function actionCreate(string $phone, string $password, string $name = 'Superadmin'): int
+    {
+        $normalized = Phone::normalize($phone) ?? $phone;
+        $user = User::findOne(['phone' => $normalized]) ?? new User();
+        $user->phone = $normalized;
+        $user->name = $name;
+        $user->status = User::STATUS_ACTIVE;
+        $user->is_superadmin = true;
+        $user->setPassword($password);
+        if (!$user->save()) {
+            $this->stderr('Failed: ' . json_encode($user->getErrors()) . "\n", Console::FG_RED);
+            return ExitCode::UNSPECIFIED_ERROR;
+        }
+        $this->stdout(sprintf("Superadmin ready: %s (id=%d)\n", $normalized, (int) $user->id), Console::FG_GREEN);
+        return ExitCode::OK;
+    }
+
     public function actionGrant(string $phone): int
     {
         return $this->setFlag($phone, true);
