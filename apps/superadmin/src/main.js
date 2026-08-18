@@ -13,8 +13,10 @@ async function bootstrap() {
   if (auth.isAuthed) {
     try {
       await auth.fetchMe()
-    } catch (_) {
-      auth.logout(false)
+    } catch (e) {
+      // Only a real 401 (expired/invalid token) should end the session; a
+      // transient network/TLS/CORS hiccup must not kick the user to login.
+      if (e && e.status === 401) auth.logout(false)
     }
   }
 
