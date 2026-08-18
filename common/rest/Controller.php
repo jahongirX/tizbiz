@@ -30,7 +30,7 @@ class Controller extends WebController
             'cors' => [
                 'Origin' => explode(',', getenv('APP_ORIGINS') ?: '*'),
                 'Access-Control-Request-Method' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-                'Access-Control-Request-Headers' => ['Authorization', 'Content-Type', 'X-Telegram-Init-Data'],
+                'Access-Control-Request-Headers' => ['Authorization', 'Content-Type', 'X-Telegram-Init-Data', 'X-Api-Key'],
                 'Access-Control-Max-Age' => 3600,
             ],
         ];

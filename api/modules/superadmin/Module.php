@@ -20,6 +20,7 @@ class Module extends BaseModule implements BootstrapInterface
             'POST v1/superadmin/sms-accounts' => 'superadmin/sms-account/create',
             'PATCH v1/superadmin/sms-accounts/<id:\d+>' => 'superadmin/sms-account/update',
             'POST v1/superadmin/sms-accounts/<id:\d+>/password' => 'superadmin/sms-account/password',
+            'POST v1/superadmin/sms-accounts/<id:\d+>/apikey' => 'superadmin/sms-account/apikey',
             'DELETE v1/superadmin/sms-accounts/<id:\d+>' => 'superadmin/sms-account/delete',
         ], false);
     }

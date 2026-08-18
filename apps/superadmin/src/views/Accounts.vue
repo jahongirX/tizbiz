@@ -1,7 +1,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { api, ApiError } from '@tizbiz/api-client'
-import { Plus, Pencil, Trash2, KeyRound } from 'lucide-vue-next'
+import { Plus, Pencil, Trash2, KeyRound, Copy, RefreshCw } from 'lucide-vue-next'
 
 const loading = ref(true)
 const items = ref([])
@@ -91,6 +91,28 @@ async function remove(a) {
   await load()
 }
 
+const copiedId = ref(null)
+async function copyKey(a) {
+  if (!a.api_key) return
+  try {
+    await navigator.clipboard.writeText(a.api_key)
+    copiedId.value = a.id
+    setTimeout(() => (copiedId.value = null), 1500)
+  } catch { /* clipboard blocked */ }
+}
+
+async function regenKey(a) {
+  if (!confirm(`"${a.name}" uchun yangi API kalit yaratilsinmi?\nEski kalit ishlamay qoladi.`)) return
+  try {
+    const res = await api.post('/v1/superadmin/sms-accounts/' + a.id + '/apikey')
+    a.api_key = res.api_key
+    await copyKey(a)
+    alert('✓ Yangi kalit yaratildi va nusxalandi')
+  } catch (e) {
+    alert(e instanceof ApiError ? e.message : 'Xatolik')
+  }
+}
+
 const quotaText = (a) => (a.quota_monthly > 0 ? `${a.usage} / ${a.quota_monthly}` : `${a.usage} / ∞`)
 </script>
 
@@ -109,12 +131,24 @@ const quotaText = (a) => (a.quota_monthly > 0 ? `${a.usage} / ${a.quota_monthly}
   <div v-else class="table-wrap">
     <table class="table">
       <thead>
-        <tr><th>Nom</th><th>Login (telefon)</th><th>Kvota (bu oy)</th><th>Holat</th><th>Izoh</th><th></th></tr>
+        <tr><th>Nom</th><th>Login (telefon)</th><th>API kalit</th><th>Kvota (bu oy)</th><th>Holat</th><th>Izoh</th><th></th></tr>
       </thead>
       <tbody>
         <tr v-for="a in items" :key="a.id">
           <td style="font-weight: 600">{{ a.name }}</td>
           <td class="muted" style="white-space: nowrap">{{ a.phone }}</td>
+          <td>
+            <button
+              v-if="a.api_key"
+              class="keychip"
+              :title="'Nusxa olish: ' + a.api_key"
+              @click="copyKey(a)"
+            >
+              <Copy :size="12" />
+              <span>{{ copiedId === a.id ? 'Nusxalandi ✓' : a.api_key.slice(0, 10) + '…' }}</span>
+            </button>
+            <span v-else class="muted">—</span>
+          </td>
           <td :style="{ color: a.remaining === 0 ? 'var(--danger)' : 'inherit' }">
             {{ quotaText(a) }}
           </td>
@@ -126,6 +160,7 @@ const quotaText = (a) => (a.quota_monthly > 0 ? `${a.usage} / ${a.quota_monthly}
           <td class="muted">{{ a.note || '—' }}</td>
           <td>
             <div class="row" style="gap: 6px; justify-content: flex-end">
+              <button class="btn ghost sm" title="Yangi API kalit" @click="regenKey(a)"><RefreshCw :size="14" /></button>
               <button class="btn ghost sm" title="Parolni tiklash" @click="resetPassword(a)"><KeyRound :size="14" /></button>
               <button class="btn ghost sm" title="Tahrirlash" @click="openEdit(a)"><Pencil :size="14" /></button>
               <button class="btn ghost sm" style="color: var(--danger)" title="O‘chirish" @click="remove(a)"><Trash2 :size="14" /></button>
@@ -179,3 +214,13 @@ const quotaText = (a) => (a.quota_monthly > 0 ? `${a.usage} / ${a.quota_monthly}
     </div>
   </div>
 </template>
+
+<style scoped>
+.keychip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+  padding: 3px 8px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--border, #e2e8f0); background: rgba(127, 127, 127, 0.06); color: inherit;
+}
+.keychip:hover { background: rgba(127, 127, 127, 0.14); }
+</style>

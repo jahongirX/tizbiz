@@ -25,7 +25,7 @@ class Cors
         $origin = $request->headers->get('Origin');
         $response->headers->set('Access-Control-Allow-Origin', $allowed === '*' ? ($origin ?: '*') : $allowed);
         $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-        $response->headers->set('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Telegram-Init-Data');
+        $response->headers->set('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Telegram-Init-Data, X-Api-Key');
         $response->headers->set('Access-Control-Max-Age', '3600');
         $response->statusCode = 204;
         $response->data = null;

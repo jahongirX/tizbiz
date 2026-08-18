@@ -128,6 +128,14 @@ class SmsAccountController extends BaseController
         return ['ok' => true];
     }
 
+    /** POST .../<id>/apikey — rotate the account's public API key. */
+    public function actionApikey(int $id): array
+    {
+        $acc = $this->find($id);
+        $acc->rotateKey();
+        return ['api_key' => $acc->api_key];
+    }
+
     /** Revoke SMS access (removes the sms_account row; the login itself remains). */
     public function actionDelete(int $id): array
     {
@@ -156,6 +164,7 @@ class SmsAccountController extends BaseController
             'remaining' => $a->remaining(),
             'is_active' => (bool) $a->is_active,
             'note' => $a->note,
+            'api_key' => $a->api_key,
             'created_at' => (int) $a->created_at,
         ];
     }

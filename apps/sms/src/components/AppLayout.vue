@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { RouterView, RouterLink, useRoute } from 'vue-router'
-import { BarChart3, Smartphone, Send, MessageSquare, FileText, Users, Ban, LogOut, Menu } from 'lucide-vue-next'
+import { BarChart3, Smartphone, Send, MessageSquare, FileText, Users, Ban, Code2, LogOut, Menu } from 'lucide-vue-next'
 import { useAuthStore } from '../stores/auth'
 import logoUrl from '../assets/logo.png'
 
@@ -17,6 +17,7 @@ const nav = [
   { to: '/templates', label: 'Shablonlar', icon: FileText },
   { to: '/contacts', label: 'Kontaktlar', icon: Users },
   { to: '/blacklist', label: 'Qora ro‘yxat', icon: Ban },
+  { to: '/api', label: 'API', icon: Code2 },
 ]
 
 const title = computed(() => nav.find((n) => n.to === route.path)?.label || 'SMS')

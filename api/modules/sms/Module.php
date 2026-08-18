@@ -39,6 +39,17 @@ class Module extends BaseModule implements BootstrapInterface
             'GET v1/sms/blacklist' => 'sms/blacklist/index',
             'POST v1/sms/blacklist' => 'sms/blacklist/create',
             'DELETE v1/sms/blacklist/<id:\d+>' => 'sms/blacklist/delete',
+
+            // Client's own API key (dashboard, Bearer-auth).
+            'GET v1/sms/apikey' => 'sms/key/index',
+            'POST v1/sms/apikey/regenerate' => 'sms/key/regenerate',
+
+            // Public SMS API for third-party integrations (API-key auth).
+            'POST v1/sms/api/send' => 'sms/api/send',
+            'GET v1/sms/api/balance' => 'sms/api/balance',
+            'GET v1/sms/api/messages' => 'sms/api/messages',
+            'GET v1/sms/api/messages/<id:\d+>' => 'sms/api/message',
+            'GET v1/sms/api/devices' => 'sms/api/devices',
         ], false);
     }
 }

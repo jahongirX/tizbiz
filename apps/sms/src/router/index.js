@@ -14,6 +14,7 @@ const routes = [
       { path: 'templates', name: 'templates', component: () => import('../views/Templates.vue') },
       { path: 'contacts', name: 'contacts', component: () => import('../views/Contacts.vue') },
       { path: 'blacklist', name: 'blacklist', component: () => import('../views/Blacklist.vue') },
+      { path: 'api', name: 'api', component: () => import('../views/Api.vue') },
     ],
   },
 ]
