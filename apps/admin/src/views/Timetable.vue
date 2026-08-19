@@ -18,6 +18,14 @@ import {
 import Modal from '../components/Modal.vue'
 import AppointmentForm from '../components/AppointmentForm.vue'
 import { selectedDate, setSelectedDate } from '../composables/useCalendar'
+import { useAuthStore } from '../stores/auth'
+import OrdersTimeline from './OrdersTimeline.vue'
+
+// Catalog businesses (cafe / tort) don't book appointments — their "Jadval"
+// is a read-only timeline of incoming orders (see OrdersTimeline). Everything
+// below (staff, appointments) only runs for slot/medical/rental engines.
+const auth = useAuthStore()
+const isCatalog = computed(() => auth.activeBusiness?.engine === 'catalog')
 
 const HOUR_PX = 56
 const SNAP_MIN = 30
@@ -335,6 +343,7 @@ async function onCreated() {
 
 /* ---------- lifecycle ---------- */
 onMounted(async () => {
+  if (isCatalog.value) return // catalog uses OrdersTimeline; skip appointment loading
   await loadStaff()
   await load()
   nowTimer = setInterval(() => {
@@ -348,7 +357,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="tt">
+  <!-- Catalog (cafe / tort): orders timeline instead of appointment scheduling -->
+  <OrdersTimeline v-if="isCatalog" />
+
+  <div v-else class="tt">
     <div class="page-head">
       <h1>Jadval</h1>
       <button class="btn btn-primary" :disabled="!staffId" @click="openCreate(today, '09:00')">

@@ -13,6 +13,11 @@ const WEEKDAY_INITIALS = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya']
 
 const today = todayInput()
 
+// The week (its Monday) currently shown in the Timetable, and the week under
+// the cursor — used to highlight/select a whole week at once.
+const selMonday = computed(() => mondayOf(selectedDate.value))
+const hoverMonday = ref('')
+
 // First day ('YYYY-MM-01') of the month currently displayed in the grid.
 function firstOfMonth(dateStr) {
   return dateStr.slice(0, 7) + '-01'
@@ -87,15 +92,22 @@ function pick(d) {
       <span v-for="w in WEEKDAY_INITIALS" :key="w" class="mc-wd">{{ w }}</span>
     </div>
 
-    <div class="mc-grid">
+    <div class="mc-grid" @mouseleave="hoverMonday = ''">
       <button
         v-for="d in days"
         :key="d.date"
         type="button"
         class="mc-day"
-        :class="{ out: !d.inMonth, today: d.isToday, selected: d.isSelected }"
+        :class="{
+          out: !d.inMonth,
+          today: d.isToday,
+          selected: d.isSelected,
+          'in-week': mondayOf(d.date) === selMonday,
+          'hover-week': hoverMonday && mondayOf(d.date) === hoverMonday,
+        }"
         :aria-current="d.isToday ? 'date' : undefined"
         :aria-pressed="d.isSelected"
+        @mouseenter="hoverMonday = mondayOf(d.date)"
         @click="pick(d)"
       >
         {{ d.day }}
@@ -183,6 +195,14 @@ function pick(d) {
 .mc-day.today {
   color: var(--primary);
   font-weight: 700;
+}
+/* Whole-week highlight: the shown week (in-week) and the hovered week. */
+.mc-day.in-week {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.mc-day.hover-week {
+  background: color-mix(in srgb, var(--primary) 16%, transparent);
 }
 .mc-day.selected {
   background: var(--primary);
