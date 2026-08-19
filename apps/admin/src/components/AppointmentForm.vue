@@ -4,6 +4,7 @@ import { api, ApiError } from '@tizbiz/api-client'
 import { formatSom } from '../lib/money'
 import { localToUtc, minutesToHhmm, todayInput } from '../lib/datetime'
 import PhoneInput from './PhoneInput.vue'
+import { useAuthStore } from '../stores/auth'
 import {
   Search,
   User,
@@ -47,6 +48,12 @@ const services = ref([])
 const serviceSearch = ref('')
 // A visit can carry several services (soch + soqol): the first is the API's
 // service_id, the rest ride along as extra_service_ids.
+const auth = useAuthStore()
+// Booking several services at once is a barbershop/salon habit; other verticals
+// keep the single-service form exactly as it was.
+const multiService = computed(() =>
+  ['barber', 'salon'].includes(String(auth.activeBusiness?.category || '')),
+)
 const serviceIds = ref(props.initial.serviceId ? [props.initial.serviceId] : [])
 const serviceId = computed(() => serviceIds.value[0] || '')
 
@@ -184,6 +191,10 @@ async function loadRecentClients() {
 
 /* ---------- selections ---------- */
 function selectService(s) {
+  if (!multiService.value) {
+    serviceIds.value = serviceIds.value[0] === s.id ? [] : [s.id]
+    return
+  }
   const at = serviceIds.value.indexOf(s.id)
   if (at >= 0) serviceIds.value.splice(at, 1)
   else serviceIds.value.push(s.id)
@@ -237,7 +248,7 @@ async function submit() {
     const payload = {
       staff_id: staffId.value,
       service_id: serviceId.value,
-      extra_service_ids: serviceIds.value.slice(1),
+      ...(multiService.value ? { extra_service_ids: serviceIds.value.slice(1) } : {}),
       starts_at: localToUtc(date.value, time.value),
       status: status.value,
       notes: notes.value.trim() || undefined,

@@ -7,6 +7,9 @@ import { soms, duration } from '../format.js'
 const props = defineProps({
   services: { type: Array, default: () => [] },
   selectedIds: { type: Array, default: () => [] },
+  // Off for verticals that book one service at a time: no tick, no total, and a
+  // tap goes straight to the next step.
+  multi: { type: Boolean, default: false },
 })
 const emit = defineEmits(['toggle', 'next'])
 
@@ -27,7 +30,7 @@ function isOn(id) {
     <div class="step-head">
       <h2>Xizmatni tanlang</h2>
     </div>
-    <p class="section-label">Bir nechtasini birga tanlashingiz mumkin</p>
+    <p v-if="multi" class="section-label">Bir nechtasini birga tanlashingiz mumkin</p>
 
     <div v-if="!services.length" class="empty">
       <div class="emo">📋</div>
@@ -42,7 +45,7 @@ function isOn(id) {
       :aria-pressed="isOn(s.id)"
       @click="emit('toggle', s)"
     >
-      <span class="tick" :class="{ on: isOn(s.id) }" aria-hidden="true">
+      <span v-if="multi" class="tick" :class="{ on: isOn(s.id) }" aria-hidden="true">
         <svg v-if="isOn(s.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
           <path d="M20 6L9 17l-5-5" />
@@ -65,9 +68,15 @@ function isOn(id) {
           depozit {{ soms(s.deposit_tiyin) }}
         </span>
       </div>
+      <span v-if="!multi" class="chev">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 18l6-6-6-6" />
+        </svg>
+      </span>
     </button>
 
-    <div v-if="chosen.length" class="basket">
+    <div v-if="multi && chosen.length" class="basket">
       <div class="basket-sum">
         <strong>{{ soms(totalPrice) }}</strong>
         <span>{{ chosen.length }} ta xizmat · {{ duration(totalMin) }}</span>

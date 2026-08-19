@@ -32,6 +32,12 @@ qator sifatida yoziladi.
   (`kind = service` qatorlari). Mahsulotlar avvalgidek hisobga kirmaydi —
   catalog vertikalining xatti-harakati o'zgarmadi.
 
+**Faqat barber/salon.** Ko'p tanlov `category` bo'yicha yoqiladi
+(`barber`, `salon`). `slot` engine'ga tushadigan boshqa biznes turlari (masalan
+ijara — hozircha o'z engine'i yo'q) avvalgidek: belgilash katakchasi ham, jami
+paneli ham ko'rinmaydi, xizmatni bosish darhol keyingi qadamga o'tkazadi.
+Admin formasida ham xuddi shunday gate bor.
+
 **Frontend.**
 - Booking sayti: `ServiceStep` — ko'p tanlovli, pastda yopishib turuvchi jami
   (narx, davomiylik, depozit) va "Davom etish".

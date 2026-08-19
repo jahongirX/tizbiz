@@ -32,6 +32,12 @@ const step = ref('service')
 // first in service_id and the rest as line items.
 const sel = reactive({ services: [], staff: null, slot: null })
 const primaryService = computed(() => sel.services[0] || null)
+// Booking several services at once is a barbershop/salon habit. Other business
+// types that fall back to this engine keep the old one-service flow untouched.
+const MULTI_SERVICE_CATEGORIES = ['barber', 'salon']
+const multiService = computed(() =>
+  MULTI_SERVICE_CATEGORIES.includes(String(business.value?.category || '')),
+)
 const selectedServiceIds = computed(() => sel.services.map((s) => s.id))
 const totalDuration = computed(() =>
   sel.services.reduce((n, s) => n + (Number(s.duration_min) || 0), 0),
@@ -114,10 +120,15 @@ const coverStyle = computed(() =>
 
 // ---- Navigation ----
 function toggleService(s) {
+  sel.slot = null // the visit's length changed, so the offered slots did too
+  if (!multiService.value) {
+    sel.services = [s]
+    servicesDone()
+    return
+  }
   const at = sel.services.findIndex((x) => x.id === s.id)
   if (at >= 0) sel.services.splice(at, 1)
   else sel.services.push(s)
-  sel.slot = null // the visit's length changed, so the offered slots did too
 }
 function servicesDone() {
   if (!sel.services.length) return
@@ -278,6 +289,7 @@ function restart() {
           v-if="step === 'service'"
           :services="services"
           :selected-ids="selectedServiceIds"
+          :multi="multiService"
           @toggle="toggleService"
           @next="servicesDone"
         />
