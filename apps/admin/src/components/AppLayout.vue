@@ -505,7 +505,6 @@ async function onSwitch(e) {
 }
 .content {
   padding: 24px;
-  max-width: 1200px;
   width: 100%;
 }
 .burger {
