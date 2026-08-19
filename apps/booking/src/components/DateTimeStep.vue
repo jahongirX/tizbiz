@@ -8,6 +8,8 @@ const props = defineProps({
   // merged, and each slot remembers which master can actually take it.
   staffIds: { type: Array, required: true },
   serviceId: { type: [Number, String], required: true },
+  // Services booked in the same visit; slots must fit their combined length.
+  extraServiceIds: { type: Array, default: () => [] },
   selectedStart: { type: [String, null], default: null },
 })
 const emit = defineEmits(['select', 'back'])
@@ -37,6 +39,7 @@ async function load() {
   slots.value = []
   try {
     const q = new URLSearchParams({ date: date.value, service_id: String(props.serviceId) })
+    if (props.extraServiceIds.length) q.set('extra', props.extraServiceIds.join(','))
     const lists = await Promise.all(
       props.staffIds.map((id) =>
         api
@@ -61,6 +64,7 @@ async function load() {
 onMounted(load)
 watch(date, load)
 watch(() => props.staffIds, load)
+watch(() => props.extraServiceIds, load)
 </script>
 
 <template>

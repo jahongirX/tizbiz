@@ -10,6 +10,39 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 22. Bir yozuvda bir necha xizmat (soch + soqol)
+
+Barberning eng ko'p buyurtmasi bitta xizmat emas. Ilgari `service_id` bitta
+bo'lgani uchun ikkinchi xizmatning vaqti jadvalda ko'rinmasdi va slot noto'g'ri
+hisoblanardi.
+
+**Yondashuv.** Migratsiya kerak bo'lmadi: `appointment_items` jadvali
+`kind = service` ni allaqachon qo'llaydi. Birinchi xizmat avvalgidek
+`service_id` da qoladi (barcha eski o'quvchilar ishlayveradi), qolganlari
+qator sifatida yoziladi.
+
+- `AvailabilityService::slots(..., array $extraServiceIds = [])` — slot
+  uzunligi barcha xizmatlar yig'indisi. `GET .../availability?...&extra=7,10`.
+- `POST /v1/appointments` ixtiyoriy `extra_service_ids` qabul qiladi:
+  `ends_at` yig'indi bo'yicha, qo'shimchalar `appointment_items` ga snapshot
+  qilinadi. Public bronda faqat faol va onlayn xizmatlar ruxsat etiladi;
+  begona xizmat 400 qaytaradi.
+- `Appointment::fields()` ga `service_names` qo'shildi (birlamchi + qo'shimchalar).
+- **Keshbek** endi qo'shimcha xizmatlarni ham hisoblaydi
+  (`kind = service` qatorlari). Mahsulotlar avvalgidek hisobga kirmaydi —
+  catalog vertikalining xatti-harakati o'zgarmadi.
+
+**Frontend.**
+- Booking sayti: `ServiceStep` — ko'p tanlovli, pastda yopishib turuvchi jami
+  (narx, davomiylik, depozit) va "Davom etish".
+- Tasdiqlash va yakuniy ekranda xizmatlar ro'yxati, yig'ma narx va depozit.
+- Admin: "Yangi yozuv" formasida xizmatlarni bir nechta tanlash (davomiylik
+  avtomatik yig'iladi); jadval va Navbatlar ro'yxatida "Soch + Soqol" ko'rinadi.
+
+**Tekshiruv.** 30 daq → 20 slot; +20 daq → 7 slot. Uch xizmatli yozuv
+04:00→05:00 yaratildi, keshbek bazasi 95 000 so'm; ustma-ust yozuvga urinish
+"Tanlangan vaqt band" bilan rad etildi.
+
 ### 21. Jadvalda usta tanlash: select o'rniga tab, tanlov esda qoladi
 
 **Muammo.** Ustani almashtirgandan keyin sahifa yangilansa, tanlov birinchi

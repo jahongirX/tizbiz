@@ -146,6 +146,16 @@ class AppointmentController extends Controller
         // a future time, and a genuinely offered slot can be booked. Authed admin
         // bookings may legitimately backfill or override, so they skip these.
         $isPublic = $this->currentUser() === null;
+
+        // Further services booked in the same visit (soch + soqol). The primary
+        // stays in `service_id` so every existing reader keeps working; the rest
+        // become line items and extend the appointment's length.
+        $extraServices = $this->extraServices($businessId, $serviceId, $isPublic);
+        $totalDuration = (int) $service->duration_min;
+        foreach ($extraServices as $extra) {
+            $totalDuration += max(0, (int) $extra->duration_min);
+        }
+
         if ($isPublic && !$service->is_active) {
             throw new BadRequestHttpException('Bu xizmatni bron qilish mumkin emas.');
         }
@@ -166,7 +176,7 @@ class AppointmentController extends Controller
             throw new BadRequestHttpException('starts_at yaroqli sana-vaqt emas.');
         }
         $startUtc = $start->setTimezone($utc);
-        $endUtc = $startUtc->modify('+' . (int) $service->duration_min . ' minutes');
+        $endUtc = $startUtc->modify('+' . $totalDuration . ' minutes');
 
         $startStr = $startUtc->format(self::UTC_FORMAT);
         $endStr = $endUtc->format(self::UTC_FORMAT);
@@ -183,7 +193,12 @@ class AppointmentController extends Controller
             // service grid). This rejects off-hours / arbitrary times up front;
             // the transactional overlap check below still guards the race.
             $localDate = $startUtc->setTimezone(new DateTimeZone($tzName))->format('Y-m-d');
-            $availability = (new AvailabilityService())->slots($staff, $localDate, $serviceId);
+            $availability = (new AvailabilityService())->slots(
+                $staff,
+                $localDate,
+                $serviceId,
+                array_map(static fn ($x) => (int) $x->id, $extraServices)
+            );
             $offered = false;
             foreach ($availability['slots'] as $slot) {
                 if ($slot['start_utc'] === $startStr) {
@@ -239,6 +254,18 @@ class AppointmentController extends Controller
             if (!$model->save()) {
                 $tx->rollBack();
                 return $this->fail422($model);
+            }
+            // Snapshot the extra services as line items (name/price as sold).
+            foreach ($extraServices as $extra) {
+                $item = new AppointmentItem();
+                $item->business_id = $businessId;
+                $item->appointment_id = (int) $model->id;
+                $item->kind = AppointmentItem::KIND_SERVICE;
+                $item->ref_id = (int) $extra->id;
+                $item->name = (string) $extra->name;
+                $item->qty = 1;
+                $item->price_tiyin = (int) $extra->price_tiyin;
+                $item->save(false);
             }
             // Sell any attached products: snapshot as line items + decrement stock.
             $this->sellProducts($businessId, (int) $model->id);
@@ -329,6 +356,39 @@ class AppointmentController extends Controller
             return $model->getIsNewRecord() ? null : (int) $model->id;
         }
         return (int) $model->id;
+    }
+
+    /**
+     * Extra services from body('extra_service_ids'), verified against the
+     * business. The primary service is skipped if it is repeated. A public
+     * booking may only add services that are online-bookable and active.
+     *
+     * @return Service[]
+     */
+    private function extraServices(int $businessId, int $primaryId, bool $isPublic): array
+    {
+        $raw = $this->body('extra_service_ids');
+        if (!is_array($raw) || $raw === []) {
+            return [];
+        }
+        $ids = array_values(array_unique(array_filter(
+            array_map('intval', $raw),
+            static fn ($id) => $id > 0 && $id !== $primaryId
+        )));
+        if ($ids === []) {
+            return [];
+        }
+
+        $query = Service::find()->andWhere(['id' => $ids, 'business_id' => $businessId]);
+        if ($isPublic) {
+            $query->andWhere(['is_active' => 1, 'online_bookable' => 1]);
+        }
+        $rows = $query->all();
+
+        if (count($rows) !== count($ids)) {
+            throw new BadRequestHttpException('Qo\'shimcha xizmatlardan biri topilmadi.');
+        }
+        return $rows;
     }
 
     /**

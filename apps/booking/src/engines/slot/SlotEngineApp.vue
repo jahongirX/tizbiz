@@ -28,7 +28,20 @@ const business = computed(() => props.business)
 // The staff step only exists when there is a choice to make, and the client's
 // details live on the confirm screen — a returning client books in two taps.
 const step = ref('service')
-const sel = reactive({ service: null, staff: null, slot: null })
+// `services` holds every service of the visit, primary first: the API keeps the
+// first in service_id and the rest as line items.
+const sel = reactive({ services: [], staff: null, slot: null })
+const primaryService = computed(() => sel.services[0] || null)
+const selectedServiceIds = computed(() => sel.services.map((s) => s.id))
+const totalDuration = computed(() =>
+  sel.services.reduce((n, s) => n + (Number(s.duration_min) || 0), 0),
+)
+const totalPrice = computed(() =>
+  sel.services.reduce((n, s) => n + (Number(s.price_tiyin) || 0), 0),
+)
+const totalDeposit = computed(() =>
+  sel.services.reduce((n, s) => n + (Number(s.deposit_tiyin) || 0), 0),
+)
 
 const CLIENT_KEY = 'tizbiz_client'
 function rememberedClient() {
@@ -100,9 +113,14 @@ const coverStyle = computed(() =>
 )
 
 // ---- Navigation ----
-function pickService(s) {
-  sel.service = s
-  sel.slot = null // duration/availability depends on service
+function toggleService(s) {
+  const at = sel.services.findIndex((x) => x.id === s.id)
+  if (at >= 0) sel.services.splice(at, 1)
+  else sel.services.push(s)
+  sel.slot = null // the visit's length changed, so the offered slots did too
+}
+function servicesDone() {
+  if (!sel.services.length) return
   if (needsStaffStep.value) {
     step.value = 'staff'
   } else {
@@ -145,7 +163,8 @@ async function confirm() {
   try {
     const appt = await api.post('/v1/appointments', {
       staff_id: sel.staff.id,
-      service_id: sel.service.id,
+      service_id: primaryService.value.id,
+      extra_service_ids: sel.services.slice(1).map((s) => s.id),
       starts_at: sel.slot.start_utc,
       client: { name: client.name, phone: client.phone },
     })
@@ -196,7 +215,7 @@ async function payDeposit() {
 }
 
 function restart() {
-  sel.service = null
+  sel.services = []
   sel.staff = null
   sel.slot = null
   anyStaff.value = false
@@ -258,8 +277,9 @@ function restart() {
         <ServiceStep
           v-if="step === 'service'"
           :services="services"
-          :selected-id="sel.service?.id ?? null"
-          @select="pickService"
+          :selected-ids="selectedServiceIds"
+          @toggle="toggleService"
+          @next="servicesDone"
         />
 
         <StaffStep
@@ -273,7 +293,8 @@ function restart() {
         <DateTimeStep
           v-else-if="step === 'datetime'"
           :staff-ids="availabilityStaffIds"
-          :service-id="sel.service.id"
+          :service-id="primaryService.id"
+          :extra-service-ids="selectedServiceIds.slice(1)"
           :selected-start="sel.slot?.start_utc ?? null"
           @select="pickSlot"
           @back="backFromDatetime"
@@ -282,7 +303,10 @@ function restart() {
         <ConfirmStep
           v-else-if="step === 'confirm'"
           :business="business"
-          :service="sel.service"
+          :services="sel.services"
+          :total-min="totalDuration"
+          :total-price="totalPrice"
+          :total-deposit="totalDeposit"
           :staff="sel.staff"
           :slot="sel.slot"
           :client="client"
@@ -295,7 +319,8 @@ function restart() {
 
         <DoneStep
           v-else-if="step === 'done'"
-          :service="sel.service"
+          :services="sel.services"
+          :total-deposit="totalDeposit"
           :staff="sel.staff"
           :slot="sel.slot"
           :pay-loading="payLoading"

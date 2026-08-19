@@ -259,7 +259,7 @@ onMounted(async () => {
                 <strong>{{ a.client?.name || a.client_name || '—' }}</strong>
                 <div class="muted" style="font-size: 12px">{{ a.client?.phone || a.client_phone || '' }}</div>
               </td>
-              <td>{{ a.service?.name || a.service_name || '—' }}</td>
+              <td>{{ (a.service_names || []).join(' + ') || a.service?.name || a.service_name || '—' }}</td>
               <td>{{ a.staff?.name || a.staff_name || '—' }}</td>
               <td>
                 <select

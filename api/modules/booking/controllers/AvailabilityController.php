@@ -11,7 +11,10 @@ use yii\web\NotFoundHttpException;
 
 /**
  * Public availability lookup for the consumer booking page.
- * GET /v1/staff/<id>/availability?date=YYYY-MM-DD&service_id=...
+ * GET /v1/staff/<id>/availability?date=YYYY-MM-DD&service_id=...&extra=5,7
+ *
+ * `extra` lists further services booked in the same visit; the offered slots
+ * are then long enough for all of them together.
  *
  * No tenant context is assumed (endpoint is anonymous): staff is loaded by id
  * directly and the service is verified against the staff's business.
@@ -27,6 +30,10 @@ class AvailabilityController extends Controller
     {
         $date = (string) Yii::$app->request->get('date', '');
         $serviceId = (int) Yii::$app->request->get('service_id', 0);
+        $extraRaw = (string) Yii::$app->request->get('extra', '');
+        $extraIds = $extraRaw === ''
+            ? []
+            : array_map('intval', array_filter(explode(',', $extraRaw), 'strlen'));
 
         if ($date === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
             throw new BadRequestHttpException('Yaroqli sana (YYYY-MM-DD) talab qilinadi.');
@@ -40,6 +47,6 @@ class AvailabilityController extends Controller
             throw new NotFoundHttpException('Xodim topilmadi.');
         }
 
-        return (new AvailabilityService())->slots($staff, $date, $serviceId);
+        return (new AvailabilityService())->slots($staff, $date, $serviceId, $extraIds);
     }
 }

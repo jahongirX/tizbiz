@@ -154,6 +154,17 @@ class Appointment extends ActiveRecord
         $fields['service_duration'] = fn (self $m) => $m->service ? (int) $m->service->duration_min : null;
         $fields['staff_name'] = fn (self $m) => $m->staff?->name;
         $fields['items'] = fn (self $m) => $m->items;
+        // Every service on the visit, primary first — a barber books "soch +
+        // soqol" as one appointment and the extras live in items.
+        $fields['service_names'] = static function (self $m): array {
+            $names = $m->service ? [$m->service->name] : [];
+            foreach ($m->items as $item) {
+                if ($item->kind === AppointmentItem::KIND_SERVICE) {
+                    $names[] = $item->name;
+                }
+            }
+            return $names;
+        };
         return $fields;
     }
 }

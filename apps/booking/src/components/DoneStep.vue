@@ -2,7 +2,8 @@
 import { soms, prettyLocal } from '../format.js'
 
 defineProps({
-  service: { type: Object, required: true },
+  services: { type: Array, default: () => [] },
+  totalDeposit: { type: Number, default: 0 },
   staff: { type: Object, required: true },
   slot: { type: Object, required: true },
   payLoading: { type: Boolean, default: false },
@@ -27,7 +28,7 @@ const emit = defineEmits(['pay', 'restart'])
     <div class="summary">
       <div class="row">
         <span class="k">Xizmat</span>
-        <span class="v">{{ service.name }}</span>
+        <span class="v">{{ services.map((s) => s.name).join(' + ') }}</span>
       </div>
       <div class="row">
         <span class="k">Mutaxassis</span>
@@ -35,7 +36,7 @@ const emit = defineEmits(['pay', 'restart'])
       </div>
     </div>
 
-    <template v-if="service.deposit_tiyin > 0">
+    <template v-if="totalDeposit > 0">
       <div class="deposit-callout">
         <span class="ico">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -45,7 +46,7 @@ const emit = defineEmits(['pay', 'restart'])
           </svg>
         </span>
         <div class="txt">
-          <div class="amt">{{ soms(service.deposit_tiyin) }} depozit</div>
+          <div class="amt">{{ soms(totalDeposit) }} depozit</div>
           <div class="hint">Joyingizni kafolatlash uchun hozir to‘lang.</div>
         </div>
       </div>

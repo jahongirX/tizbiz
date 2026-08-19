@@ -22,9 +22,11 @@ class AvailabilityService
     private const UTC_FORMAT = 'Y-m-d H:i:s';
 
     /**
+     * @param int[] $extraServiceIds services booked in the same visit (soch +
+     *                               soqol): the slot must fit their sum.
      * @return array{date:string, timezone:string, slots:array<int, array{start_utc:string, end_utc:string, start_local:string}>}
      */
-    public function slots(Staff $staff, string $date, int $serviceId): array
+    public function slots(Staff $staff, string $date, int $serviceId, array $extraServiceIds = []): array
     {
         $tzName = $this->resolveTimezone($staff);
         $tz = new DateTimeZone($tzName);
@@ -39,7 +41,7 @@ class AvailabilityService
         if ($service === null || (int) $service->duration_min <= 0) {
             return $empty;
         }
-        $duration = (int) $service->duration_min;
+        $duration = (int) $service->duration_min + $this->extraDuration($staff, $extraServiceIds);
 
         if (!$staff->is_active) {
             return $empty;
@@ -139,6 +141,24 @@ class AvailabilityService
         }
 
         return ['date' => $date, 'timezone' => $tzName, 'slots' => $slots];
+    }
+
+    /** Summed duration of the additional services, own-business only. */
+    private function extraDuration(Staff $staff, array $extraServiceIds): int
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $extraServiceIds))));
+        if ($ids === []) {
+            return 0;
+        }
+        $rows = Service::find()
+            ->andWhere(['id' => $ids, 'business_id' => $staff->business_id])
+            ->all();
+
+        $total = 0;
+        foreach ($rows as $row) {
+            $total += max(0, (int) $row->duration_min);
+        }
+        return $total;
     }
 
     private function resolveTimezone(Staff $staff): string

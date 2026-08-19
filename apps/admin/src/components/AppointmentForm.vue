@@ -45,7 +45,10 @@ const tab = ref('services') // 'services' | 'products'
 
 const services = ref([])
 const serviceSearch = ref('')
-const serviceId = ref(props.initial.serviceId ?? '')
+// A visit can carry several services (soch + soqol): the first is the API's
+// service_id, the rest ride along as extra_service_ids.
+const serviceIds = ref(props.initial.serviceId ? [props.initial.serviceId] : [])
+const serviceId = computed(() => serviceIds.value[0] || '')
 
 const products = ref([])
 const productSearch = ref('')
@@ -65,8 +68,13 @@ const submitting = ref(false)
 const error = ref('')
 
 /* ---------- derived: chosen service ---------- */
-const selectedService = computed(() => services.value.find((s) => s.id === serviceId.value) || null)
-const duration = computed(() => Number(selectedService.value?.duration_min) || 0)
+const selectedServices = computed(() =>
+  serviceIds.value.map((id) => services.value.find((s) => s.id === id)).filter(Boolean),
+)
+const selectedService = computed(() => selectedServices.value[0] || null)
+const duration = computed(() =>
+  selectedServices.value.reduce((n, s) => n + (Number(s.duration_min) || 0), 0),
+)
 
 const endTime = computed(() => {
   if (!duration.value) return ''
@@ -176,7 +184,9 @@ async function loadRecentClients() {
 
 /* ---------- selections ---------- */
 function selectService(s) {
-  serviceId.value = serviceId.value === s.id ? '' : s.id
+  const at = serviceIds.value.indexOf(s.id)
+  if (at >= 0) serviceIds.value.splice(at, 1)
+  else serviceIds.value.push(s.id)
 }
 
 function addProduct(p) {
@@ -227,6 +237,7 @@ async function submit() {
     const payload = {
       staff_id: staffId.value,
       service_id: serviceId.value,
+      extra_service_ids: serviceIds.value.slice(1),
       starts_at: localToUtc(date.value, time.value),
       status: status.value,
       notes: notes.value.trim() || undefined,
@@ -354,10 +365,10 @@ onMounted(() => {
               :key="s.id"
               type="button"
               class="af-card"
-              :class="{ selected: serviceId === s.id }"
+              :class="{ selected: serviceIds.includes(s.id) }"
               @click="selectService(s)"
             >
-              <Check v-if="serviceId === s.id" :size="16" class="af-card-check" />
+              <Check v-if="serviceIds.includes(s.id)" :size="16" class="af-card-check" />
               <span class="af-card-name">{{ s.name }}</span>
               <span class="af-card-meta">
                 <strong>{{ formatSom(s.price_tiyin) }}</strong>

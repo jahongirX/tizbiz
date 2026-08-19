@@ -5,7 +5,10 @@ import { soms, duration, prettyLocal } from '../format.js'
 
 const props = defineProps({
   business: { type: Object, required: true },
-  service: { type: Object, required: true },
+  services: { type: Array, default: () => [] },
+  totalMin: { type: Number, default: 0 },
+  totalPrice: { type: Number, default: 0 },
+  totalDeposit: { type: Number, default: 0 },
   staff: { type: Object, required: true },
   slot: { type: Object, required: true },
   client: { type: Object, required: true },
@@ -47,8 +50,12 @@ function onConfirm() {
 
     <div class="summary">
       <div class="row">
-        <span class="k">Xizmat</span>
-        <span class="v">{{ service.name }} · {{ duration(service.duration_min) }}</span>
+        <span class="k">{{ services.length > 1 ? 'Xizmatlar' : 'Xizmat' }}</span>
+        <span class="v">
+          <template v-for="(s, i) in services" :key="s.id">
+            <br v-if="i" />{{ s.name }} · {{ duration(s.duration_min) }}
+          </template>
+        </span>
       </div>
       <div class="row">
         <span class="k">Mutaxassis</span>
@@ -59,12 +66,12 @@ function onConfirm() {
         <span class="v accent">{{ prettyLocal(slot.start_local) }}</span>
       </div>
       <div class="row total">
-        <span class="k">Narx</span>
-        <span class="v">{{ soms(service.price_tiyin) }}</span>
+        <span class="k">Narx<template v-if="services.length > 1"> · {{ duration(totalMin) }}</template></span>
+        <span class="v">{{ soms(totalPrice) }}</span>
       </div>
     </div>
 
-    <div v-if="service.deposit_tiyin > 0" class="deposit-callout">
+    <div v-if="totalDeposit > 0" class="deposit-callout">
       <span class="ico">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -73,7 +80,7 @@ function onConfirm() {
         </svg>
       </span>
       <div class="txt">
-        <div class="amt">{{ soms(service.deposit_tiyin) }} depozit</div>
+        <div class="amt">{{ soms(totalDeposit) }} depozit</div>
         <div class="hint">Joyingizni kafolatlaydi. Tasdiqlaganingizdan so‘ng to‘lanadi.</div>
       </div>
     </div>

@@ -291,6 +291,15 @@ class LoyaltyService
 
             $service = $appt->service ?? null;
             $amount = $service !== null && $service->price_tiyin !== null ? (int) $service->price_tiyin : 0;
+            // Extra services booked in the same visit are line items; count them
+            // too, or a "soch + soqol" visit would earn cashback on the haircut
+            // alone. Products keep their existing (excluded) behaviour.
+            $amount += (int) \common\models\AppointmentItem::find()
+                ->where([
+                    'appointment_id' => (int) $appt->id,
+                    'kind' => \common\models\AppointmentItem::KIND_SERVICE,
+                ])
+                ->sum('price_tiyin * qty');
             if ($amount <= 0) {
                 return;
             }

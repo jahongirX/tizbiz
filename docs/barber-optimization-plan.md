@@ -154,7 +154,7 @@ Hozir `staff.commission_percent` — ustaga bitta foiz. Amalda: soch olish 50%, 
 | 3. Rol bo'yicha tugmalar + o'zbekcha xato | ✅ |
 | 4.1 `api-client` shartnoma funksiyalari | ✅ (working-hours) |
 | 4.2 Bo'sh ro'yxat himoyasi | ✅ (`?clear=1`) |
-| **2.2 Bir yozuvda bir necha xizmat** | ⏳ migratsiya talab qiladi |
+| **2.2 Bir yozuvda bir necha xizmat** | ✅ (migratsiyasiz — `appointment_items`) |
 | **2.6 Mijoz kartasi maxsus maydonlari** | ⏳ migratsiya talab qiladi |
 | **2.9 Xizmat bo'yicha usta foizi** | ⏳ migratsiya talab qiladi |
 | 1. Hisobot sahifalarini birlashtirish | ⏳ |

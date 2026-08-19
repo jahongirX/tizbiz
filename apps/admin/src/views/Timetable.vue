@@ -381,6 +381,12 @@ function onWalkInCreated() {
   load()
 }
 
+/** Every service of the visit — a barber books "soch + soqol" as one record. */
+function serviceLabel(appt) {
+  const names = appt?.service_names?.length ? appt.service_names : [appt?.service_name]
+  return names.filter(Boolean).join(' + ')
+}
+
 function staffInitials(name) {
   return String(name || '?')
     .trim()
@@ -544,7 +550,7 @@ onBeforeUnmount(() => {
                 @click.stop="openDetail(b.appt)"
               >
                 <span class="ap-time">{{ formatTime(b.appt.starts_at) }}</span>
-                <span class="ap-service">{{ b.appt.service_name || 'Xizmat' }}</span>
+                <span class="ap-service">{{ serviceLabel(b.appt) }}</span>
                 <span class="ap-client">{{ b.appt.client_name || '—' }}</span>
               </button>
             </div>
@@ -554,7 +560,7 @@ onBeforeUnmount(() => {
     </template>
 
     <!-- Detail popover -->
-    <Modal v-if="detail" :title="detail.service_name || 'Yozuv'" @close="closeDetail">
+    <Modal v-if="detail" :title="serviceLabel(detail) || 'Yozuv'" @close="closeDetail">
       <div v-if="detailError" class="alert alert-error">{{ detailError }}</div>
       <dl class="tt-detail">
         <div>
@@ -563,7 +569,7 @@ onBeforeUnmount(() => {
         </div>
         <div>
           <dt>Xizmat</dt>
-          <dd>{{ detail.service_name || '—' }}</dd>
+          <dd>{{ serviceLabel(detail) || '—' }}</dd>
         </div>
         <div>
           <dt>Mijoz</dt>
