@@ -16,6 +16,7 @@ const props = defineProps({
   business: { type: Object, default: null },
   services: { type: Array, default: () => [] },
   staff: { type: Array, default: () => [] },
+  serviceCategories: { type: Array, default: () => [] },
 })
 
 // Only active offerings reach the wizard (mirrors the previous inline filter).
@@ -34,9 +35,15 @@ const sel = reactive({ services: [], staff: null, slot: null })
 const primaryService = computed(() => sel.services[0] || null)
 // Booking several services at once is a barbershop/salon habit. Other business
 // types that fall back to this engine keep the old one-service flow untouched.
-const MULTI_SERVICE_CATEGORIES = ['barber', 'salon']
-const multiService = computed(() =>
-  MULTI_SERVICE_CATEGORIES.includes(String(business.value?.category || '')),
+const BARBER_CATEGORIES = ['barber', 'salon']
+// Multi-select and the sectioned menu are both barbershop/salon behaviour; other
+// business types that fall back to this engine keep the plain single-pick list.
+const isBarberShop = computed(() =>
+  BARBER_CATEGORIES.includes(String(business.value?.category || '')),
+)
+const multiService = isBarberShop
+const serviceCategories = computed(() =>
+  isBarberShop.value ? props.serviceCategories || [] : [],
 )
 const selectedServiceIds = computed(() => sel.services.map((s) => s.id))
 const totalDuration = computed(() =>
@@ -289,6 +296,7 @@ function restart() {
           v-if="step === 'service'"
           :services="services"
           :selected-ids="selectedServiceIds"
+          :categories="serviceCategories"
           :multi="multiService"
           @toggle="toggleService"
           @next="servicesDone"

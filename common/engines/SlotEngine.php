@@ -4,6 +4,7 @@ namespace common\engines;
 
 use common\models\Business;
 use common\models\Service;
+use common\models\ServiceCategory;
 use common\models\Staff;
 
 /**
@@ -40,7 +41,27 @@ class SlotEngine implements EngineInterface
             'staff' => $enabled
                 ? Staff::find()->where(['business_id' => $business->id, 'is_active' => 1])->all()
                 : [],
+            // Flat list plus the sections it belongs to: the booking page groups
+            // a long menu ("Soch olish", "Soqol va yuz") instead of scrolling one
+            // undifferentiated column. Additive — a client that ignores it sees
+            // exactly the previous payload.
+            'service_categories' => $enabled ? $this->serviceCategories($business) : [],
         ];
+    }
+
+    /** @return array<int, array{id:int,name:string,sort:int}> ordered sections */
+    protected function serviceCategories(Business $business): array
+    {
+        $rows = ServiceCategory::find()
+            ->where(['business_id' => $business->id])
+            ->orderBy(['sort' => SORT_ASC, 'id' => SORT_ASC])
+            ->all();
+
+        return array_map(static fn (ServiceCategory $c) => [
+            'id' => (int) $c->id,
+            'name' => $c->name,
+            'sort' => (int) $c->sort,
+        ], $rows);
     }
 
     /** Shared public business profile (reused by sibling engines). */

@@ -7,6 +7,8 @@ import { soms, duration } from '../format.js'
 const props = defineProps({
   services: { type: Array, default: () => [] },
   selectedIds: { type: Array, default: () => [] },
+  // Ordered sections; empty means show one flat list.
+  categories: { type: Array, default: () => [] },
   // Off for verticals that book one service at a time: no tick, no total, and a
   // tap goes straight to the next step.
   multi: { type: Boolean, default: false },
@@ -23,6 +25,25 @@ const totalDeposit = computed(() =>
 function isOn(id) {
   return props.selectedIds.includes(id)
 }
+
+// Services under their section, in the shop's own order. Anything without a
+// section lands in a trailing group, and a shop with no sections at all keeps a
+// single unlabelled list.
+const groups = computed(() => {
+  if (!props.categories.length) {
+    return [{ id: 0, name: '', items: props.services }]
+  }
+  const out = props.categories.map((c) => ({
+    id: c.id,
+    name: c.name,
+    items: props.services.filter((s) => s.category_id === c.id),
+  }))
+  const rest = props.services.filter(
+    (s) => !props.categories.some((c) => c.id === s.category_id),
+  )
+  if (rest.length) out.push({ id: 0, name: 'Boshqa', items: rest })
+  return out.filter((g) => g.items.length)
+})
 </script>
 
 <template>
@@ -37,8 +58,10 @@ function isOn(id) {
       <p>Hozircha xizmatlar mavjud emas.</p>
     </div>
 
+    <template v-for="g in groups" :key="g.id">
+    <p v-if="g.name" class="group-head">{{ g.name }}</p>
     <button
-      v-for="s in services"
+      v-for="s in g.items"
       :key="s.id"
       class="card"
       :class="{ selected: isOn(s.id) }"
@@ -76,6 +99,7 @@ function isOn(id) {
         </svg>
       </span>
     </button>
+    </template>
 
     <div v-if="multi && chosen.length" class="basket">
       <div class="basket-sum">
@@ -155,5 +179,16 @@ function isOn(id) {
   flex: 0 0 auto;
   margin-right: 12px;
   box-shadow: inset 0 0 0 1px var(--border);
+}
+.group-head {
+  margin: 18px 0 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.group-head:first-of-type {
+  margin-top: 6px;
 }
 </style>

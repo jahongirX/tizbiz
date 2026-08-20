@@ -122,6 +122,7 @@ onMounted(async () => {
     :business="payload.business"
     :services="payload.services || []"
     :staff="payload.staff || []"
+    :service-categories="payload.service_categories || []"
     :payload="payload"
   />
 </template>

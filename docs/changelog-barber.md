@@ -10,6 +10,27 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 25. Xizmat kategoriyalari endi mijozga ham ko'rinadi
+
+**Muammo.** Xizmat kategoriyalari ("Soch olish", "Soqol va yuz", "Qo'shimcha")
+faqat admin jadvalidagi ustun edi. Public booking sahifasi 11 ta xizmatni
+**tekis ro'yxat** qilib chiqarardi — `category_id` payload'da kelsa ham,
+`ServiceStep` uni o'qimasdi. Ya'ni bo'limlarni yaratishning amaliy foydasi yo'q edi.
+
+**Yechim.**
+- `SlotEngine::publicData()` ga `service_categories` qo'shildi (`sort`, keyin
+  `id` bo'yicha tartiblangan). Additive — bu maydonni o'qimaydigan klient
+  avvalgi payload'ni ko'radi.
+- `ServiceStep` xizmatlarni bo'lim sarlavhalari ostida guruhlaydi. Bo'limi
+  yo'q xizmatlar oxirida "Boshqa" ostida chiqadi; bo'limi umuman bo'lmagan
+  biznesda esa avvalgidek bitta tekis ro'yxat qoladi.
+- Guruhlash ham ko'p tanlov kabi **faqat `barber`/`salon`** da yoqiladi
+  (`isBarberShop`), shuning uchun `slot` engine'ga tushadigan boshqa turlar
+  o'zgarishsiz qoladi.
+
+**Tekshiruv.** `jalolbek` → 3 bo'lim (4 + 3 + 3 xizmat) va bo'limsiz 1 ta
+xizmat "Boshqa" da; `demo` (klinika) → gate yopiq, tekis ro'yxat.
+
 ### 24. Moliya naqd tushumni ko'rmasdi (offline zakazlar)
 
 **Muammo.** Moliya sahifasi kun bo'yi ishlagan sartaroshxonaga ham
