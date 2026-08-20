@@ -51,6 +51,7 @@ function isOn(id) {
           <path d="M20 6L9 17l-5-5" />
         </svg>
       </span>
+      <img v-if="s.image" :src="s.image" alt="" class="svc-thumb" />
       <div class="grow">
         <div class="title">{{ s.name }}</div>
         <div class="meta">
@@ -145,5 +146,14 @@ function isOn(id) {
   width: auto;
   padding-inline: 22px;
   flex: 0 0 auto;
+}
+.svc-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex: 0 0 auto;
+  margin-right: 12px;
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 </style>

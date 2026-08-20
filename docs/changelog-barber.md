@@ -10,6 +10,30 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 23. Ustalar va xizmatlar uchun demo rasmlar
+
+Barcha ustalarda avatar, barcha xizmatlarda rasm bo'sh edi — demo bo'm-bo'sh
+ko'rinardi.
+
+**Yechim.** Yangi konsol komandasi
+`php yii barber-image/generate [slug] [baseUrl] [--only=masters|services] [--force]`
+GD bilan **joyida chizadi** — internetdan hech nima olinmaydi, birovning surati
+ishlatilmaydi:
+
+- **Usta** — 320×320, hue bo'yicha gradient disk + ism harflari (JN, SQ, AT…).
+- **Xizmat** — 480×320, gradient + qaychi belgisi + xizmat nomi.
+- Ranglar oltin burchak (137.5°) bo'yicha aylanadi, ya'ni qo'shni yozuvlar
+  bir-biriga o'xshab qolmaydi.
+
+Fayllar `POST /v1/uploads` qayerga qo'ysa, o'sha joyga yoziladi
+(`api/web/uploads/YYYYMM/`), URL esa `staff.avatar` / `services.image` ga
+saqlanadi. Rasmi bor qatorga tegilmaydi (`--force` bundan mustasno).
+
+Booking saytida xizmat kartasiga kichik rasm qo'shildi (`ServiceStep`); rasm
+yo'q bo'lsa avvalgidek ko'rinadi.
+
+**Natija.** 5/5 usta va 11/11 xizmat rasmli.
+
 ### 22. Bir yozuvda bir necha xizmat (soch + soqol)
 
 Barberning eng ko'p buyurtmasi bitta xizmat emas. Ilgari `service_id` bitta
