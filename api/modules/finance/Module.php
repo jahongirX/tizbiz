@@ -21,5 +21,10 @@ class Module extends BaseModule implements BootstrapInterface
             'GET v1/finance/summary' => 'finance/finance/summary',
             'GET v1/finance/transactions' => 'finance/finance/transactions',
         ], false);
+
+        // A finished visit is income even when nothing went through a payment
+        // provider. Attached here rather than in the app config because that
+        // config can hold only one handler per event key.
+        $app->on('appointmentCompleted', [services\SaleService::class, 'onAppointmentCompleted']);
     }
 }

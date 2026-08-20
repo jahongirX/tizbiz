@@ -2,6 +2,7 @@
 
 namespace console\controllers;
 
+use api\modules\finance\services\SaleService;
 use common\models\Appointment;
 use yii\base\Event;
 use yii\console\Controller;
@@ -33,6 +34,11 @@ class AppointmentController extends Controller
             $this->stderr("graceMin must be >= 0\n", Console::FG_RED);
             return ExitCode::USAGE;
         }
+
+        // The API attaches this in the finance module's bootstrap, which the
+        // console app does not load — without it a visit closed by cron would
+        // earn cashback but never reach Moliya.
+        \Yii::$app->on('appointmentCompleted', [SaleService::class, 'onAppointmentCompleted']);
 
         $cutoff = (new \DateTime('now', new \DateTimeZone('UTC')))
             ->modify("-{$graceMin} minutes")

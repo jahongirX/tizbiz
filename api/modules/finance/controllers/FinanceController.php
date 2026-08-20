@@ -26,11 +26,11 @@ class FinanceController extends Controller
     /**
      * GET /v1/finance/summary?from=&to=
      *
-     * income_tiyin  = SUM of paid deposit transactions
+     * income_tiyin  = SUM of paid income transactions (in-shop sales + deposits)
      * refunds_tiyin = SUM of refund transactions (status refunded)
      * net_tiyin     = income - refunds
      * count         = number of paid deposit transactions
-     * by_provider   = paid deposits grouped by provider {provider,amount_tiyin,count}
+     * by_provider   = paid income grouped by provider (cash/payme/click)
      */
     public function actionSummary(): array
     {
@@ -43,11 +43,14 @@ class FinanceController extends Controller
         // condition string can be reused across several independent queries
         // without dangling/duplicated bindings. Values are controlled constants.
         $deposit = Yii::$app->db->quoteValue(Transaction::TYPE_DEPOSIT);
+        $sale = Yii::$app->db->quoteValue(Transaction::TYPE_SALE);
         $refund = Yii::$app->db->quoteValue(Transaction::TYPE_REFUND);
         $paid = Yii::$app->db->quoteValue(Transaction::STATUS_PAID);
         $refunded = Yii::$app->db->quoteValue(Transaction::STATUS_REFUNDED);
 
-        $paidDeposit = "t.type = $deposit AND t.status = $paid";
+        // Income is every kind of money in: what the client paid in the shop
+        // (sale) and what was prepaid online (deposit).
+        $paidIncome = "t.type IN ($sale, $deposit) AND t.status = $paid";
 
         $base = static fn (): Query => (new Query())
             ->from(['t' => Transaction::tableName()])
@@ -56,7 +59,7 @@ class FinanceController extends Controller
             ->andWhere(['<', 't.created_at', $toTs]);
 
         $income = $base()
-            ->andWhere($paidDeposit)
+            ->andWhere($paidIncome)
             ->select([
                 'amount' => 'COALESCE(SUM(t.amount_tiyin), 0)',
                 'cnt' => 'COUNT(*)',
@@ -69,7 +72,7 @@ class FinanceController extends Controller
             ->scalar();
 
         $byProviderRows = $base()
-            ->andWhere($paidDeposit)
+            ->andWhere($paidIncome)
             ->select([
                 'provider' => 't.provider',
                 'amount_tiyin' => 'COALESCE(SUM(t.amount_tiyin), 0)',

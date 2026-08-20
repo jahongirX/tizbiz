@@ -28,11 +28,13 @@ const status = ref('')
 
 const providerOptions = [
   { key: '', label: 'Barcha provayderlar' },
+  { key: 'cash', label: 'Naqd' },
   { key: 'payme', label: 'Payme' },
   { key: 'click', label: 'Click' },
 ]
 const typeOptions = [
   { key: '', label: 'Barcha turlar' },
+  { key: 'sale', label: 'Xizmat to‘lovi' },
   { key: 'deposit', label: 'Depozit' },
   { key: 'refund', label: 'Qaytarish' },
   { key: 'float', label: 'Ustama' },
@@ -47,8 +49,8 @@ const statusOptions = [
 ]
 
 // ---- Label maps ----
-const providerLabels = { payme: 'Payme', click: 'Click' }
-const typeLabels = { deposit: 'Depozit', refund: 'Qaytarish', float: 'Ustama' }
+const providerLabels = { cash: 'Naqd', payme: 'Payme', click: 'Click' }
+const typeLabels = { sale: 'Xizmat to‘lovi', deposit: 'Depozit', refund: 'Qaytarish', float: 'Ustama' }
 const statusLabels = {
   created: 'Yaratildi',
   pending: 'Kutilmoqda',

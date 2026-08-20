@@ -35,10 +35,14 @@ class Transaction extends ActiveRecord
     public const STATUS_CANCELED = 'canceled';
     public const STATUS_REFUNDED = 'refunded';
 
+    /** Money taken in the shop for a finished visit (not an online payment). */
+    public const TYPE_SALE = 'sale';
     public const TYPE_DEPOSIT = 'deposit';
     public const TYPE_REFUND = 'refund';
     public const TYPE_FLOAT = 'float';
 
+    /** Paid in person; the shop is the "provider". */
+    public const PROVIDER_CASH = 'cash';
     public const PROVIDER_PAYME = 'payme';
     public const PROVIDER_CLICK = 'click';
 
@@ -64,8 +68,8 @@ class Transaction extends ActiveRecord
         return [
             [['business_id', 'provider', 'amount_tiyin', 'type', 'status'], 'required'],
             [['business_id', 'appointment_id', 'amount_tiyin'], 'integer'],
-            [['provider'], 'in', 'range' => [self::PROVIDER_PAYME, self::PROVIDER_CLICK]],
-            [['type'], 'in', 'range' => [self::TYPE_DEPOSIT, self::TYPE_REFUND, self::TYPE_FLOAT]],
+            [['provider'], 'in', 'range' => [self::PROVIDER_CASH, self::PROVIDER_PAYME, self::PROVIDER_CLICK]],
+            [['type'], 'in', 'range' => [self::TYPE_SALE, self::TYPE_DEPOSIT, self::TYPE_REFUND, self::TYPE_FLOAT]],
             [['status'], 'in', 'range' => [
                 self::STATUS_CREATED,
                 self::STATUS_PENDING,

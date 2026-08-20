@@ -10,6 +10,41 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 24. Moliya naqd tushumni ko'rmasdi (offline zakazlar)
+
+**Muammo.** Moliya sahifasi kun bo'yi ishlagan sartaroshxonaga ham
+"Kirim: 0 so'm" ko'rsatardi. Sabab: hisobot faqat `transactions` jadvalidagi
+**to'lov provayderi** yozuvlarini (Payme/Click depozitlari) o'qirdi. Barberning
+pulining aksariyati esa kursida naqd to'lanadi va hech qayerga yozilmasdi.
+
+**Yechim.** Yakunlangan tashrif endi o'z yozuvini oladi.
+
+- `Transaction` ga ikkita qiymat qo'shildi: `provider = cash` (do'konda
+  to'langan) va `type = sale` (xizmat to'lovi). Enum kengaytmasi — mavjud
+  yozuvlarga ta'sir qilmaydi.
+- Yangi `SaleService` `appointmentCompleted` hodisasiga ulanadi va tashrifning
+  **to'liq summasi** (asosiy xizmat + qo'shimcha xizmatlar + sotilgan
+  mahsulotlar) uchun bitta `sale` yozuvi yozadi.
+- **Qo'shaloq hisoblanmaydi:** onlayn to'langan depozit ayiriladi. 50 000 so'mlik
+  tashrifda 20 000 depozit to'langan bo'lsa, naqd sotuv 30 000 bo'lib yoziladi.
+  To'liq oldindan to'langan bo'lsa — umuman yozilmaydi.
+- `idempotency_key = sale:appointment:<id>` — takroriy yakunlash yangi yozuv
+  yaratmaydi.
+- Hodisa API va konsolda ham ishlaydi, ya'ni **qo'lda yakunlangan** va
+  **avto-yakunlangan** (cron) tashrif bir xil yoziladi.
+- `GET /v1/finance/summary` endi kirimni `sale + deposit` bo'yicha hisoblaydi;
+  provayderlar kesimida "Naqd" alohida chiqadi. Filtrlarga "Naqd" va
+  "Xizmat to'lovi" qo'shildi.
+
+**Eski ma'lumot uchun:** `php yii finance/backfill-sales [slug]` — bu
+o'zgarishdan oldin yakunlangan tashriflar uchun yetishmagan yozuvlarni to'ldiradi.
+Idempotent.
+
+**Tekshiruv.** Backfill 13 ta yozuv yozdi (845 000 so'm); qayta ishga tushirilganda
+0 ta yangi. API orqali yakunlash → 50 000 so'mlik naqd sotuv; cron orqali
+yakunlash → xuddi shunday. To'langan depozitli tashrifda sotuv 30 000 bo'ldi.
+Moliya summary: **895 000 so'm, 14 tranzaksiya** (avval 0 edi).
+
 ### 23. Ustalar va xizmatlar uchun demo rasmlar
 
 Barcha ustalarda avatar, barcha xizmatlarda rasm bo'sh edi — demo bo'm-bo'sh
