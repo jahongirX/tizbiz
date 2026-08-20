@@ -1,7 +1,7 @@
 <script setup>
 // Multi-select: a barbershop visit is often "soch + soqol", so the step adds up
 // the chosen services and the slot search then looks for one long enough.
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { soms, duration } from '../format.js'
 
 const props = defineProps({
@@ -29,6 +29,14 @@ function isOn(id) {
 // Services under their section, in the shop's own order. Anything without a
 // section lands in a trailing group, and a shop with no sections at all keeps a
 // single unlabelled list.
+// Section tabs. Filtering beats drilling in and out of a category, because a
+// visit often spans two of them (soch + soqol) and the picks must survive the
+// switch.
+const activeTab = ref(0) // 0 = hammasi
+const tabs = computed(() =>
+  props.categories.length ? [{ id: 0, name: 'Hammasi' }, ...props.categories] : [],
+)
+
 const groups = computed(() => {
   if (!props.categories.length) {
     return [{ id: 0, name: '', items: props.services }]
@@ -42,7 +50,14 @@ const groups = computed(() => {
     (s) => !props.categories.some((c) => c.id === s.category_id),
   )
   if (rest.length) out.push({ id: 0, name: 'Boshqa', items: rest })
-  return out.filter((g) => g.items.length)
+  const filled = out.filter((g) => g.items.length)
+  return activeTab.value ? filled.filter((g) => g.id === activeTab.value) : filled
+})
+
+/** Selections made in other sections stay visible while a tab is active. */
+const hiddenChosen = computed(() => {
+  const shown = new Set(groups.value.flatMap((g) => g.items.map((s) => s.id)))
+  return chosen.value.filter((s) => !shown.has(s.id))
 })
 </script>
 
@@ -53,13 +68,32 @@ const groups = computed(() => {
     </div>
     <p v-if="multi" class="section-label">Bir nechtasini birga tanlashingiz mumkin</p>
 
+    <div v-if="tabs.length" class="tabs" role="tablist">
+      <button
+        v-for="t in tabs"
+        :key="t.id"
+        role="tab"
+        type="button"
+        class="tab"
+        :class="{ on: activeTab === t.id }"
+        :aria-selected="activeTab === t.id"
+        @click="activeTab = t.id"
+      >
+        {{ t.name }}
+      </button>
+    </div>
+
+    <p v-if="hiddenChosen.length" class="other-picked">
+      Boshqa bo‘limdan tanlangan: {{ hiddenChosen.map((s) => s.name).join(', ') }}
+    </p>
+
     <div v-if="!services.length" class="empty">
       <div class="emo">📋</div>
       <p>Hozircha xizmatlar mavjud emas.</p>
     </div>
 
     <template v-for="g in groups" :key="g.id">
-    <p v-if="g.name" class="group-head">{{ g.name }}</p>
+    <p v-if="g.name && !activeTab" class="group-head">{{ g.name }}</p>
     <button
       v-for="s in g.items"
       :key="s.id"
@@ -190,5 +224,39 @@ const groups = computed(() => {
 }
 .group-head:first-of-type {
   margin-top: 6px;
+}
+.tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+.tab {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tab.on {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+.other-picked {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  color: var(--muted);
 }
 </style>

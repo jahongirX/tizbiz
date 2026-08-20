@@ -5,6 +5,7 @@ import { formatSom } from '../lib/money'
 import { localToUtc, minutesToHhmm, todayInput } from '../lib/datetime'
 import PhoneInput from './PhoneInput.vue'
 import { useAuthStore } from '../stores/auth'
+import { isBarberShop } from '../lib/verticals'
 import {
   Search,
   User,
@@ -51,9 +52,7 @@ const serviceSearch = ref('')
 const auth = useAuthStore()
 // Booking several services at once is a barbershop/salon habit; other verticals
 // keep the single-service form exactly as it was.
-const multiService = computed(() =>
-  ['barber', 'salon'].includes(String(auth.activeBusiness?.category || '')),
-)
+const multiService = computed(() => isBarberShop(auth.activeBusiness))
 const serviceIds = ref(props.initial.serviceId ? [props.initial.serviceId] : [])
 const serviceId = computed(() => serviceIds.value[0] || '')
 

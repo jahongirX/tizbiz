@@ -10,6 +10,31 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 26. Bo'lim tablari — booking sahifasida ham, adminda ham
+
+Uchta bo'lim ostidagi 11 ta xizmat bitta ustunda uzun ro'yxat bo'lib qolgan edi.
+
+**Nega drill-down emas.** "Kategoriyani och → ichidan tanla" varianti ko'p
+xizmat tanlash bilan qarama-qarshi: bitta tashrif ko'pincha ikki bo'limga tegadi
+(soch + soqol), ya'ni mijoz ichkariga kirib-chiqib yurishi kerak bo'lardi.
+Shuning uchun **tab (filtr)**: bosilganda ro'yxat qisqaradi, tanlovlar esa
+saqlanib qoladi.
+
+- **Booking sahifasi** — "Hammasi" + har bo'lim uchun chip. Boshqa bo'limda
+  tanlangan xizmatlar yo'qolib qolmasligi uchun tepada eslatma chiqadi
+  ("Boshqa bo'limdan tanlangan: …"), pastda esa jami paneli avvalgidek turadi.
+  "Hammasi" da bo'lim sarlavhalari ko'rinadi, bitta bo'lim tanlanganda ular
+  ortiqcha bo'lgani uchun yashiriladi.
+- **Admin → Xizmatlar** — jadval ustida shu tablar, har birida xizmatlar soni;
+  "Bo'limsiz" faqat kerak bo'lganda chiqadi.
+
+Gate bitta joyga yig'ildi: `isBarberShop(business)` (`apps/admin/src/lib/verticals.js`).
+`AppointmentForm` ham endi shu funksiyani ishlatadi — ilgari kategoriyalar ro'yxati
+ikki joyda takrorlanardi.
+
+**Tekshiruv.** Tab hisoblari: Hammasi 11, Soch olish 4, Soqol va yuz 3,
+Qo'shimcha 3, Bo'limsiz 1.
+
 ### 25. Xizmat kategoriyalari endi mijozga ham ko'rinadi
 
 **Muammo.** Xizmat kategoriyalari ("Soch olish", "Soqol va yuz", "Qo'shimcha")

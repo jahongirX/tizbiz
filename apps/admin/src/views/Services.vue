@@ -7,7 +7,7 @@ import Modal from '../components/Modal.vue'
 import ImageUpload from '../components/ImageUpload.vue'
 import { Pencil, Trash2 } from 'lucide-vue-next'
 import { useAuthStore } from '../stores/auth'
-import { samplesFor } from '../lib/verticals'
+import { isBarberShop, samplesFor } from '../lib/verticals'
 
 // Placeholder texts follow the business's vertical (barber/salon vs cafe…).
 const auth = useAuthStore()
@@ -27,6 +27,28 @@ const form = ref(blank())
 function blank() {
   return { name: '', duration_min: 30, price_som: '', deposit_som: '', category_id: '', is_active: true, online_bookable: true, image: '', description: '', gallery: [] }
 }
+
+// Section tabs over the table. A barbershop's menu is short but grouped, and
+// scanning one section at a time beats reading eleven rows.
+const activeTab = ref(0) // 0 = hammasi
+const showTabs = computed(() => isBarberShop(auth.activeBusiness) && categories.value.length > 0)
+const tabs = computed(() => {
+  if (!showTabs.value) return []
+  const out = [{ id: 0, name: 'Hammasi', count: services.value.length }]
+  for (const c of categories.value) {
+    out.push({ id: c.id, name: c.name, count: services.value.filter((s) => s.category_id === c.id).length })
+  }
+  const loose = services.value.filter((s) => !categories.value.some((c) => c.id === s.category_id))
+  if (loose.length) out.push({ id: -1, name: 'Bo‘limsiz', count: loose.length })
+  return out
+})
+const shownServices = computed(() => {
+  if (!showTabs.value || !activeTab.value) return services.value
+  if (activeTab.value === -1) {
+    return services.value.filter((s) => !categories.value.some((c) => c.id === s.category_id))
+  }
+  return services.value.filter((s) => s.category_id === activeTab.value)
+})
 
 const categoryName = computed(() => {
   const map = {}
@@ -194,6 +216,21 @@ onMounted(load)
         </div>
       </section>
 
+      <div v-if="tabs.length" class="svc-tabs" role="tablist">
+        <button
+          v-for="t in tabs"
+          :key="t.id"
+          role="tab"
+          type="button"
+          class="svc-tab"
+          :class="{ on: activeTab === t.id }"
+          :aria-selected="activeTab === t.id"
+          @click="activeTab = t.id"
+        >
+          {{ t.name }}<span class="svc-tab-n">{{ t.count }}</span>
+        </button>
+      </div>
+
       <div v-if="!services.length" class="empty card">
         Hali xizmat qo'shilmagan. <a href="#" @click.prevent="openCreate">Birinchisini qo'shing</a>.
       </div>
@@ -214,7 +251,7 @@ onMounted(load)
             </tr>
           </thead>
           <tbody>
-            <tr v-for="s in services" :key="s.id">
+            <tr v-for="s in shownServices" :key="s.id">
               <td>
                 <img v-if="s.image" :src="s.image" class="row-thumb" alt="" />
                 <span v-else class="row-thumb ph">{{ s.name.charAt(0) }}</span>
@@ -442,5 +479,40 @@ onMounted(load)
   font-size: 11px;
   cursor: pointer;
   line-height: 1;
+}
+.svc-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.svc-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.svc-tab:hover {
+  border-color: var(--primary);
+  color: var(--text);
+}
+.svc-tab.on {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--text);
+}
+.svc-tab-n {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
 }
 </style>

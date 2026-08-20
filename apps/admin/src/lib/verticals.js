@@ -147,6 +147,17 @@ export function samplesFor(business) {
   return { ...SAMPLES_DEFAULT, ...(vertical.samples || {}), ...(sub?.samples || {}) }
 }
 
+/**
+ * Barbershop-or-salon behaviour (several services on one visit, sectioned
+ * service menus). Other business types that share the same engine keep the
+ * simpler flows, so this is the single place that decides.
+ */
+const BARBER_CATEGORIES = ['barber', 'salon']
+
+export function isBarberShop(business) {
+  return BARBER_CATEGORIES.includes(String(business?.category || ''))
+}
+
 export function categoryLabel(business) {
   const vertical = verticalFor(business)
   return CATEGORY_LABEL[business?.category] || vertical.short
