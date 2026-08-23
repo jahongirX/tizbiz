@@ -78,6 +78,16 @@ class SaleService
             Yii::error('Sale transaction rejected: ' . json_encode($tx->getErrors(), JSON_UNESCAPED_UNICODE), __METHOD__);
             return null;
         }
+
+        // Date the row by when the visit ended, not by when it was written.
+        // They match in normal use, but a backfill (or a seeded demo) would
+        // otherwise pile months of income onto today and make the finance date
+        // filter meaningless.
+        $earnedAt = strtotime((string) $appt->ends_at . ' UTC');
+        if ($earnedAt !== false && $earnedAt > 0 && $earnedAt < time()) {
+            $tx->updateAttributes(['created_at' => $earnedAt]);
+        }
+
         return $tx;
     }
 

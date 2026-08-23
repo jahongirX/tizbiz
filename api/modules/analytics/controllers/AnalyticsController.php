@@ -41,7 +41,14 @@ class AnalyticsController extends Controller
 
         $db = Yii::$app->db;
         $completedQ = $db->quoteValue(Appointment::STATUS_COMPLETED);
-        $revenueExpr = "SUM(CASE WHEN a.status = $completedQ THEN s.price_tiyin ELSE 0 END)";
+        // A visit can carry more than its primary service (soch + soqol); those
+        // extras live in appointment_items and were missing from revenue, so
+        // Analitika read lower than Moliya for the same days.
+        $serviceKindQ = $db->quoteValue(\common\models\AppointmentItem::KIND_SERVICE);
+        $itemsTable = \common\models\AppointmentItem::tableName();
+        $extrasExpr = "(SELECT COALESCE(SUM(ai.price_tiyin * ai.qty), 0) FROM $itemsTable ai"
+            . " WHERE ai.appointment_id = a.id AND ai.kind = $serviceKindQ)";
+        $revenueExpr = "SUM(CASE WHEN a.status = $completedQ THEN s.price_tiyin + $extrasExpr ELSE 0 END)";
 
         // --- Aggregate row: totals, per-status counts, revenue ----------------
         $statuses = [

@@ -10,6 +10,41 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 32. Analitika va Moliya raqamlari nega farq qilardi
+
+**Savol.** Analitikada 30 kunlik daromad 15,6 mln, Moliyada esa o'sha oraliqda
+48 mln. Qaysi biri to'g'ri?
+
+**Ikkita alohida sabab bor edi — biri bug, biri ta'rif farqi.**
+
+**1) Bug: sotuv yozuvi noto'g'ri sana bilan turardi.** Moliya `transactions`
+jadvalini `created_at` — ya'ni **qator yozilgan** payt bo'yicha filtrlaydi.
+Backfill (va demo seed) bir necha oylik tushumni bitta kunga yozgani uchun
+"30 kun" oynasi **hamma narsani** qamrab olardi. Endi sotuv yozuvi **tashrif
+tugagan vaqt** bilan sanaladi (`SaleService`), ya'ni sana filtri haqiqiy ma'no
+kasb etadi. Oddiy ishlashda ikkalasi baribir bir xil bo'ladi — farq faqat
+backfill'da chiqadi.
+
+Mavjud yozuvlar uchun: `php yii finance-redate/run [slug]` — 663 qator o'z
+tashrifiga ko'chirildi.
+
+**2) Bug: Analitika qo'shimcha xizmatlarni hisoblamasdi.** Daromad faqat
+**asosiy** xizmat narxidan olinardi, "soch + soqol" dagi ikkinchi xizmat
+(`appointment_items`) e'tibordan chetda qolardi — 30 kunda 3,3 mln so'm.
+Endi u ham qo'shiladi.
+
+**Qolgan farq — ta'rif, xato emas.** Tuzatishdan keyin: Moliya 19 685 000,
+Analitika 19 505 000. Farq **180 000** — bu oraliqda to'langan **depozitlar**.
+
+| Hisobot | Nimani ko'rsatadi |
+|---|---|
+| **Analitika** | Bajarilgan tashriflar **qiymati** — xizmat sanasi bo'yicha |
+| **Moliya** | Kassaga **tushgan pul** — naqd sotuv + onlayn depozit, to'lov sanasi bo'yicha |
+
+Kelasi haftaga to'langan depozit — bugun olingan pul, lekin hali ishlab
+topilmagan daromad. Shuning uchun ikki raqam bir-biriga hech qachon aynan teng
+bo'lmaydi va bu to'g'ri.
+
 ### 31. Navbatlar sahifasida filtrlar yangilashdan keyin tiklanadi
 
 **Muammo.** Sana oralig'i, xodim va holat tanlangandan keyin "Ko'rsatish"
