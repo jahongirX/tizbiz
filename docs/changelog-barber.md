@@ -10,6 +10,38 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 33. SMS shlyuzi ulandi (sms.tizbiz.uz)
+
+Eslatmalar mijozda tasdiqlangan Telegram ulanishi bo'lmasa SMS ga tushadi, lekin
+`SmsSender` faqat Eskiz uslubidagi zagotovka edi va sozlanmagan.
+
+**O'zgarish.** `SmsSender` ga provayder tanlovi qo'shildi:
+
+- `SMS_PROVIDER=tizbiz` → `POST {to, text}`, sarlavha `X-Api-Key`
+- `SMS_PROVIDER=eskiz` (standart) → avvalgidek `{mobile_phone, message, from}` + bearer
+
+Ya'ni **standart xatti-harakat o'zgarmadi** — yangi provayder faqat env orqali
+yoqiladi. `SMS_ENDPOINT` berilmasa tizbiz uchun
+`https://api.tizbiz.uz/v1/sms/api/send` ishlatiladi.
+
+**Konsol:**
+
+```
+php yii sms/status                      # provayder, endpoint, balans (faqat o'qish)
+php yii sms/send +9989XXXXXXXX "matn"   # haqiqiy SMS — avval tasdiq so'raydi
+```
+
+`sms/status` kalitni to'liq chiqarmaydi (`tzb_****…2c32`), balansni esa
+`/balance` endpointidan oladi.
+
+**Tekshiruv.** `sms/status` → HTTP 200,
+`{"quota_monthly":0,"used_this_month":9,"remaining":null,"unlimited":true}` —
+kalit ishlaydi, hisob cheklanmagan. Haqiqiy SMS yuborilmadi.
+
+**Xavfsizlik.** Kalit repoga yozilmadi — faqat env. Yo'l-yo'lakay PHP 8.5 da
+deprecated bo'lgan `curl_close()` chaqiruvlari olib tashlandi (ular xatoga
+sabab bo'layotgan edi).
+
 ### 32. Analitika va Moliya raqamlari nega farq qilardi
 
 **Savol.** Analitikada 30 kunlik daromad 15,6 mln, Moliyada esa o'sha oraliqda

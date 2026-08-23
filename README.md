@@ -68,3 +68,20 @@ Each web tier then serves its SPA (SPA history fallback via `web/.htaccess` in p
 Money in **tiyin** (1/100 so'm); times stored **UTC**, shown in `Asia/Tashkent`. Migrations only
 (never hand DDL). Env vars: `DB_*`, `JWT_SECRET`, `API_BASE`, `ROOT_DOMAIN`, `APP_ORIGINS`,
 `PAYME_*`, `CLICK_*`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `SMS_*`.
+
+### SMS
+
+Reminders fall back to SMS when a client has no verified Telegram link. Configure the
+gateway from the environment — no key belongs in the repo:
+
+```bash
+export SMS_PROVIDER=tizbiz                 # tizbiz | eskiz (default: eskiz)
+export SMS_TOKEN='tzb_…'                   # key from sms.tizbiz.uz -> API
+# SMS_ENDPOINT defaults to https://api.tizbiz.uz/v1/sms/api/send
+
+php yii sms/status                         # read-only: provider + monthly balance
+php yii sms/send +9989XXXXXXXX "Salom"     # sends for real, asks to confirm first
+```
+
+`tizbiz` posts `{to, text}` with an `X-Api-Key` header; `eskiz` keeps the previous
+`{mobile_phone, message, from}` + bearer shape.
