@@ -10,6 +10,20 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 31. Navbatlar sahifasida filtrlar yangilashdan keyin tiklanadi
+
+**Muammo.** Sana oralig'i, xodim va holat tanlangandan keyin "Ko'rsatish"
+bosilsa ro'yxat to'g'ri chiqardi, lekin sahifa yangilansa hammasi standart
+holatga (bugun + 7 kun, barcha xodim) qaytardi.
+
+**Yechim.** Filtrlar endi **URL query** da saqlanadi:
+`/app/appointments?from=…&to=…&staff=…&status=…`. Sahifa ochilganda holat
+o'sha yerdan tiklanadi.
+
+URL tanlangani uchun ikkita qo'shimcha foyda bor: havolani hamkasbga yuborsa
+ham o'sha ko'rinish ochiladi, va brauzerning "orqaga" tugmasi sahifadan chiqadi
+— har bir filtr o'zgarishi tarixga yozilmaydi (`router.replace`).
+
 ### 30. Jadvalda qisqa yozuvlar faqat soatni ko'rsatardi
 
 **Muammo.** 10-30 daqiqalik xizmat (masalan "Qosh olish") blokida faqat `10:00`

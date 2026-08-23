@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { api, ApiError } from '@tizbiz/api-client'
 import {
   todayInput,
@@ -28,12 +29,27 @@ const appointments = ref([])
 const staff = ref([])
 const services = ref([])
 
+// Filters live in the URL: a refresh (or a shared link) keeps the view the user
+// set up, instead of snapping back to "today + 7 days, everyone".
+const route = useRoute()
+const router = useRouter()
+
 const filters = ref({
-  from: todayInput(),
-  to: addDays(todayInput(), 7),
-  staff: '',
-  status: '',
+  from: String(route.query.from || todayInput()),
+  to: String(route.query.to || addDays(todayInput(), 7)),
+  staff: String(route.query.staff || ''),
+  status: String(route.query.status || ''),
 })
+
+function syncUrl() {
+  const q = {}
+  for (const [key, value] of Object.entries(filters.value)) {
+    if (value) q[key] = String(value)
+  }
+  // replace, not push: the back button should leave the page, not walk through
+  // every filter the user tried.
+  router.replace({ query: q })
+}
 
 const sorted = computed(() =>
   [...appointments.value].sort((a, b) =>
@@ -52,6 +68,7 @@ async function loadRefs() {
 }
 
 async function load() {
+  syncUrl()
   loading.value = true
   error.value = ''
   try {
