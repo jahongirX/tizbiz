@@ -85,3 +85,6 @@ php yii sms/send +9989XXXXXXXX "Salom"     # sends for real, asks to confirm fir
 
 `tizbiz` posts `{to, text}` with an `X-Api-Key` header; `eskiz` keeps the previous
 `{mobile_phone, message, from}` + bearer shape.
+
+Full walkthrough — the delivery chain, the admin controls and troubleshooting:
+[docs/sms-setup.md](docs/sms-setup.md).
