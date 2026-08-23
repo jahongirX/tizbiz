@@ -227,7 +227,7 @@ onMounted(load)
 
     <template v-else>
       <div class="table-wrap">
-        <table class="data">
+        <table class="data cards">
           <thead>
             <tr>
               <th>Mijoz</th>
@@ -243,9 +243,9 @@ onMounted(load)
               style="cursor: pointer"
               @click="openDetail(r)"
             >
-              <td><strong>{{ r.name || '—' }}</strong></td>
-              <td>{{ r.phone || '—' }}</td>
-              <td style="text-align: right">
+              <td data-label="Mijoz"><strong>{{ r.name || '—' }}</strong></td>
+              <td data-label="Telefon">{{ r.phone || '—' }}</td>
+              <td data-label="Balans" style="text-align: right">
                 <strong :style="{ color: (r.balance_tiyin || 0) < 0 ? 'var(--danger)' : 'var(--primary)' }">
                   {{ formatSom(r.balance_tiyin) }}
                 </strong>

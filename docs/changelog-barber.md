@@ -21,9 +21,14 @@ aylanadi — `thead` yashiriladi, har hujayra alohida qatorga tushadi, chapda
 ustun nomi (`data-label`) chiqadi. Birinchi hujayra kartaning sarlavhasi
 bo'ladi; rasm bo'lsa, sarlavha keyingi hujayraga o'tadi.
 
-Karta rejimi **ixtiyoriy** (`.cards` klassi bilan yoqiladi), shuning uchun
-boshqa vertikallarning jadvallari o'zgarmadi. Hozircha eng ko'p ishlatiladigan
-5 tasi ulandi: Navbatlar, Mijozlar, Moliya, Xizmatlar, Xabarlar.
+Karta rejimi `.cards` klassi bilan yoqiladi. **Admin'dagi 15 ta jadvalning
+hammasi** ulandi: Navbatlar, Mijozlar, Moliya, Xizmatlar, Xabarlar, Xodimlar,
+Kategoriyalar, Jamoa, Ombor, Ish haqi, Boshqaruv, Sertifikatlar, Abonementlar,
+Depozitlar, Loyallik kartalari.
+
+Birinchi hujayrada rasm, avatar yoki rang kvadrati bo'lsa (Xodimlar,
+Kategoriyalar, Xizmatlar), sarlavha keyingi hujayraga o'tadi —
+`:has(img, [class*='thumb'], [class*='ava'], .swatch)`.
 
 Desktop'da hech nima o'zgarmaydi — media query faqat telefon kengligida ishlaydi.
 

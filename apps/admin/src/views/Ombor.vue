@@ -363,7 +363,7 @@ onMounted(() => {
 
     <template v-else>
       <div class="table-wrap">
-        <table class="data">
+        <table class="data cards">
           <thead>
             <tr>
               <th>Nomi</th>
@@ -377,15 +377,15 @@ onMounted(() => {
           </thead>
           <tbody>
             <tr v-for="p in rows" :key="p.id">
-              <td><strong>{{ p.name }}</strong></td>
-              <td>{{ p.unit || '—' }}</td>
-              <td style="text-align: right">
+              <td data-label="Nomi"><strong>{{ p.name }}</strong></td>
+              <td data-label="Birlik">{{ p.unit || '—' }}</td>
+              <td data-label="Zaxira" style="text-align: right">
                 {{ p.stock_qty }}
                 <span v-if="isLow(p)" class="badge no_show" style="margin-left: 6px">Kam</span>
               </td>
-              <td style="text-align: right">{{ formatSom(p.price_tiyin) }}</td>
-              <td style="text-align: right">{{ formatSom(p.cost_tiyin) }}</td>
-              <td>
+              <td data-label="Sotish narxi" style="text-align: right">{{ formatSom(p.price_tiyin) }}</td>
+              <td data-label="Tannarx" style="text-align: right">{{ formatSom(p.cost_tiyin) }}</td>
+              <td data-label="Faol">
                 <span class="badge" :class="p.is_active !== false ? 'completed' : 'canceled'">
                   {{ p.is_active !== false ? 'Faol' : 'Nofaol' }}
                 </span>

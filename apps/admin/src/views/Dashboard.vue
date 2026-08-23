@@ -101,7 +101,7 @@ onMounted(load)
       <div v-if="!sorted.length" class="empty card">Bugun uchun yozuvlar yo'q.</div>
 
       <div v-else class="table-wrap">
-        <table class="data">
+        <table class="data cards">
           <thead>
             <tr>
               <th>Vaqt</th>
@@ -113,11 +113,11 @@ onMounted(load)
           </thead>
           <tbody>
             <tr v-for="a in sorted" :key="a.id">
-              <td><strong>{{ timeOf(a) }}</strong></td>
-              <td>{{ a.client?.name || a.client_name || '—' }}</td>
-              <td>{{ a.service?.name || a.service_name || '—' }}</td>
-              <td>{{ a.staff?.name || a.staff_name || '—' }}</td>
-              <td><span class="badge" :class="a.status">{{ statusLabels[a.status] || a.status }}</span></td>
+              <td data-label="Vaqt"><strong>{{ timeOf(a) }}</strong></td>
+              <td data-label="Mijoz">{{ a.client?.name || a.client_name || '—' }}</td>
+              <td data-label="Xizmat">{{ a.service?.name || a.service_name || '—' }}</td>
+              <td data-label="Xodim">{{ a.staff?.name || a.staff_name || '—' }}</td>
+              <td data-label="Holat"><span class="badge" :class="a.status">{{ statusLabels[a.status] || a.status }}</span></td>
             </tr>
           </tbody>
         </table>

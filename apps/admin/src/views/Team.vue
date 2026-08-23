@@ -150,7 +150,7 @@ onMounted(load)
       </div>
 
       <div v-else class="table-wrap">
-        <table class="data">
+        <table class="data cards">
           <thead>
             <tr>
               <th>Ism</th>
@@ -165,12 +165,12 @@ onMounted(load)
               :key="m.user_id"
               :class="{ 'is-me': m.user_id === currentUserId }"
             >
-              <td>
+              <td data-label="Ism">
                 <strong>{{ m.name || '—' }}</strong>
                 <span v-if="m.user_id === currentUserId" class="badge confirmed me-badge">Siz</span>
               </td>
-              <td>{{ m.phone }}</td>
-              <td>
+              <td data-label="Telefon">{{ m.phone }}</td>
+              <td data-label="Rol">
                 <!-- Owner may re-assign roles inline, except demoting the last owner. -->
                 <select
                   v-if="isOwner"

@@ -127,7 +127,7 @@ onMounted(load)
       </div>
 
       <div v-else class="table-wrap">
-        <table class="data">
+        <table class="data cards">
           <thead>
             <tr>
               <th style="width: 44px"></th>
@@ -143,13 +143,13 @@ onMounted(load)
               <td>
                 <span class="swatch" :style="{ background: c.color || '#64748b' }"></span>
               </td>
-              <td>
+              <td data-label="Nomi">
                 <span class="cat-chip" :style="{ background: (c.color || '#64748b') + '22', color: c.color || '#94a3b8' }">
                   {{ c.name }}
                 </span>
               </td>
-              <td><span class="muted">{{ c.color || '—' }}</span></td>
-              <td style="text-align: right">
+              <td data-label="Rang"><span class="muted">{{ c.color || '—' }}</span></td>
+              <td data-label="Mijozlar" style="text-align: right">
                 <RouterLink
                   v-if="c.clients_count"
                   :to="{ path: '/clients', query: { category: c.id } }"
@@ -157,7 +157,7 @@ onMounted(load)
                 >{{ c.clients_count }} ta</RouterLink>
                 <span v-else class="muted">0</span>
               </td>
-              <td style="text-align: right">{{ c.sort ?? 0 }}</td>
+              <td data-label="Tartib" style="text-align: right">{{ c.sort ?? 0 }}</td>
               <td style="text-align: right">
                 <button class="btn btn-sm btn-ghost" @click="openEdit(c)">Tahrir</button>
                 <button class="btn btn-sm btn-danger" @click="remove(c)">O'chirish</button>

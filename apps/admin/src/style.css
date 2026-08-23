@@ -271,16 +271,23 @@ table.data tbody tr:hover {
     letter-spacing: 0.03em;
     color: var(--text-muted);
   }
-  /* The first cell reads as the card's title — unless it is only a thumbnail,
-     in which case the next one carries the name. */
-  table.data.cards td:first-child,
-  table.data.cards td:has(> .row-thumb) + td {
+  /* The first cell reads as the card's title. */
+  table.data.cards td:first-child {
     font-size: 15px;
     font-weight: 600;
     padding-bottom: 6px;
   }
-  table.data.cards td:has(> .row-thumb) {
+  /* …unless it only holds a thumbnail, avatar or colour swatch — then the cell
+     next to it carries the name. */
+  table.data.cards td:first-child:has(img, [class*='thumb'], [class*='ava'], .swatch) {
+    font-size: inherit;
+    font-weight: inherit;
     padding-bottom: 2px;
+  }
+  table.data.cards td:first-child:has(img, [class*='thumb'], [class*='ava'], .swatch) + td {
+    font-size: 15px;
+    font-weight: 600;
+    padding-bottom: 6px;
   }
   table.data.cards td:first-child::before {
     display: none;

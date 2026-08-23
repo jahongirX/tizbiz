@@ -114,7 +114,7 @@ onMounted(load)
       </div>
 
       <div v-else class="table-wrap">
-        <table class="data">
+        <table class="data cards">
           <thead>
             <tr>
               <th>Nomi</th>
@@ -127,11 +127,11 @@ onMounted(load)
           </thead>
           <tbody>
             <tr v-for="s in rows" :key="s.id">
-              <td><strong>{{ s.name }}</strong></td>
-              <td style="text-align: right">{{ s.visits }}</td>
-              <td style="text-align: right">{{ formatSom(s.price_tiyin) }}</td>
-              <td>{{ s.valid_days }} kun</td>
-              <td>
+              <td data-label="Nomi"><strong>{{ s.name }}</strong></td>
+              <td data-label="Tashriflar" style="text-align: right">{{ s.visits }}</td>
+              <td data-label="Narxi" style="text-align: right">{{ formatSom(s.price_tiyin) }}</td>
+              <td data-label="Amal muddati">{{ s.valid_days }} kun</td>
+              <td data-label="Faol">
                 <span class="badge" :class="s.is_active !== false ? 'completed' : 'canceled'">
                   {{ s.is_active !== false ? 'Faol' : 'Nofaol' }}
                 </span>

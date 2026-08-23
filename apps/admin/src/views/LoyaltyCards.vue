@@ -378,7 +378,7 @@ onMounted(() => {
           Hali chegirma qoidasi yo'q. <a href="#" @click.prevent="openDiscCreate">Birinchisini qo'shing</a>.
         </div>
         <div v-else class="table-wrap">
-          <table class="data">
+          <table class="data cards">
             <thead>
               <tr>
                 <th>Mezon</th>
@@ -390,10 +390,10 @@ onMounted(() => {
             </thead>
             <tbody>
               <tr v-for="r in discRules" :key="r.id">
-                <td><strong>{{ metricLabels[r.metric] || r.metric }}</strong></td>
-                <td>{{ formatThreshold(r.metric, r.threshold) }}</td>
-                <td>{{ r.percent }}%</td>
-                <td>
+                <td data-label="Mezon"><strong>{{ metricLabels[r.metric] || r.metric }}</strong></td>
+                <td data-label="Chegara">{{ formatThreshold(r.metric, r.threshold) }}</td>
+                <td data-label="Chegirma">{{ r.percent }}%</td>
+                <td data-label="Holat">
                   <span class="badge" :class="r.active !== false ? 'completed' : 'canceled'">
                     {{ r.active !== false ? 'Faol' : 'Nofaol' }}
                   </span>
@@ -434,7 +434,7 @@ onMounted(() => {
           Hali kategoriya qoidasi yo'q. <a href="#" @click.prevent="openCatCreate">Birinchisini qo'shing</a>.
         </div>
         <div v-else class="table-wrap">
-          <table class="data">
+          <table class="data cards">
             <thead>
               <tr>
                 <th>Mezon</th>
@@ -447,10 +447,10 @@ onMounted(() => {
             </thead>
             <tbody>
               <tr v-for="r in catRules" :key="r.id">
-                <td><strong>{{ metricLabels[r.metric] || r.metric }}</strong></td>
-                <td>{{ formatThreshold(r.metric, r.threshold) }}</td>
-                <td>{{ r.action === 'remove' ? 'Olib tashlash' : "Qo'shish" }}</td>
-                <td>
+                <td data-label="Mezon"><strong>{{ metricLabels[r.metric] || r.metric }}</strong></td>
+                <td data-label="Chegara">{{ formatThreshold(r.metric, r.threshold) }}</td>
+                <td data-label="Amal">{{ r.action === 'remove' ? 'Olib tashlash' : "Qo'shish" }}</td>
+                <td data-label="Kategoriya">
                   <span
                     v-if="categoryMap[r.category_id]"
                     class="cat-chip"
@@ -460,7 +460,7 @@ onMounted(() => {
                   </span>
                   <span v-else class="muted">—</span>
                 </td>
-                <td>
+                <td data-label="Holat">
                   <span class="badge" :class="r.active !== false ? 'completed' : 'canceled'">
                     {{ r.active !== false ? 'Faol' : 'Nofaol' }}
                   </span>

@@ -117,7 +117,7 @@ onMounted(load)
       </div>
 
       <div v-else class="table-wrap">
-        <table class="data">
+        <table class="data cards">
           <thead>
             <tr>
               <th>Kod</th>
@@ -131,16 +131,16 @@ onMounted(load)
           </thead>
           <tbody>
             <tr v-for="c in rows" :key="c.id">
-              <td><strong>{{ c.code }}</strong></td>
-              <td>{{ c.name || '—' }}</td>
-              <td style="text-align: right">{{ formatSom(c.value_tiyin) }}</td>
-              <td style="text-align: right">{{ formatSom(c.balance_tiyin) }}</td>
-              <td>
+              <td data-label="Kod"><strong>{{ c.code }}</strong></td>
+              <td data-label="Nomi">{{ c.name || '—' }}</td>
+              <td data-label="Nominal" style="text-align: right">{{ formatSom(c.value_tiyin) }}</td>
+              <td data-label="Qoldiq" style="text-align: right">{{ formatSom(c.balance_tiyin) }}</td>
+              <td data-label="Holat">
                 <span class="badge" :class="statusBadge[c.status] || 'canceled'">
                   {{ statusLabels[c.status] || c.status }}
                 </span>
               </td>
-              <td>{{ c.expires_at ? String(c.expires_at).slice(0, 10) : '—' }}</td>
+              <td data-label="Amal muddati">{{ c.expires_at ? String(c.expires_at).slice(0, 10) : '—' }}</td>
               <td style="text-align: right; white-space: nowrap">
                 <button class="btn btn-sm btn-ghost" @click="openEdit(c)">Tahrir</button>
                 <button class="btn btn-sm btn-danger" @click="remove(c)">O'chirish</button>

@@ -111,7 +111,7 @@ onMounted(load)
       <div v-if="!hasRows" class="empty card">Bu davr uchun ma'lumot yo'q.</div>
 
       <div v-else class="table-wrap">
-        <table class="data">
+        <table class="data cards">
           <thead>
             <tr>
               <th>Xodim</th>
@@ -123,8 +123,8 @@ onMounted(load)
           </thead>
           <tbody>
             <tr v-for="s in staff" :key="s.staff_id">
-              <td><strong>{{ s.name }}</strong></td>
-              <td>
+              <td data-label="Xodim"><strong>{{ s.name }}</strong></td>
+              <td data-label="Komissiya (%)">
                 <div class="comm-cell">
                   <input
                     v-model.number="drafts[s.staff_id]"
@@ -147,9 +147,9 @@ onMounted(load)
                 </div>
                 <div v-if="rowError[s.staff_id]" class="field-err">{{ rowError[s.staff_id] }}</div>
               </td>
-              <td style="text-align: right">{{ s.appointments }}</td>
-              <td style="text-align: right">{{ formatSom(s.revenue_tiyin) }}</td>
-              <td style="text-align: right"><strong>{{ formatSom(s.earnings_tiyin) }}</strong></td>
+              <td data-label="Yozuvlar" style="text-align: right">{{ s.appointments }}</td>
+              <td data-label="Daromad" style="text-align: right">{{ formatSom(s.revenue_tiyin) }}</td>
+              <td data-label="Ish haqi" style="text-align: right"><strong>{{ formatSom(s.earnings_tiyin) }}</strong></td>
             </tr>
           </tbody>
           <tfoot>

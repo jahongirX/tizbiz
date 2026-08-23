@@ -120,7 +120,7 @@ onMounted(load)
       </div>
 
       <div v-else class="table-wrap">
-        <table class="data">
+        <table class="data cards">
           <thead>
             <tr>
               <th style="width: 52px"></th>
@@ -136,9 +136,9 @@ onMounted(load)
                 <img v-if="s.avatar" :src="s.avatar" :alt="s.name" class="staff-ava" />
                 <span v-else class="staff-ava fallback">{{ initials(s.name) }}</span>
               </td>
-              <td><strong>{{ s.name }}</strong></td>
-              <td>{{ s.specialization || '—' }}</td>
-              <td>
+              <td data-label="Ismi"><strong>{{ s.name }}</strong></td>
+              <td data-label="Mutaxassisligi">{{ s.specialization || '—' }}</td>
+              <td data-label="Holat">
                 <span class="badge" :class="s.is_active !== false ? 'completed' : 'canceled'">
                   {{ s.is_active !== false ? 'Faol' : 'Nofaol' }}
                 </span>
