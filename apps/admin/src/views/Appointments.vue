@@ -259,7 +259,7 @@ onMounted(async () => {
     <template v-else>
       <div v-if="!sorted.length" class="empty card">Tanlangan davr uchun yozuvlar yo'q.</div>
       <div v-else class="table-wrap">
-        <table class="data">
+        <table class="data cards">
           <thead>
             <tr>
               <th>Vaqt</th>
@@ -276,9 +276,9 @@ onMounted(async () => {
                 <strong>{{ a.client?.name || a.client_name || '—' }}</strong>
                 <div class="muted" style="font-size: 12px">{{ a.client?.phone || a.client_phone || '' }}</div>
               </td>
-              <td>{{ (a.service_names || []).join(' + ') || a.service?.name || a.service_name || '—' }}</td>
-              <td>{{ a.staff?.name || a.staff_name || '—' }}</td>
-              <td>
+              <td data-label="Xizmat">{{ (a.service_names || []).join(' + ') || a.service?.name || a.service_name || '—' }}</td>
+              <td data-label="Xodim">{{ a.staff?.name || a.staff_name || '—' }}</td>
+              <td data-label="Holat">
                 <select
                   class="status-select"
                   :class="a.status"

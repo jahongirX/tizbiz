@@ -87,7 +87,7 @@ onMounted(() => load())
     </div>
 
     <div v-else class="table-wrap">
-      <table class="data">
+      <table class="data cards">
         <thead>
           <tr>
             <th>Vaqt</th>
@@ -105,14 +105,14 @@ onMounted(() => load())
               <strong>{{ r.client_name || '—' }}</strong>
               <div class="muted" style="font-size: 12px">{{ r.client_phone || '' }}</div>
             </td>
-            <td>{{ templateLabels[r.template] || r.template }}</td>
-            <td>{{ channelLabels[r.channel] || r.channel }}</td>
-            <td>
+            <td data-label="Turi">{{ templateLabels[r.template] || r.template }}</td>
+            <td data-label="Kanal">{{ channelLabels[r.channel] || r.channel }}</td>
+            <td data-label="Holat">
               <span class="badge" :class="statusClass[r.status] || ''">
                 {{ statusLabels[r.status] || r.status }}
               </span>
             </td>
-            <td>{{ stamp(r.sent_at) }}</td>
+            <td data-label="Yuborilgan">{{ stamp(r.sent_at) }}</td>
           </tr>
         </tbody>
       </table>

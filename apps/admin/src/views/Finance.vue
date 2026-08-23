@@ -235,7 +235,7 @@ onMounted(loadAll)
     <div v-else-if="!rows.length" class="empty card">Tranzaksiyalar topilmadi.</div>
     <template v-else>
       <div class="table-wrap">
-        <table class="data">
+        <table class="data cards">
           <thead>
             <tr>
               <th>Sana</th>
@@ -250,16 +250,16 @@ onMounted(loadAll)
           <tbody>
             <tr v-for="t in rows" :key="t.id">
               <td>{{ formatDateTime(t.created_at) || '—' }}</td>
-              <td>{{ providerLabels[t.provider] || t.provider || '—' }}</td>
-              <td>{{ typeLabels[t.type] || t.type || '—' }}</td>
-              <td>
+              <td data-label="Provayder">{{ providerLabels[t.provider] || t.provider || '—' }}</td>
+              <td data-label="Turi">{{ typeLabels[t.type] || t.type || '—' }}</td>
+              <td data-label="Holat">
                 <span class="badge" :class="statusBadge[t.status] || 'pending'">
                   {{ statusLabels[t.status] || t.status }}
                 </span>
               </td>
-              <td style="text-align: right">{{ formatSom(t.amount_tiyin) }}</td>
-              <td>{{ t.client_name || '—' }}</td>
-              <td>{{ t.service_name || '—' }}</td>
+              <td data-label="Summa" style="text-align: right">{{ formatSom(t.amount_tiyin) }}</td>
+              <td data-label="Mijoz">{{ t.client_name || '—' }}</td>
+              <td data-label="Xizmat">{{ t.service_name || '—' }}</td>
             </tr>
           </tbody>
         </table>

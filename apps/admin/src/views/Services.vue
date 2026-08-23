@@ -236,7 +236,7 @@ onMounted(load)
       </div>
 
       <div v-else class="table-wrap">
-        <table class="data">
+        <table class="data cards">
           <thead>
             <tr>
               <th style="width: 44px"></th>
@@ -257,11 +257,11 @@ onMounted(load)
                 <span v-else class="row-thumb ph">{{ s.name.charAt(0) }}</span>
               </td>
               <td><strong>{{ s.name }}</strong></td>
-              <td>{{ categoryName[s.category_id] || '—' }}</td>
-              <td>{{ s.duration_min }} daqiqa</td>
-              <td>{{ formatSom(s.price_tiyin) }}</td>
-              <td>{{ s.deposit_tiyin ? formatSom(s.deposit_tiyin) : '—' }}</td>
-              <td>
+              <td data-label="Kategoriya">{{ categoryName[s.category_id] || '—' }}</td>
+              <td data-label="Davomiyligi">{{ s.duration_min }} daqiqa</td>
+              <td data-label="Narxi">{{ formatSom(s.price_tiyin) }}</td>
+              <td data-label="Depozit">{{ s.deposit_tiyin ? formatSom(s.deposit_tiyin) : '—' }}</td>
+              <td data-label="Onlayn bron">
                 <span class="badge" :class="s.online_bookable !== false ? 'completed' : 'canceled'">
                   {{ s.online_bookable !== false ? 'Ochiq' : 'Yopiq' }}
                 </span>

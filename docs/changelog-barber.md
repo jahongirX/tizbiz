@@ -10,6 +10,23 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 35. Mobil (1/4): jadvallar telefonda kartaga aylandi
+
+**Muammo.** Admin'dagi jadval hujayralarida `white-space: nowrap` turadi va
+ustunlar 5-8 ta. Telefonda har bir ro'yxat (Navbatlar, Mijozlar, Moliya,
+Xizmatlar, Xabarlar) faqat yonga surib o'qilardi.
+
+**Yechim.** Umumiy CSS: 640px dan pastda `table.data.cards` qatori **kartaga**
+aylanadi — `thead` yashiriladi, har hujayra alohida qatorga tushadi, chapda
+ustun nomi (`data-label`) chiqadi. Birinchi hujayra kartaning sarlavhasi
+bo'ladi; rasm bo'lsa, sarlavha keyingi hujayraga o'tadi.
+
+Karta rejimi **ixtiyoriy** (`.cards` klassi bilan yoqiladi), shuning uchun
+boshqa vertikallarning jadvallari o'zgarmadi. Hozircha eng ko'p ishlatiladigan
+5 tasi ulandi: Navbatlar, Mijozlar, Moliya, Xizmatlar, Xabarlar.
+
+Desktop'da hech nima o'zgarmaydi — media query faqat telefon kengligida ishlaydi.
+
 ### 34. Xabarlar admin paneldan boshqariladi
 
 SMS ulangandan keyin ham uni faqat env va cron boshqarardi — biznes egasi

@@ -378,7 +378,7 @@ onMounted(() => {
         <div v-else-if="!rows.length" class="empty card">Mijozlar topilmadi.</div>
         <template v-else>
           <div class="table-wrap">
-            <table class="data">
+            <table class="data cards">
               <thead>
                 <tr>
                   <th>Ism</th>
@@ -420,11 +420,11 @@ onMounted(() => {
                       {{ c.no_shows }}× kelmagan
                     </span>
                   </td>
-                  <td>{{ c.phone || '—' }}</td>
-                  <td>{{ c.email || '—' }}</td>
-                  <td style="text-align: right">{{ formatSom(c.spent_tiyin || 0) }}</td>
-                  <td style="text-align: right">{{ c.visits ?? 0 }}</td>
-                  <td>{{ formatDate(c.last_visit) }}</td>
+                  <td data-label="Telefon">{{ c.phone || '—' }}</td>
+                  <td data-label="Email">{{ c.email || '—' }}</td>
+                  <td data-label="Sotildi" style="text-align: right">{{ formatSom(c.spent_tiyin || 0) }}</td>
+                  <td data-label="Tashriflar" style="text-align: right">{{ c.visits ?? 0 }}</td>
+                  <td data-label="Oxirgi tashrif">{{ formatDate(c.last_visit) }}</td>
                   <td style="text-align: right" @click.stop>
                     <button class="btn btn-sm btn-ghost" @click="openDrawer(c)">Ko'rish</button>
                     <button class="btn btn-sm btn-ghost" @click="openEdit(c)">Tahrir</button>
