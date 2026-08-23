@@ -10,6 +10,37 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 27. To'liq demo do'kon: chizilgan avatarlar + oylik tarix
+
+**Avatarlar.** Ism harflari o'rniga ustalar endi **chizilgan portret** bilan
+chiqadi: bosh, soch, soqol va yelka rangli fonda. Uslub (soch turi, soqol yoki
+mo'ylov) indeksdan tanlanadi, ya'ni ustalar bir-biridan farq qiladi. Xizmat
+kartochkalarida ham bitta qaychi o'rniga uchta belgi aylanadi: **qaychi, ustara,
+taroq**. Hammasi GD bilan joyida chiziladi — internetdan hech nima olinmaydi.
+
+**Bulk demo.** Yangi komanda
+`php yii barber-bulk/generate [slug] [pastDays] [futureDays]` do'konni haqiqiy
+tarix bilan to'ldiradi:
+
+- 34 mijoz (kartada usta eslab qoladigan izohlar bilan)
+- **437 yozuv**: 75 kun orqaga va 12 kun oldinga, yakshanba yopiq, shanba eng
+  band kun; 342 bajarilgan, 20 kelmagan, 12 bekor, 58 kelajakdagi
+- har to'rtinchi tashrifda **ikkinchi xizmat** (soch + soqol) — 114 ta yozuv
+- mijoz kategoriyalari (VIP / Doimiy / Yangi) tashriflar soniga qarab biriktiriladi
+- abonement turlari, ustaning dam olish kuni, onlayn depozitlar (Payme + Click)
+
+Pul va keshbek **seed ichida qo'lda yozilmaydi** — o'sha `appointmentCompleted`
+hodisasi ishga tushiriladi, ya'ni demo tarix ilova real ishlaganda yozadigan
+narsaning aynan o'zi. Generator deterministik (bir xil seed → bir xil do'kon) va
+mavjud yozuvlarga tegmaydi.
+
+**Keshbek uchun:** `php yii loyalty/backfill [slug]` — qoida yoqilmasdan oldin
+yakunlangan tashriflarga keshbekni qaytadan hisoblaydi. Idempotent.
+
+**Natija.** Moliya: **26 065 000 so'm**, 348 tranzaksiya (naqd 342, Payme 4,
+Click 2). Keshbek: 340 yozuv, jami 1 288 750 so'm. Eng faol mijozda 67 000 so'm
+balans.
+
 ### 26. Bo'lim tablari — booking sahifasida ham, adminda ham
 
 Uchta bo'lim ostidagi 11 ta xizmat bitta ustunda uzun ro'yxat bo'lib qolgan edi.

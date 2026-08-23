@@ -64,7 +64,7 @@ class BarberImageController extends Controller
             if ($this->only === 'services' || (!$this->force && $staff->avatar)) {
                 continue;
             }
-            $file = $this->avatar($this->initials($staff->name), $this->hue($i));
+            $file = $this->avatar($this->initials($staff->name), $this->hue($i), $i);
             $name = 'staff-' . $staff->id . '-' . bin2hex(random_bytes(4)) . '.png';
             imagepng($file, $dir . '/' . $name, 9);
             $staff->avatar = $baseUrl . '/uploads/' . $sub . '/' . $name;
@@ -77,7 +77,7 @@ class BarberImageController extends Controller
             if ($this->only === 'masters' || (!$this->force && $service->image)) {
                 continue;
             }
-            $file = $this->serviceTile($service->name, $this->hue($i + 3));
+            $file = $this->serviceTile($service->name, $this->hue($i + 3), $i);
             $name = 'service-' . $service->id . '-' . bin2hex(random_bytes(4)) . '.png';
             imagepng($file, $dir . '/' . $name, 9);
             $service->image = $baseUrl . '/uploads/' . $sub . '/' . $name;
@@ -115,34 +115,75 @@ class BarberImageController extends Controller
         return null;
     }
 
-    /** Round-ish portrait: a soft vertical gradient with the initials on top. */
-    private function avatar(string $initials, int $hue)
+    /**
+     * A drawn portrait rather than initials: head, hair and shoulders on a
+     * coloured ground. The variant (hairstyle, beard, moustache) is picked from
+     * the index, so masters stay recognisably different from each other.
+     */
+    private function avatar(string $initials, int $hue, int $variant)
     {
         $size = 320;
         $img = imagecreatetruecolor($size, $size);
+        imageantialias($img, true);
         $this->gradient($img, $size, $size, $hue);
 
-        // A faint ring keeps the disc from melting into a dark page.
-        $ring = imagecolorallocatealpha($img, 255, 255, 255, 100);
-        imagesetthickness($img, 4);
-        imageellipse($img, $size / 2, $size / 2, $size - 26, $size - 26, $ring);
+        $skin = imagecolorallocate($img, 236, 199, 168);
+        $skinShade = imagecolorallocate($img, 214, 173, 141);
+        $hair = imagecolorallocate($img, 42, 34, 30);
+        $shirt = imagecolorallocate($img, 250, 250, 250);
+        $ring = imagecolorallocatealpha($img, 255, 255, 255, 105);
 
-        $white = imagecolorallocate($img, 255, 255, 255);
-        $font = $this->font();
-        if ($font !== null) {
-            $fs = 108;
-            $box = imagettfbbox($fs, 0, $font, $initials);
-            $w = $box[2] - $box[0];
-            $h = $box[1] - $box[7];
-            imagettftext($img, $fs, 0, (int) (($size - $w) / 2), (int) (($size + $h) / 2), $white, $font, $initials);
-        } else {
-            imagestring($img, 5, (int) ($size / 2 - 20), (int) ($size / 2 - 8), $initials, $white);
+        $cx = $size / 2;
+
+        // Shoulders first, so the head overlaps them.
+        imagefilledellipse($img, (int) $cx, 322, 250, 190, $shirt);
+        // Collar notch.
+        imagefilledellipse($img, (int) $cx, 232, 74, 54, $skinShade);
+
+        // Head.
+        imagefilledellipse($img, (int) $cx, 168, 146, 168, $skin);
+        // Ears.
+        imagefilledellipse($img, (int) $cx - 74, 172, 26, 34, $skinShade);
+        imagefilledellipse($img, (int) $cx + 74, 172, 26, 34, $skinShade);
+
+        // Hair always starts as a cap that follows the skull, then the face is
+        // drawn back over it — that keeps every style attached to the head.
+        $style = $variant % 3;
+        imagefilledellipse($img, (int) $cx, 150, 152, 176, $hair);
+        if ($style === 1) {
+            // Flat top: square off the crown inside the skull's width.
+            imagefilledrectangle($img, (int) $cx - 76, 74, (int) $cx + 76, 120, $hair);
         }
+        if ($style === 2) {
+            // Side part: the face sits slightly right, leaving a thicker fringe.
+            imagefilledellipse($img, (int) $cx + 12, 178, 132, 152, $skin);
+        } else {
+            imagefilledellipse($img, (int) $cx, 178, 138, 152, $skin);
+        }
+
+        // Beard on every other master; a moustache on the rest.
+        if ($variant % 2 === 0) {
+            imagefilledellipse($img, (int) $cx, 206, 128, 104, $hair);
+            imagefilledellipse($img, (int) $cx, 182, 100, 78, $skin);
+            imagefilledrectangle($img, (int) $cx - 20, 196, (int) $cx + 20, 202, $hair);
+        } else {
+            imagefilledrectangle($img, (int) $cx - 24, 196, (int) $cx + 24, 203, $hair);
+            imagefilledellipse($img, (int) $cx, 218, 26, 12, $skinShade);
+        }
+
+        // Eyes.
+        imagefilledellipse($img, (int) $cx - 28, 172, 13, 15, $hair);
+        imagefilledellipse($img, (int) $cx + 28, 172, 13, 15, $hair);
+
+        // Framing ring, same as before.
+        imagesetthickness($img, 4);
+        imageellipse($img, (int) $cx, (int) $cx, $size - 26, $size - 26, $ring);
+
         return $img;
     }
 
     /** Wide tile: gradient, a drawn pair of scissors, and the service name. */
-    private function serviceTile(string $name, int $hue)
+    private function serviceTile(string $name, int $hue, int $variant)
     {
         $w = 480;
         $h = 320;
@@ -150,13 +191,8 @@ class BarberImageController extends Controller
         $this->gradient($img, $w, $h, $hue);
 
         $ink = imagecolorallocatealpha($img, 255, 255, 255, 40);
-        imagesetthickness($img, 7);
-        // Blades crossing, then the two finger holes: a scissors silhouette.
-        imageline($img, 170, 84, 316, 236, $ink);
-        imageline($img, 310, 84, 164, 236, $ink);
-        imagesetthickness($img, 6);
-        imageellipse($img, 160, 244, 40, 40, $ink);
-        imageellipse($img, 320, 244, 40, 40, $ink);
+        // Three marks so a menu is not a wall of identical scissors.
+        $this->glyph($img, $ink, $variant % 3);
 
         $font = $this->font();
         $white = imagecolorallocate($img, 255, 255, 255);
@@ -168,6 +204,40 @@ class BarberImageController extends Controller
             imagettftext($img, $fs, 0, (int) (($w - $tw) / 2), $h - 34, $white, $font, $label);
         }
         return $img;
+    }
+
+    /** 0 = scissors, 1 = straight razor, 2 = comb. */
+    private function glyph($img, int $ink, int $kind): void
+    {
+        if ($kind === 0) {
+            imagesetthickness($img, 7);
+            imageline($img, 170, 84, 316, 236, $ink);
+            imageline($img, 310, 84, 164, 236, $ink);
+            imagesetthickness($img, 6);
+            imageellipse($img, 160, 244, 40, 40, $ink);
+            imageellipse($img, 320, 244, 40, 40, $ink);
+            return;
+        }
+
+        if ($kind === 1) {
+            // Blade folded out of its handle.
+            imagesetthickness($img, 7);
+            imageline($img, 150, 200, 262, 96, $ink);
+            imageline($img, 262, 96, 292, 118, $ink);
+            imageline($img, 292, 118, 178, 222, $ink);
+            imageline($img, 178, 222, 150, 200, $ink);
+            imagesetthickness($img, 9);
+            imageline($img, 168, 236, 300, 236, $ink);
+            return;
+        }
+
+        // Comb: a spine with teeth.
+        imagesetthickness($img, 9);
+        imageline($img, 152, 128, 328, 128, $ink);
+        imagesetthickness($img, 6);
+        for ($x = 160; $x <= 320; $x += 20) {
+            imageline($img, $x, 132, $x, 214, $ink);
+        }
     }
 
     /** Vertical gradient from a light to a dark shade of one hue. */
