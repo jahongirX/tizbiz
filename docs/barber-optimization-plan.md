@@ -140,6 +140,29 @@ Hozir `staff.commission_percent` — ustaga bitta foiz. Amalda: soch olish 50%, 
 
 ---
 
+## 4a. Mobil (telefon) — hozirgi holat
+
+Kod bo'yicha tekshirildi, taxmin emas.
+
+**Bor:**
+- `viewport` meta ikkala SPA'da to'g'ri
+- Sidebar 860px dan pastda burger + drawer bo'lib yig'iladi
+- `.field-row` va `AppointmentForm` ning uch ustuni 880px da bitta ustunga tushadi
+- Jadvallar `.table-wrap` ichida gorizontal skroll bo'ladi (ma'lumot yo'qolmaydi)
+
+**Yetishmayapti:**
+
+| Muammo | Nega og'riqli | Yechim |
+|---|---|---|
+| **15 ta jadvalli sahifa**, har hujayrada `white-space: nowrap` | Telefonda Navbatlar/Mijozlar/Moliya doim yonga suriladi | ~640px dan pastda qator → **karta** (ustun nomi + qiymat) |
+| **Jadval (Timetable) — 7 kunlik setka** | 390px ekranda o'qib bo'lmaydi; faqat nav tugmalari moslashgan | Telefonda **bir kunlik** ko'rinish (ustun = usta) yoki oddiy ro'yxat |
+| **Teginish maydoni ~36px** (`.btn` 9×16, input 9×11) | Barmoq bilan, ho'l qo'l bilan tegish qiyin | ≤640px da 44px minimal balandlik |
+| **Modal telefonda ham "oyna"** | Uzun forma o'rtada qisilib qoladi | ≤640px da to'liq ekranli sheet (pastdan chiqadi) |
+| **Mini-kalendar drawer'ning yarmini egallaydi** | Menyuga yetish uchun skroll kerak | Telefonda yig'iladigan qilish yoki yashirish |
+
+**Ustuvorlik:** jadval→karta va bir kunlik Timetable — qolgan hammasidan
+muhimroq, chunki usta kunda eng ko'p shu ikki ekranga qaraydi.
+
 ## 5. Bajarilish holati (2026-08-17)
 
 | Punkt | Holat |
@@ -160,6 +183,10 @@ Hozir `staff.commission_percent` — ustaga bitta foiz. Amalda: soch olish 50%, 
 | 1. Hisobot sahifalarini birlashtirish | ⏳ |
 | 1. Mijoz kategoriyalarini yashirish | ⏳ |
 | 4.3 Vaqt zonasini biznesdan olish | ⏳ |
+| 2.8 Telegram eslatmasida tasdiq tugmalari | ⏳ (eslatma yuboriladi, tugmalar yo'q) |
+| **Mobil: jadval → karta** | ⏳ |
+| **Mobil: bir kunlik Timetable** | ⏳ |
+| **Mobil: teginish maydoni + sheet modal** | ⏳ |
 
 Qolganlari `appointments` / `clients` / `services` jadvallarida schema o'zgarishini
 talab qiladi (`appointment_items` ni slot engine uchun ochish, `clients.profile`
