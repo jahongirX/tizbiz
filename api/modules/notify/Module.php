@@ -15,6 +15,7 @@ class Module extends \yii\base\Module implements BootstrapInterface
     {
         $app->getUrlManager()->addRules([
             'POST v1/webhooks/telegram' => 'notify/telegram-webhook/update',
+            'GET v1/notifications' => 'notify/notification/index',
         ], false);
     }
 }

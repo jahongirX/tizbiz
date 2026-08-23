@@ -113,6 +113,7 @@ const nav = computed(() => {
       children: [
         { to: '/team', label: 'Jamoa' },
         { to: '/settings', label: 'Onlayn-yozuv' },
+        { to: '/messages', label: 'Xabarlar' },
       ],
     },
   ]

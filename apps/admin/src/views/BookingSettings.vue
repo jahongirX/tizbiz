@@ -64,6 +64,34 @@ async function saveInfo() {
   }
 }
 
+// Client notifications: does the shop write to the client, and how early.
+const notify = reactive({ notify_confirmation: true, notify_reminder: true, reminder_hours: 24 })
+const notifySaving = ref(false)
+const notifySaved = ref(false)
+const notifyError = ref('')
+
+async function saveNotify() {
+  notifyError.value = ''
+  notifySaved.value = false
+  notifySaving.value = true
+  try {
+    const res = await api.put('/v1/settings/booking', {
+      notify_confirmation: notify.notify_confirmation,
+      notify_reminder: notify.notify_reminder,
+      reminder_hours: Number(notify.reminder_hours) || 24,
+    })
+    notify.notify_confirmation = !!res.notify_confirmation
+    notify.notify_reminder = !!res.notify_reminder
+    notify.reminder_hours = Number(res.reminder_hours ?? 24)
+    notifySaved.value = true
+    setTimeout(() => (notifySaved.value = false), 2500)
+  } catch (e) {
+    notifyError.value = e instanceof ApiError ? e.message : 'Saqlab bo\'lmadi'
+  } finally {
+    notifySaving.value = false
+  }
+}
+
 // Branding (logo / cover / brand colors) — applied to the public storefront.
 const brand = reactive({ logo: '', cover: '', brand_color: '', brand_color_2: '' })
 const brandSaving = ref(false)
@@ -153,6 +181,9 @@ async function load() {
     info.phone = res.phone || ''
     info.tagline = res.tagline || ''
     info.category = res.category || ''
+    notify.notify_confirmation = res.notify_confirmation !== false
+    notify.notify_reminder = res.notify_reminder !== false
+    notify.reminder_hours = Number(res.reminder_hours ?? 24)
     brand.logo = res.logo || ''
     brand.cover = res.cover || ''
     brand.brand_color = res.brand_color || ''
@@ -414,6 +445,52 @@ onMounted(load)
       </div>
       </section>
 
+      <!-- Client notifications -->
+      <section class="card">
+        <h2 class="sec-h">Mijozga xabar</h2>
+        <p class="muted" style="margin: -6px 0 14px; font-size: 13px">
+          Mijozda ulangan Telegram bo‘lsa — Telegram orqali, aks holda SMS bilan yuboriladi.
+        </p>
+        <div v-if="notifyError" class="alert alert-error" style="margin-bottom: 12px">{{ notifyError }}</div>
+
+        <label class="row nf-row">
+          <input v-model="notify.notify_confirmation" type="checkbox" style="width: auto" />
+          <span>
+            <strong>Yozilganda tasdiq</strong>
+            <small class="muted">Mijoz navbat olgach darhol xabar oladi.</small>
+          </span>
+        </label>
+
+        <label class="row nf-row">
+          <input v-model="notify.notify_reminder" type="checkbox" style="width: auto" />
+          <span>
+            <strong>Tashrifdan oldin eslatma</strong>
+            <small class="muted">Kelmay qolishni kamaytiradi.</small>
+          </span>
+        </label>
+
+        <div class="field" style="max-width: 220px">
+          <label>Necha soat oldin</label>
+          <input
+            v-model.number="notify.reminder_hours"
+            type="number"
+            min="1"
+            max="168"
+            :disabled="!notify.notify_reminder"
+          />
+        </div>
+
+        <div class="row" style="gap: 12px; margin-top: 8px; align-items: center">
+          <button class="btn btn-primary" :disabled="notifySaving" @click="saveNotify">
+            {{ notifySaving ? 'Saqlanmoqda…' : 'Saqlash' }}
+          </button>
+          <span v-if="notifySaved" style="color: var(--success); font-weight: 600">✓ Saqlandi</span>
+          <RouterLink to="/messages" class="muted" style="margin-left: auto; font-size: 13px">
+            Yuborilgan xabarlar →
+          </RouterLink>
+        </div>
+      </section>
+
       <!-- Telegram bot -->
       <section class="card tg-card">
       <div class="tg-head">
@@ -666,5 +743,19 @@ onMounted(load)
 .bp-txt span {
   font-size: 12px;
   opacity: 0.9;
+}
+.nf-row {
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+.nf-row span {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.35;
+}
+.nf-row small {
+  font-size: 12px;
 }
 </style>

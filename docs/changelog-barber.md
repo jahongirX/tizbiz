@@ -10,6 +10,41 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 34. Xabarlar admin paneldan boshqariladi
+
+SMS ulangandan keyin ham uni faqat env va cron boshqarardi — biznes egasi
+hech nimani ko'rmasdi va o'zgartira olmasdi.
+
+**Migratsiya** `m260823_100000_add_notify_settings_to_businesses` — `businesses`
+ga uchta maydon: `notify_confirmation`, `notify_reminder`, `reminder_hours`
+(standart: yoqilgan, 24 soat). Additive.
+
+**Sozlamalar → "Mijozga xabar" kartasi:**
+- *Yozilganda tasdiq* — mijoz navbat olgach darhol xabar oladi
+- *Tashrifdan oldin eslatma* + necha soat oldin (1-168)
+
+**Yangi: tasdiq xabari.** Ilgari `confirmation` shabloni bor edi, lekin uni
+hech kim yubormasdi. Endi bron yaratilganda xabar navbatga tushadi va
+yuboriladi. Mijozda tasdiqlangan Telegram bo'lsa — Telegram, aks holda SMS.
+Xato bo'lsa bron baribir saqlanadi (`try/catch` + log).
+
+**Eslatma endi biznesga bo'ysunadi.** `reminder/send` har bir biznesning
+`notify_reminder` va `reminder_hours` sozlamasini o'qiydi — ilgari hammaga
+bir xil oyna edi.
+
+**Sozlamalar → Xabarlar** sahifasi: yuborilgan xabarlar jurnali — vaqt, mijoz,
+turi (tasdiq/eslatma), kanal (SMS/Telegram), holat va yuborilgan vaqt. Kanal va
+holat bo'yicha filtr. API: `GET /v1/notifications` (faqat o'qish, tenant bo'yicha).
+
+**Tekshiruv.** Public bron → `confirmation` yozuvi paydo bo'ldi
+(`sms`, mijoz nomi va raqami bilan). Serverda `SMS_TOKEN` yo'q bo'lgani uchun
+holat `failed` — ya'ni tasodifiy haqiqiy SMS ketmaydi; kalit qo'yilganda
+yuboriladi.
+
+**Yo'l-yo'lakay bug:** tasdiq xabarida Telegram tekshiruvi mavjud bo'lmagan
+`verified` ustunini so'rardi (to'g'risi — `verified_at`), shuning uchun butun
+blok jimgina yiqilardi.
+
 ### 33. SMS shlyuzi ulandi (sms.tizbiz.uz)
 
 Eslatmalar mijozda tasdiqlangan Telegram ulanishi bo'lmasa SMS ga tushadi, lekin

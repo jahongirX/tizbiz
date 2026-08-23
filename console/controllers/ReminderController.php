@@ -68,6 +68,19 @@ class ReminderController extends Controller
                 continue;
             }
 
+            // The shop decides whether reminders go out and how early.
+            $business = Business::findOne((int) $appt->business_id);
+            if ($business === null || !$business->notify_reminder) {
+                $skipped++;
+                continue;
+            }
+            $lead = max(1, (int) $business->reminder_hours);
+            $startsTs = strtotime((string) $appt->starts_at . ' UTC');
+            if ($startsTs === false || $startsTs > time() + $lead * 3600) {
+                $skipped++; // still too early for this business
+                continue;
+            }
+
             $channel = $this->hasVerifiedTelegram($clientId)
                 ? Notification::CHANNEL_TELEGRAM
                 : Notification::CHANNEL_SMS;

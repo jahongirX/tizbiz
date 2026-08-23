@@ -3,13 +3,16 @@
 namespace api\modules\booking\controllers;
 
 use api\modules\booking\services\AvailabilityService;
+use api\modules\notify\services\NotificationService;
 use common\models\Appointment;
 use common\models\AppointmentItem;
 use common\models\Client;
+use common\models\Notification;
 use common\models\Product;
 use common\models\Service;
 use common\models\Staff;
 use common\models\StockMovement;
+use common\models\TelegramLink;
 use common\rest\Controller;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -287,6 +290,8 @@ class AppointmentController extends Controller
             Yii::$app->cache->set($cacheKey, $model->id, 86400);
         }
 
+        $this->sendConfirmation($model, $staff, $service);
+
         return $this->created($model);
     }
 
@@ -333,6 +338,55 @@ class AppointmentController extends Controller
     }
 
     /** Upsert a Client by (business, phone). Returns client id or null. */
+    /**
+     * Tell the client their booking is in: Telegram when they have a verified
+     * link, SMS otherwise. Off by default for nobody — the shop turns it off in
+     * settings if it does not want to spend on messages. Never fails a booking.
+     */
+    private function sendConfirmation(Appointment $appt, Staff $staff, Service $service): void
+    {
+        try {
+            if ($appt->client_id === null) {
+                return; // walk-in placeholder, nobody to notify
+            }
+            $business = $staff->business;
+            if ($business === null || !$business->notify_confirmation) {
+                return;
+            }
+
+            $tz = (string) ($business->timezone ?: 'Asia/Tashkent');
+            $localStart = (new DateTimeImmutable((string) $appt->starts_at, new DateTimeZone('UTC')))
+                ->setTimezone(new DateTimeZone($tz))
+                ->format('d.m.Y H:i');
+
+            // A link counts as verified once it has a verified_at stamp — the
+            // same test the reminder command uses.
+            $channel = TelegramLink::find()
+                ->andWhere(['client_id' => (int) $appt->client_id])
+                ->andWhere(['not', ['verified_at' => null]])
+                ->exists()
+                ? Notification::CHANNEL_TELEGRAM
+                : Notification::CHANNEL_SMS;
+
+            $n = NotificationService::queue(
+                (int) $appt->business_id,
+                (int) $appt->client_id,
+                $channel,
+                'confirmation',
+                [
+                    'appointment_id' => (int) $appt->id,
+                    'starts_at' => (string) $appt->starts_at,
+                    'starts_at_local' => $localStart,
+                    'service' => (string) $service->name,
+                    'business' => (string) $business->name,
+                ]
+            );
+            NotificationService::dispatch($n);
+        } catch (\Throwable $e) {
+            Yii::warning('Confirmation notification failed: ' . $e->getMessage(), 'notify');
+        }
+    }
+
     /** Digits only, kept in the +998XXXXXXXXX shape the base already uses. */
     public static function normalizePhone(string $raw): string
     {

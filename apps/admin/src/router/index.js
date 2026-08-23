@@ -30,6 +30,7 @@ const routes = [
       { path: 'finance', name: 'finance', component: () => import('../views/Finance.vue') },
       { path: 'payroll', name: 'payroll', component: () => import('../views/Payroll.vue') },
       { path: 'ombor', name: 'ombor', component: () => import('../views/Ombor.vue') },
+      { path: 'messages', name: 'messages', component: () => import('../views/Messages.vue') },
       { path: 'team', name: 'team', component: () => import('../views/Team.vue') },
       { path: 'settings', name: 'booking-settings', component: () => import('../views/BookingSettings.vue') },
     ],

@@ -58,6 +58,15 @@ class SettingsController extends Controller
         if (($v = $this->body('booking_horizon_days')) !== null) {
             $model->booking_horizon_days = (int) $v;
         }
+        // Notifications: whether the client hears from the shop, and how early.
+        foreach (['notify_confirmation', 'notify_reminder'] as $flag) {
+            if (array_key_exists($flag, $this->body())) {
+                $model->$flag = (bool) $this->body($flag);
+            }
+        }
+        if (($v = $this->body('reminder_hours')) !== null) {
+            $model->reminder_hours = (int) $v;
+        }
         // Branding: logo / cover URLs (empty string clears) + brand colors.
         foreach (['logo', 'cover', 'brand_color', 'brand_color_2'] as $attr) {
             if (array_key_exists($attr, $this->body())) {
@@ -95,6 +104,9 @@ class SettingsController extends Controller
             'online_booking_enabled' => (bool) $b->online_booking_enabled,
             'booking_lead_min' => (int) $b->booking_lead_min,
             'booking_horizon_days' => (int) $b->booking_horizon_days,
+            'notify_confirmation' => (bool) $b->notify_confirmation,
+            'notify_reminder' => (bool) $b->notify_reminder,
+            'reminder_hours' => (int) $b->reminder_hours,
             'logo' => $b->logo,
             'cover' => $b->cover,
             'brand_color' => $b->brand_color,
