@@ -95,9 +95,15 @@ class BarberBulkController extends Controller
         $this->timeOff($masters);
 
         [$made, $completed] = $this->appointments($bid, $masters, $services, $clients, $pastDays, $futureDays);
+        [$newcomers, $lapsed] = $this->cohorts($bid, $masters, $services);
         $this->deposits($bid);
         $this->assignCategories($bid, $categories);
 
+        $this->stdout(sprintf(
+            "  cohorts: %d newcomers (0-1 visit), %d lapsed (last visit 70+ days ago)\n",
+            $newcomers,
+            $lapsed
+        ));
         $this->stdout(sprintf(
             "Bulk seed for '%s': %d clients, %d appointments (%d completed), categories + subscriptions + time off.\n",
             $slug,
@@ -310,6 +316,103 @@ class BarberBulkController extends Controller
                 'idempotency_key' => $key,
             ]))->save(false);
         }
+    }
+
+    /**
+     * A real client base is not all regulars: some walked in for the first time
+     * last week, and some have not been back in months. Without them the
+     * "Yangi" and "Yo'qolgan" segments are empty and look broken.
+     *
+     * @return array{0:int,1:int} [newcomers, lapsed]
+     */
+    private function cohorts(int $bid, array $masters, array $services): array
+    {
+        $newcomers = 0;
+        $lapsed = 0;
+
+        // Newcomers: one recent visit at most.
+        for ($i = 1; $i <= 8; $i++) {
+            $phone = '+9989013' . str_pad((string) (10000 + $i), 5, '0', STR_PAD_LEFT);
+            if (Client::find()->where(['business_id' => $bid, 'phone' => $phone])->exists()) {
+                continue;
+            }
+            $client = new Client([
+                'business_id' => $bid,
+                'name' => $this->pick(self::FIRST) . ' ' . $this->pick(self::LAST),
+                'phone' => $phone,
+                'notes' => 'Birinchi marta keldi',
+                'tags' => [],
+            ]);
+            $client->save(false);
+            $newcomers++;
+
+            if ($this->rand(3) > 0) { // two out of three have been in once
+                $this->visit($bid, $masters, $services, $client, -2 - $this->rand(8));
+            }
+        }
+
+        // Lapsed: a few visits, none of them recent.
+        for ($i = 1; $i <= 6; $i++) {
+            $phone = '+9989014' . str_pad((string) (10000 + $i), 5, '0', STR_PAD_LEFT);
+            if (Client::find()->where(['business_id' => $bid, 'phone' => $phone])->exists()) {
+                continue;
+            }
+            $client = new Client([
+                'business_id' => $bid,
+                'name' => $this->pick(self::FIRST) . ' ' . $this->pick(self::LAST),
+                'phone' => $phone,
+                'notes' => 'Ancha vaqtdan beri kelmagan',
+                'tags' => [],
+            ]);
+            $client->save(false);
+            $lapsed++;
+
+            $times = 2 + $this->rand(3);
+            for ($v = 0; $v < $times; $v++) {
+                $this->visit($bid, $masters, $services, $client, -70 - $this->rand(70));
+            }
+        }
+
+        return [$newcomers, $lapsed];
+    }
+
+    /** One completed visit on a given day offset, skipping clashes. */
+    private function visit(int $bid, array $masters, array $services, Client $client, int $dayOffset): void
+    {
+        $master = $masters[$this->rand(count($masters))];
+        $service = $services[$this->rand(count($services))];
+
+        $dayTs = time() + $dayOffset * 86400;
+        if ((int) gmdate('N', $dayTs) === 7) {
+            $dayTs -= 86400; // shop is closed on Sunday
+        }
+        $startTs = strtotime(gmdate('Y-m-d', $dayTs) . ' 04:00:00 UTC') + $this->rand(20) * 1800;
+        $endTs = $startTs + (int) $service->duration_min * 60;
+        $startStr = gmdate('Y-m-d H:i:s', $startTs);
+        $endStr = gmdate('Y-m-d H:i:s', $endTs);
+
+        $clash = Appointment::find()
+            ->where(['staff_id' => $master->id])
+            ->andWhere(['not in', 'status', Appointment::RELEASED_STATUSES])
+            ->andWhere(['<', 'starts_at', $endStr])
+            ->andWhere(['>', 'ends_at', $startStr])
+            ->exists();
+        if ($clash) {
+            return;
+        }
+
+        $appt = new Appointment([
+            'business_id' => $bid,
+            'client_id' => $client->id,
+            'staff_id' => $master->id,
+            'service_id' => $service->id,
+            'starts_at' => $startStr,
+            'ends_at' => $endStr,
+            'status' => Appointment::STATUS_COMPLETED,
+            'source' => Appointment::SOURCE_ADMIN,
+        ]);
+        $appt->save(false);
+        Yii::$app->trigger('appointmentCompleted', new Event(['sender' => $appt]));
     }
 
     /** Segment the base the way the shop would: by how often someone comes. */

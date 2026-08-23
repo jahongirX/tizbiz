@@ -10,6 +10,24 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 29. "Yangi" va "Yo'qolgan" segmentlari bo'sh edi (demo ma'lumot)
+
+**Muammo.** Mijozlar bazasida "Yangi" va "Yo'qolgan" filtrlari hech nima
+ko'rsatmasdi.
+
+**Sabab — kod emas, ma'lumot.** API va SQL bir xil natija berdi (0 va 0):
+bulk seed har bir mijozga ko'plab tashrif bergan va hammasining oxirgi tashrifi
+yaqin edi. Segment ta'riflari: *Yangi* = 1 tadan ko'p bo'lmagan tashrif,
+*Yo'qolgan* = 60 kundan beri kelmagan. Ikkalasiga ham mos keluvchi mijoz yo'q edi.
+
+**Yechim.** Seed endi haqiqiy bazadagidek uch xil mijozni yaratadi:
+
+- **8 yangi** — 0 yoki 1 ta yaqin tashrif ("Birinchi marta keldi")
+- **6 yo'qolgan** — 2-4 ta tashrif, hammasi 70-140 kun oldin
+- qolganlari doimiy mijozlar
+
+**Natija.** Barchasi 48 · Yangi 9 · Takroriy 39 · Yo'qolgan 6.
+
 ### 28. Public bron mijozsiz saqlanardi (bug) + vaqt formati
 
 **Muammo.** Saytdan navbat olinganda "Navbat band qilindi!" chiqardi, lekin
