@@ -200,16 +200,37 @@ function layoutLanes(dayBlocks) {
   if (cluster.length) flush()
 }
 
+/** A short service (10-30 min) is only a few pixels tall at this zoom. */
+function blockHeight(b) {
+  return Math.max(((b.endMin - b.startMin) / 60) * HOUR_PX, 26)
+}
+
 function blockStyle(b) {
-  const top = minToTop(b.startMin)
-  const height = Math.max(((b.endMin - b.startMin) / 60) * HOUR_PX, 22)
   const w = 100 / b.lanes
   return {
-    top: top + 'px',
-    height: height - 2 + 'px',
+    top: minToTop(b.startMin) + 'px',
+    height: blockHeight(b) - 2 + 'px',
     left: `calc(${b.lane * w}% + 2px)`,
     width: `calc(${w}% - 4px)`,
   }
+}
+
+/**
+ * Three stacked lines need ~46px. Below that the block used to show the time and
+ * clip everything else, which is the least useful half — a bare "10:00" says
+ * nothing. Short blocks put the time and the service on one line instead, and
+ * the client is dropped only when even that does not fit.
+ */
+function blockClass(b) {
+  const h = blockHeight(b)
+  return { [b.appt.status]: true, compact: h < 46, tiny: h < 34 }
+}
+
+/** Everything about the visit, for the hover tooltip. */
+function blockTitle(b) {
+  const parts = [formatTime(b.appt.starts_at), serviceLabel(b.appt)]
+  if (b.appt.client_name) parts.push(b.appt.client_name)
+  return parts.filter(Boolean).join(' · ')
 }
 
 /* ---------- data loading ---------- */
@@ -545,12 +566,15 @@ onBeforeUnmount(() => {
                 :key="b.appt.id"
                 type="button"
                 class="tt-appt"
-                :class="b.appt.status"
+                :class="blockClass(b)"
                 :style="blockStyle(b)"
+                :title="blockTitle(b)"
                 @click.stop="openDetail(b.appt)"
               >
-                <span class="ap-time">{{ formatTime(b.appt.starts_at) }}</span>
-                <span class="ap-service">{{ serviceLabel(b.appt) }}</span>
+                <span class="ap-head">
+                  <span class="ap-time">{{ formatTime(b.appt.starts_at) }}</span>
+                  <span class="ap-service">{{ serviceLabel(b.appt) }}</span>
+                </span>
                 <span class="ap-client">{{ b.appt.client_name || '—' }}</span>
               </button>
             </div>
@@ -875,10 +899,29 @@ onBeforeUnmount(() => {
   filter: brightness(1.04);
   z-index: 5;
 }
+.tt-appt .ap-head {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+/* Short visit: time and service share one line, client is dropped. */
+.tt-appt.compact .ap-head {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 5px;
+}
+.tt-appt.compact .ap-client {
+  display: none;
+}
+.tt-appt.tiny .ap-service {
+  font-size: 11px;
+}
 .tt-appt .ap-time {
   font-size: 11px;
   font-weight: 700;
   line-height: 1.2;
+  flex: 0 0 auto;
 }
 .tt-appt .ap-service {
   font-size: 11.5px;

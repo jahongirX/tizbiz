@@ -10,6 +10,28 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 30. Jadvalda qisqa yozuvlar faqat soatni ko'rsatardi
+
+**Muammo.** 10-30 daqiqalik xizmat (masalan "Qosh olish") blokida faqat `10:00`
+ko'rinardi — xizmat nomi ham, mijoz ham yo'q. Ya'ni eng kerakli qism kesilib
+qolardi.
+
+**Sabab.** Blok balandligi davomiylikdan hisoblanadi (soatiga 56px), minimal
+22px. Uchta qator (vaqt / xizmat / mijoz) esa ~46px joy talab qiladi, ortiqchasi
+`overflow: hidden` bilan kesilardi — birinchi bo'lib vaqt sig'ardi, qolgani yo'q.
+
+**Yechim.** Blok balandligiga qarab uch xil ko'rinish:
+
+| Davomiylik | Ko'rinish |
+|---|---|
+| 50 daqiqa va undan uzun | vaqt / xizmat / mijoz — uch qator |
+| 30-40 daqiqa | vaqt va xizmat **bitta qatorda**, mijoz yashiriladi |
+| 10-25 daqiqa | xuddi shunday, shrift bir oz kichik |
+
+Bundan tashqari har blokka `title` qo'shildi — sichqonchani olib borsangiz
+to'liq ma'lumot (vaqt · xizmat · mijoz) chiqadi. Minimal balandlik 26px ga
+ko'tarildi.
+
 ### 29. "Yangi" va "Yo'qolgan" segmentlari bo'sh edi (demo ma'lumot)
 
 **Muammo.** Mijozlar bazasida "Yangi" va "Yo'qolgan" filtrlari hech nima
