@@ -216,6 +216,12 @@ class AppointmentController extends Controller
         if (empty($clientId)) {
             $clientId = $this->upsertClient($businessId);
         }
+        // A booking made from the public site with nobody attached is useless:
+        // no reminder, no loyalty, and the shop cannot tell who is coming. Fail
+        // loudly instead of silently storing an anonymous row.
+        if ($isPublic && $clientId === null) {
+            throw new BadRequestHttpException('Telefon raqamingizni kiriting.');
+        }
 
         $model = new Appointment();
         $model->business_id = $businessId;
@@ -327,13 +333,29 @@ class AppointmentController extends Controller
     }
 
     /** Upsert a Client by (business, phone). Returns client id or null. */
+    /** Digits only, kept in the +998XXXXXXXXX shape the base already uses. */
+    public static function normalizePhone(string $raw): string
+    {
+        $digits = preg_replace('/\D+/', '', $raw) ?? '';
+        if ($digits === '') {
+            return '';
+        }
+        return '+' . $digits;
+    }
+
     private function upsertClient(int $businessId): ?int
     {
         $client = $this->body('client');
         if (!is_array($client) || empty($client['phone'])) {
             return null;
         }
-        $phone = (string) $client['phone'];
+        // Store one canonical shape: the booking page sends "+998 90 123 45 67"
+        // while the admin stores "+998901234567", and looking the client up by
+        // the raw string created a second record for the same person.
+        $phone = self::normalizePhone((string) $client['phone']);
+        if ($phone === '') {
+            return null;
+        }
         $name = isset($client['name']) && $client['name'] !== '' ? (string) $client['name'] : $phone;
 
         $model = Client::find()

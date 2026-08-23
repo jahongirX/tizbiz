@@ -59,9 +59,16 @@ export function dayStrip(count = 14, from = new Date()) {
   return out
 }
 
-/** Bucket a slot's start hour: 'morning' | 'afternoon' | 'evening'. */
+/**
+ * Bucket a slot's start hour: 'morning' | 'afternoon' | 'evening'.
+ * Accepts both shapes the API/UI pass around: "HH:MM" and "YYYY-MM-DD HH:MM".
+ * It used to read a fixed offset, so a time-only value always parsed as hour 0
+ * and every slot landed under "Ertalab".
+ */
 export function slotBucket(startLocal) {
-  const h = Number(String(startLocal || '').slice(11, 13)) || 0
+  const str = String(startLocal || '')
+  const time = str.includes(' ') ? str.split(' ')[1] || '' : str
+  const h = Number(time.slice(0, 2)) || 0
   if (h < 12) return 'morning'
   if (h < 17) return 'afternoon'
   return 'evening'
@@ -70,7 +77,12 @@ export function slotBucket(startLocal) {
 /** Pretty local date+time for confirmation, e.g. "18 iyul · 14:30". */
 export function prettyLocal(startLocal) {
   if (!startLocal) return ''
-  const [date, time] = String(startLocal).split(' ')
+  const str = String(startLocal)
+  // Time only ("09:30") — no date to name, so don't leave a dangling separator.
+  if (!str.includes(' ')) {
+    return str.slice(0, 5)
+  }
+  const [date, time] = str.split(' ')
   const parts = String(date).split('-')
   const hm = (time || '').slice(0, 5)
   if (parts.length === 3) {

@@ -22,7 +22,7 @@ const emit = defineEmits(['pay', 'restart'])
         </svg>
       </div>
       <h2>Navbat band qilindi!</h2>
-      <p>{{ prettyLocal(slot.start_local) }}</p>
+      <p>{{ prettyLocal(slot.start_local_full || slot.start_local) }}</p>
     </div>
 
     <div class="summary">

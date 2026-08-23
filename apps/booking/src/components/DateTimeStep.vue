@@ -44,7 +44,15 @@ async function load() {
       props.staffIds.map((id) =>
         api
           .get(`/v1/staff/${id}/availability?${q}`)
-          .then((res) => (Array.isArray(res?.slots) ? res.slots : []).map((s) => ({ ...s, staff_id: id })))
+          .then((res) =>
+            (Array.isArray(res?.slots) ? res.slots : []).map((s) => ({
+              ...s,
+              staff_id: id,
+              // The API returns the time only; carry the day so the confirmation
+              // can say "26 avgust · 09:30" instead of a bare clock reading.
+              start_local_full: `${date.value} ${s.start_local}`,
+            })),
+          )
           .catch(() => []),
       ),
     )

@@ -21,10 +21,15 @@ const emit = defineEmits(['confirm', 'back', 'update:client'])
 // visitor sees them prefilled and only has to confirm.
 const name = ref(props.client.name || '')
 const phone = ref(props.client.phone || '')
-const editing = ref(!props.client.phone)
 const touched = ref(false)
 
-const invalid = computed(() => !name.value.trim() || phone.value.replace(/\D/g, '').length < 12)
+const complete = (n, p) => !!String(n || '').trim() && String(p || '').replace(/\D/g, '').length >= 12
+// Open the form unless what we remembered is actually good enough to send —
+// a half-filled memory used to leave the card collapsed and the booking went
+// out with no client on it.
+const editing = ref(!complete(props.client.name, props.client.phone))
+
+const invalid = computed(() => !complete(name.value, phone.value))
 
 watch([name, phone], () => {
   emit('update:client', { name: name.value.trim(), phone: phone.value.trim() })
@@ -63,7 +68,7 @@ function onConfirm() {
       </div>
       <div class="row">
         <span class="k">Vaqt</span>
-        <span class="v accent">{{ prettyLocal(slot.start_local) }}</span>
+        <span class="v accent">{{ prettyLocal(slot.start_local_full || slot.start_local) }}</span>
       </div>
       <div class="row total">
         <span class="k">Narx<template v-if="services.length > 1"> · {{ duration(totalMin) }}</template></span>

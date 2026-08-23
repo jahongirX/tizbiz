@@ -10,6 +10,40 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 28. Public bron mijozsiz saqlanardi (bug) + vaqt formati
+
+**Muammo.** Saytdan navbat olinganda "Navbat band qilindi!" chiqardi, lekin
+adminda o'sha yozuvning mijozi **bo'sh** (`—`) bo'lardi.
+
+**Sabab va yechim (uch qatlam).**
+
+1. **Jimgina yo'qolish.** `upsertClient()` telefon bo'sh bo'lsa `null`
+   qaytaradi, `actionCreate` esa yozuvni baribir saqlardi. Endi public bronda
+   mijoz aniqlanmasa — **400**: *"Telefon raqamingizni kiriting."* Ya'ni
+   ma'lumot jimgina yo'qolishi o'rniga xato ko'rinadi. Admin tomondan
+   yaratilgan yozuv avvalgidek mijozsiz bo'lishi mumkin (walk-in shunday ishlaydi).
+2. **Telefon formati.** Booking sahifasi `+998 90 123 45 67` (bo'shliqli),
+   admin esa `+998901234567` saqlaydi. Qidiruv xom satr bo'yicha ketgani uchun
+   **bir odamga ikkita mijoz kartasi** ochilardi. Endi raqam bitta ko'rinishga
+   normallashtiriladi (`normalizePhone`), ya'ni bo'shliqli raqam mavjud mijozga
+   tushadi.
+3. **Forma yopiq qolishi.** `ConfirmStep` da maydonlar `props.client.phone` bo'sh
+   bo'lmasa yashirilardi — yarim to'ldirilgan xotira (masalan ismsiz) bilan forma
+   yopiq turaverar edi. Endi mezon bitta: yuborishga yaroqli bo'lmasa — forma ochiq.
+
+**Yo'l-yo'lakay ikkita vaqt bug'i.** API `start_local` ni faqat soat sifatida
+qaytaradi ("09:30"), UI esa to'liq sana-vaqt kutardi:
+
+- `slotBucket()` soatni qat'iy o'rindan o'qir edi → **hamma slot "Ertalab"**
+  bo'limiga tushardi. Endi ikkala ko'rinish ham tushuniladi.
+- `prettyLocal()` sanasiz qiymatda `"09:30 · "` (osilib qolgan ajratgich)
+  qaytarardi. Endi `DateTimeStep` tanlangan kunni slotga biriktiradi va
+  tasdiqlash ekrani **"26 avgust · 09:30"** deb yozadi.
+
+**Tekshiruv.** Bo'sh mijoz bilan bron → 400; `+998 90 123 00 01` → mavjud
+mijoz #14 ga bog'landi (yangi karta ochilmadi); guruhlash 09:00→ertalab,
+14:00→kunduzi, 19:30→kechqurun.
+
 ### 27. To'liq demo do'kon: chizilgan avatarlar + oylik tarix
 
 **Avatarlar.** Ism harflari o'rniga ustalar endi **chizilgan portret** bilan
