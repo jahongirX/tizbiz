@@ -1045,8 +1045,14 @@ onBeforeUnmount(() => {
   .tt-body {
     grid-template-columns: 46px 1fr;
   }
+  /*
+   * Setting overflow on one axis makes the other compute to auto, so the card
+   * became its own scroll container inside the page — two scrollbars for one
+   * grid. With a single day nothing overflows sideways, so the whole thing can
+   * go back to flowing with the page.
+   */
   .tt-scroll {
-    overflow-x: hidden;
+    overflow: visible;
   }
   /* The grid is sized for seven columns; with one day that 720px floor pushed
      the column past the screen and clipped the day name. */

@@ -10,6 +10,20 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 39. Telefonda jadval ichida ikkinchi skroll paydo bo'lardi
+
+Sahifaning o'zi ham, jadval kartasi ham alohida skroll bo'lardi — barmoq qayerga
+tekkaniga qarab goh biri, goh ikkinchisi suriladi. Bu telefonda juda noqulay.
+
+**Sabab.** `.tt-scroll` da faqat `overflow-x` qo'yilgan edi. CSS qoidasiga
+ko'ra bir o'qqa `auto`/`hidden` berilsa, ikkinchisi ham `visible` bo'lib
+qololmaydi va `auto` ga aylanadi — ya'ni karta o'z-o'zidan vertikal skroll
+konteynerga aylangan.
+
+**Yechim.** Telefonda `overflow: visible` — bir kunlik ko'rinishda yonga
+chiqadigan narsa yo'q, shuning uchun butun jadval sahifa bilan birga suriladi.
+Bitta skroll qoladi.
+
 ### 38. Telefonda kun ustuni ekrandan chiqib ketardi (bug)
 
 Bir kunlik ko'rinishga o'tgandan keyin ustun baribir ekranga sig'masdi va kun
