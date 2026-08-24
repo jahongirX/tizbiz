@@ -119,6 +119,9 @@ const nav = computed(() => {
   ]
 })
 
+// Collapsed by default on a phone only — the CSS keeps it open on desktop.
+const calOpen = ref(false)
+
 const openGroups = ref({})
 
 function groupHasActive(group) {
@@ -174,7 +177,16 @@ async function onSwitch(e) {
       </div>
 
       <div class="side-scroll">
-        <MiniCalendar />
+        <!-- On a phone the calendar would push the menu off screen, so it opens
+             on demand; on desktop it is always there. -->
+        <button type="button" class="cal-toggle" @click="calOpen = !calOpen">
+          <CalendarDays :size="16" />
+          <span class="grow">Kalendar</span>
+          <ChevronRight class="chev" :class="{ open: calOpen }" :size="16" />
+        </button>
+        <div class="cal-wrap" :class="{ open: calOpen }">
+          <MiniCalendar />
+        </div>
 
         <nav class="nav">
           <template v-for="item in nav">
@@ -546,6 +558,46 @@ async function onSwitch(e) {
   }
   .user-name {
     display: none;
+  }
+}
+
+/* The calendar toggle exists only on a phone. */
+.cal-toggle {
+  display: none;
+}
+@media (max-width: 860px) {
+  .cal-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .cal-toggle .grow {
+    flex: 1;
+    text-align: left;
+  }
+  .cal-toggle .chev {
+    transition: transform 0.15s;
+  }
+  .cal-toggle .chev.open {
+    transform: rotate(90deg);
+  }
+  .cal-wrap {
+    display: none;
+  }
+  .cal-wrap.open {
+    display: block;
+    margin-bottom: 10px;
   }
 }
 </style>

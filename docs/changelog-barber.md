@@ -10,6 +10,29 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 37. Mobil (3/4 va 4/4): teginish maydonlari, sheet-modal, kalendar
+
+**3/4 — teginish va formalar.** `.btn` 36px, input 36px edi — barmoq uchun,
+ayniqsa ho'l qo'l bilan, kichik. ≤640px da:
+
+- tugmalar **44px**, kichik tugmalar 38px
+- input/select/textarea 44px va **16px shrift** — iOS shundan kichik shriftli
+  maydonga bosilganda sahifani zumlab yuboradi
+- checkbox/radio bundan mustasno (20×20 bo'lib qoladi)
+
+**Modal → sheet.** Telefonda oyna ekran o'rtasida suzib turardi, tugmalari esa
+kontent qayerda tugasa o'sha yerda edi. Endi pastdan chiqadigan **sheet**:
+sarlavha tepada yopishib turadi, tanasi skroll bo'ladi, tugmalar pastda
+qotirilgan va bosh barmoq yetadigan joyda (`safe-area-inset-bottom` hisobga
+olingan).
+
+**4/4 — kalendar.** Yon menyudagi mini-kalendar telefonda drawer'ning yarmini
+egallab, menyuni ekrandan chiqarib yuborardi. Endi u **"Kalendar"** tugmasi
+ostida yig'ilgan holda turadi, kerak bo'lganda ochiladi. Desktopda avvalgidek
+doim ochiq.
+
+Hammasi faqat media query ichida — desktop ko'rinishi umuman o'zgarmadi.
+
 ### 36. Mobil (2/4): telefonda Jadval bir kunlik bo'ldi
 
 **Muammo.** Jadval — 7 kun × ish kuni setkasi. 390px ekranda ustun kengligi

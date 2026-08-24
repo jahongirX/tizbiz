@@ -184,9 +184,9 @@ muhimroq, chunki usta kunda eng ko'p shu ikki ekranga qaraydi.
 | 1. Mijoz kategoriyalarini yashirish | ⏳ |
 | 4.3 Vaqt zonasini biznesdan olish | ⏳ |
 | 2.8 Telegram eslatmasida tasdiq tugmalari | ⏳ (eslatma yuboriladi, tugmalar yo'q) |
-| **Mobil: jadval → karta** | ⏳ |
-| **Mobil: bir kunlik Timetable** | ⏳ |
-| **Mobil: teginish maydoni + sheet modal** | ⏳ |
+| **Mobil: jadval → karta** | ✅ (15 ta jadval) |
+| **Mobil: bir kunlik Timetable** | ✅ |
+| **Mobil: teginish maydoni + sheet modal** | ✅ (+ kalendar yig'iladi) |
 
 Qolganlari `appointments` / `clients` / `services` jadvallarida schema o'zgarishini
 talab qiladi (`appointment_items` ni slot engine uchun ochish, `clients.profile`

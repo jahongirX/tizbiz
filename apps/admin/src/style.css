@@ -408,3 +408,38 @@ table.data tbody tr:hover {
   color: var(--text-muted);
   margin-top: 2px;
 }
+
+/*
+ * Phone: controls sized for a mouse are about 36px tall. A master taps these
+ * with wet hands, so on a touch screen they grow to the 44px everyone's
+ * guidelines ask for. Desktop keeps the tighter sizing.
+ */
+@media (max-width: 640px) {
+  .btn {
+    min-height: 44px;
+    padding: 11px 18px;
+  }
+  .btn.btn-sm {
+    min-height: 38px;
+    padding: 8px 14px;
+  }
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+    font-size: 16px; /* iOS zooms into anything smaller */
+  }
+  textarea {
+    min-height: 88px;
+  }
+  input[type='checkbox'],
+  input[type='radio'] {
+    min-height: 0;
+    width: 20px;
+    height: 20px;
+  }
+  .page-head {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
