@@ -14,6 +14,7 @@ import {
   formatWeekRange,
   formatTime,
   dayNum,
+  monthName,
 } from '../lib/datetime'
 import Modal from '../components/Modal.vue'
 import AppointmentForm from '../components/AppointmentForm.vue'
@@ -97,6 +98,28 @@ const weekDays = computed(() => {
   return days
 })
 const weekRangeLabel = computed(() => formatWeekRange(monday.value, addDays(monday.value, 6)))
+
+/*
+ * A phone cannot show seven columns of a working day, so it shows one: the
+ * selected date, full width, with the arrows stepping a day at a time. The grid,
+ * the blocks and the click-to-create all stay exactly as they are — only the
+ * list of rendered columns narrows.
+ */
+const phoneQuery = typeof window !== 'undefined' ? window.matchMedia('(max-width: 640px)') : null
+const isPhone = ref(phoneQuery ? phoneQuery.matches : false)
+function onPhoneChange(e) {
+  isPhone.value = e.matches
+}
+
+const visibleDays = computed(() =>
+  isPhone.value
+    ? weekDays.value.filter((d) => d.date === selectedDate.value)
+    : weekDays.value,
+)
+const dayLabel = computed(() => {
+  const d = weekDays.value.find((x) => x.date === selectedDate.value)
+  return d ? `${d.name}, ${dayNum(d.date)} ${monthName(d.date)}` : selectedDate.value
+})
 
 /* Visible vertical range (minutes), derived from working hours + appointments. */
 const range = computed(() => {
@@ -314,10 +337,10 @@ watch(selectedDate, (d) => {
 })
 
 function prevWeek() {
-  setSelectedDate(addDays(selectedDate.value, -7))
+  setSelectedDate(addDays(selectedDate.value, isPhone.value ? -1 : -7))
 }
 function nextWeek() {
-  setSelectedDate(addDays(selectedDate.value, 7))
+  setSelectedDate(addDays(selectedDate.value, isPhone.value ? 1 : 7))
 }
 function goToday() {
   setSelectedDate(todayInput())
@@ -436,6 +459,7 @@ async function onCreated() {
 onMounted(async () => {
   await loadStaff()
   await load()
+  phoneQuery?.addEventListener('change', onPhoneChange)
   nowTimer = setInterval(() => {
     nowMin.value = nowLocalMinutes()
     today.value = todayInput()
@@ -443,6 +467,7 @@ onMounted(async () => {
 })
 onBeforeUnmount(() => {
   if (nowTimer) clearInterval(nowTimer)
+  phoneQuery?.removeEventListener('change', onPhoneChange)
 })
 </script>
 
@@ -491,7 +516,7 @@ onBeforeUnmount(() => {
           <button class="btn btn-sm" aria-label="Oldingi hafta" @click="prevWeek">‹</button>
           <button class="btn btn-sm" @click="goToday">Bugun</button>
           <button class="btn btn-sm" aria-label="Keyingi hafta" @click="nextWeek">›</button>
-          <span class="tt-range">{{ weekRangeLabel }}</span>
+          <span class="tt-range">{{ isPhone ? dayLabel : weekRangeLabel }}</span>
         </div>
       </div>
 
@@ -502,7 +527,7 @@ onBeforeUnmount(() => {
           <div class="tt-head">
             <div class="tt-gutter-head"></div>
             <div
-              v-for="d in weekDays"
+              v-for="d in visibleDays"
               :key="d.date"
               class="tt-day-head"
               :class="{ today: d.isToday }"
@@ -530,7 +555,7 @@ onBeforeUnmount(() => {
 
             <!-- day columns -->
             <div
-              v-for="d in weekDays"
+              v-for="d in visibleDays"
               :key="d.date"
               class="tt-col"
               :class="{ today: d.isToday }"
@@ -1012,6 +1037,19 @@ onBeforeUnmount(() => {
   }
   .tt-range {
     margin-left: auto;
+  }
+}
+/* Phone: a single day fills the width. */
+@media (max-width: 640px) {
+  .tt-head,
+  .tt-body {
+    grid-template-columns: 46px 1fr;
+  }
+  .tt-scroll {
+    overflow-x: hidden;
+  }
+  .tt-toolbar {
+    gap: 12px;
   }
 }
 </style>

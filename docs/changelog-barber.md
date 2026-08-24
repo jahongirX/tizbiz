@@ -10,6 +10,27 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 36. Mobil (2/4): telefonda Jadval bir kunlik bo'ldi
+
+**Muammo.** Jadval — 7 kun × ish kuni setkasi. 390px ekranda ustun kengligi
+~40px ga tushardi, ya'ni o'qib bo'lmasdi.
+
+**Yechim.** ≤640px da faqat **tanlangan kun** ko'rsatiladi, to'liq kenglikda:
+
+- `‹ ›` tugmalari telefonda **bir kunga** siljitadi (desktopda avvalgidek hafta)
+- Sarlavhada hafta oralig'i o'rniga kun nomi: "Dushanba, 24 avgust"
+- Setka, bloklar, bo'sh joyga bosib yozuv yaratish — hammasi o'zgarishsiz
+
+Ekran kengligi `matchMedia` bilan kuzatiladi, ya'ni telefonni burasangiz
+ko'rinish o'zi almashadi.
+
+**Detal:** hafta chegarasidan o'tganda kun yo'qolib qolmaydi — `selectedDate`
+o'zgarganda ko'rsatilayotgan hafta (`anchor`) avtomatik ergashadi.
+
+**Eslatma:** CSS override'ni fayl oxiriga ko'chirish kerak bo'ldi — u avval
+`.tt-head` / `.tt-body` ta'riflaridan **oldin** turgani uchun bir xil
+spetsifikatsiyada keyingi qoidalar uni bekor qilardi.
+
 ### 35. Mobil (1/4): jadvallar telefonda kartaga aylandi
 
 **Muammo.** Admin'dagi jadval hujayralarida `white-space: nowrap` turadi va
