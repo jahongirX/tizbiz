@@ -1048,6 +1048,11 @@ onBeforeUnmount(() => {
   .tt-scroll {
     overflow-x: hidden;
   }
+  /* The grid is sized for seven columns; with one day that 720px floor pushed
+     the column past the screen and clipped the day name. */
+  .tt-inner {
+    min-width: 0;
+  }
   .tt-toolbar {
     gap: 12px;
   }

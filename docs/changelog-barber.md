@@ -10,6 +10,17 @@
 
 Reja: [barber-optimization-plan.md](barber-optimization-plan.md).
 
+### 38. Telefonda kun ustuni ekrandan chiqib ketardi (bug)
+
+Bir kunlik ko'rinishga o'tgandan keyin ustun baribir ekranga sig'masdi va kun
+nomi ("Seshanba") o'ng chetda kesilib qolardi.
+
+**Sabab.** `.tt-inner` da `min-width: 720px` — u 7 ta ustun uchun qo'yilgan.
+Bitta kun ko'rsatilganda ham shu 720px kuchda qolgani uchun kontent ekrandan
+chiqib ketardi, `overflow-x: hidden` esa ortiqchasini kesib tashlardi.
+
+**Yechim.** ≤640px da `min-width: 0`.
+
 ### 37. Mobil (3/4 va 4/4): teginish maydonlari, sheet-modal, kalendar
 
 **3/4 — teginish va formalar.** `.btn` 36px, input 36px edi — barmoq uchun,
