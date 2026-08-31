@@ -5,7 +5,11 @@ namespace console\controllers;
 use common\models\Business;
 use common\models\BusinessUser;
 use common\models\Client;
+use common\models\LoyaltyAccount;
 use common\models\LoyaltyRule;
+use common\models\LoyaltyTransaction;
+use common\models\Order;
+use common\models\OrderItem;
 use common\models\Service;
 use common\models\ServiceCategory;
 use common\models\Staff;
@@ -664,6 +668,222 @@ class SeedController extends Controller
 
         $this->stdout("Clinic '{$business->name}' catalog + images ready ($n services).\n");
         return ExitCode::OK;
+    }
+
+    /**
+     * Fill a catalog business (cafe / tort) with a full, realistic demo dataset —
+     * staff, clients, loyalty cards + ledger, and ~50 orders spread across the
+     * last two weeks with varied times / statuses / sources — so the admin
+     * (orders kanban, the Jadval orders-timeline, clients, loyalty) looks alive
+     * for a screencast. Order timestamps are backdated so the timeline is real.
+     *
+     * Usage: php yii seed/fill            (defaults to the local 'tort' business)
+     *        php yii seed/fill <slug>     (e.g. the prod cake-shop slug)
+     *
+     * Staff/clients/loyalty are found-or-created; orders are only added when the
+     * business has < 25 already, so re-running is safe.
+     */
+    public function actionFill(string $slug = 'tort'): int
+    {
+        $business = Business::findOne(['slug' => $slug]);
+        if ($business === null) {
+            $this->stderr("Business '$slug' topilmadi. Mavjud catalog bizneslar:\n");
+            foreach (Business::find()->where(['engine' => 'catalog'])->all() as $b) {
+                $this->stdout(sprintf("  %-18s %s\n", $b->slug, $b->name));
+            }
+            return ExitCode::DATAERR;
+        }
+        $bid = (int) $business->id;
+        $this->stdout("Filling '{$business->name}' (id=$bid)…\n");
+
+        // 1) Menu (Services) — need something orderable.
+        $services = Service::find()->where(['business_id' => $bid, 'is_active' => 1])->all();
+        if ($services === []) {
+            $cat = ServiceCategory::findOne(['business_id' => $bid])
+                ?? $this->save(new ServiceCategory(['business_id' => $bid, 'name' => 'Tortlar', 'sort' => 0]));
+            foreach ([
+                ['Napoleon tort (1kg)', 150000], ['Medovik tort (1kg)', 160000],
+                ['Shokoladli tort (1kg)', 170000], ['Chizkeyk (1kg)', 180000],
+                ['Ekler (6 dona)', 45000], ['Makaron (6 dona)', 60000],
+                ['Kapuchino', 28000], ['Amerikano', 22000], ['Choy (choynak)', 15000],
+            ] as [$n, $som]) {
+                $services[] = $this->save(new Service([
+                    'business_id' => $bid, 'category_id' => $cat->id, 'name' => $n,
+                    'duration_min' => 30, 'price_tiyin' => $som * 100, 'deposit_tiyin' => 0, 'is_active' => 1,
+                ]));
+            }
+        }
+
+        // 2) Staff (hodimlar)
+        $staffAdded = 0;
+        foreach ([
+            ['Oshpaz Dilnoza', 'Bosh qandolatchi'], ['Qandolatchi Malika', 'Qandolatchi'],
+            ['Ofitsiant Jasur', 'Ofitsiant'], ['Kassir Nigora', 'Kassir'],
+            ['Kuryer Sardor', 'Yetkazib beruvchi'],
+        ] as [$name, $spec]) {
+            if (Staff::find()->where(['business_id' => $bid, 'name' => $name])->exists()) {
+                continue;
+            }
+            $this->save(new Staff(['business_id' => $bid, 'name' => $name, 'specialization' => $spec, 'is_active' => 1]));
+            $staffAdded++;
+        }
+
+        // 3) Clients (mijozlar)
+        $people = [
+            ['Aziz Karimov', '+998901234511'], ['Dilnoza Yusupova', '+998901234512'],
+            ['Sardor Aliyev', '+998901234513'], ['Nigora Rashidova', '+998901234514'],
+            ['Jasur Toshpulatov', '+998901234515'], ['Malika Ergasheva', '+998901234516'],
+            ['Bekzod Rahimov', '+998901234517'], ['Kamola Saidova', '+998901234518'],
+            ['Sanjar Yusupov', '+998901234519'], ['Gulnora Aliyeva', '+998901234520'],
+            ['Otabek Nazarov', '+998901234521'], ['Feruza Karimova', '+998901234522'],
+            ['Shoxrux Mirzayev', '+998901234523'], ['Zilola Umarova', '+998901234524'],
+            ['Islom Tursunov', '+998901234525'], ['Madina Qodirova', '+998901234526'],
+            ['Javohir Abdullayev', '+998901234527'], ['Sevara Xolmatova', '+998901234528'],
+        ];
+        $clients = [];
+        foreach ($people as [$name, $phone]) {
+            $clients[] = Client::findOne(['business_id' => $bid, 'phone' => $phone])
+                ?? $this->save(new Client(['business_id' => $bid, 'name' => $name, 'phone' => $phone, 'tags' => []]));
+        }
+
+        // 4) Loyalty — rule + accounts with a small ledger.
+        LoyaltyRule::findOne(['business_id' => $bid]) ?? $this->save(new LoyaltyRule([
+            'business_id' => $bid, 'earn_rate' => 500, 'active' => 1,
+            'gift_config' => ['referral_bonus_tiyin' => 2000000, 'referral_bonus_points' => 20],
+        ]));
+        $loyAdded = 0;
+        foreach (array_slice($clients, 0, 12) as $c) {
+            if (LoyaltyAccount::findOne(['business_id' => $bid, 'client_id' => $c->id]) !== null) {
+                continue;
+            }
+            $acc = new LoyaltyAccount(['business_id' => $bid, 'client_id' => $c->id, 'points' => 0, 'cashback_tiyin' => 0]);
+            $acc->save(false);
+
+            $txs = [];
+            $earns = mt_rand(1, 3);
+            for ($k = 0; $k < $earns; $k++) {
+                $txs[] = ['earn', mt_rand(10, 120), mt_rand(30, 600) * 100];
+            }
+            if (mt_rand(1, 100) <= 35) {
+                $cbSum = array_sum(array_column($txs, 2));
+                $red = min($cbSum, mt_rand(50, 300) * 100);
+                if ($red > 0) {
+                    $txs[] = ['redeem', 0, -$red];
+                }
+            }
+            $pts = 0;
+            $cb = 0;
+            foreach ($txs as [$reason, $dp, $dc]) {
+                $t = new LoyaltyTransaction([
+                    'account_id' => $acc->id, 'delta_points' => $dp,
+                    'delta_cashback_tiyin' => $dc, 'reason' => $reason, 'ref' => 'seed',
+                ]);
+                $t->save(false);
+                $this->backdate('{{%loyalty_transactions}}', (int) $t->id, time() - mt_rand(1, 20) * 86400);
+                $pts += $dp;
+                $cb += $dc;
+            }
+            $acc->points = max(0, $pts);
+            $acc->cashback_tiyin = max(0, $cb);
+            $acc->save(false);
+            $loyAdded++;
+        }
+
+        // 5) Orders (zakazlar) — backdated across ~2 weeks, status by age.
+        $existing = (int) Order::find()->where(['business_id' => $bid])->count();
+        $ordersAdded = 0;
+        if ($existing >= 25) {
+            $this->stdout("  '{$business->name}' allaqachon $existing ta zakazga ega; zakaz seed o'tkazib yuborildi.\n");
+        } else {
+            $notes = ['tezda kerak', 'muzsiz', 'kam shakar', '2 qavatli bo\'lsin', 'yozuv bilan', 'sovuq bo\'lsin', null, null, null, null];
+            $dayWeights = [0, 0, 1, 1, 1, 2, 2, 3, 3, 4, 5, 5, 6, 6, 7, 8, 9, 10, 11, 12, 13];
+            for ($i = 0; $i < 52; $i++) {
+                $dayOffset = $dayWeights[mt_rand(0, count($dayWeights) - 1)];
+                $hour = mt_rand(9, 20);
+                $min = mt_rand(0, 59);
+                // Local Tashkent (UTC+5) H:M on that day -> absolute unix seconds.
+                $ts = strtotime(gmdate('Y-m-d', time() - $dayOffset * 86400) . ' 00:00:00 UTC')
+                    + ($hour * 3600 + $min * 60) - 5 * 3600;
+
+                if ($dayOffset >= 5) {
+                    $status = $this->pick(['delivered' => 72, 'cancelled' => 18, 'ready' => 10]);
+                } elseif ($dayOffset >= 2) {
+                    $status = $this->pick(['delivered' => 40, 'ready' => 20, 'preparing' => 18, 'confirmed' => 12, 'cancelled' => 10]);
+                } else {
+                    $status = $this->pick(['new' => 30, 'confirmed' => 25, 'preparing' => 22, 'ready' => 15, 'delivered' => 8]);
+                }
+                $source = $this->pick(['bot' => 55, 'site' => 30, 'admin' => 15]);
+
+                if (mt_rand(1, 100) <= 75) {
+                    $c = $clients[array_rand($clients)];
+                    $cname = $c->name;
+                    $cphone = $c->phone;
+                    $cid = (int) $c->id;
+                } else {
+                    $cname = 'Mehmon';
+                    $cphone = '+99890' . mt_rand(1000000, 9999999);
+                    $cid = null;
+                }
+
+                $order = new Order([
+                    'business_id' => $bid, 'client_id' => $cid,
+                    'customer_name' => $cname, 'customer_phone' => $cphone,
+                    'status' => $status, 'source' => $source,
+                    'note' => $notes[array_rand($notes)], 'total_tiyin' => 0,
+                ]);
+                $order->save(false);
+
+                $total = 0;
+                $used = [];
+                $lines = mt_rand(1, 3);
+                for ($l = 0; $l < $lines; $l++) {
+                    $svc = $services[array_rand($services)];
+                    if (isset($used[$svc->id])) {
+                        continue;
+                    }
+                    $used[$svc->id] = true;
+                    $qty = mt_rand(1, 2);
+                    $it = new OrderItem([
+                        'order_id' => (int) $order->id, 'business_id' => $bid, 'service_id' => (int) $svc->id,
+                        'name' => $svc->name, 'price_tiyin' => (int) $svc->price_tiyin, 'qty' => $qty,
+                    ]);
+                    $it->save(false);
+                    $this->backdate('{{%order_items}}', (int) $it->id, $ts);
+                    $total += (int) $svc->price_tiyin * $qty;
+                }
+                $order->total_tiyin = $total;
+                $order->save(false);
+                $this->backdate('{{%orders}}', (int) $order->id, $ts);
+                $ordersAdded++;
+            }
+        }
+
+        $this->stdout(sprintf(
+            "Tayyor: +%d hodim, %d mijoz, +%d loyallik karta, +%d zakaz — '%s'.\n",
+            $staffAdded, count($clients), $loyAdded, $ordersAdded, $business->name
+        ));
+        return ExitCode::OK;
+    }
+
+    /** Backdate a row's created_at directly (bypasses TimestampBehavior). */
+    private function backdate(string $table, int $id, int $ts): void
+    {
+        \Yii::$app->db->createCommand()->update($table, ['created_at' => $ts], ['id' => $id])->execute();
+    }
+
+    /** Weighted random pick: ['a'=>70,'b'=>30] -> 'a' ~70% of the time. */
+    private function pick(array $weighted): string
+    {
+        $sum = array_sum($weighted);
+        $r = mt_rand(1, max(1, $sum));
+        $acc = 0;
+        foreach ($weighted as $key => $w) {
+            $acc += $w;
+            if ($r <= $acc) {
+                return (string) $key;
+            }
+        }
+        return (string) array_key_first($weighted);
     }
 
     /**
