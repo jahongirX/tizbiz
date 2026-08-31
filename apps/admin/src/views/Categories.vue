@@ -12,9 +12,9 @@ const showModal = ref(false)
 const saving = ref(false)
 const formError = ref('')
 const editing = ref(null)
-const form = ref(blank())
 
-// Preset palette for quick picking (dark-friendly hues).
+// Preset palette for quick picking (dark-friendly hues). Declared before `form`
+// so blank() can read presets[0] without hitting its temporal dead zone.
 const presets = [
   '#6366f1', '#8b5cf6', '#ec4899', '#ef4444', '#f97316',
   '#f59e0b', '#eab308', '#22c55e', '#10b981', '#14b8a6',
@@ -24,6 +24,8 @@ const presets = [
 function blank() {
   return { name: '', color: presets[0], sort: 0 }
 }
+
+const form = ref(blank())
 
 async function load() {
   loading.value = true
