@@ -2,9 +2,16 @@
 
 namespace console\controllers;
 
+use common\models\Appointment;
+use common\models\AutoCategoryRule;
 use common\models\Business;
 use common\models\BusinessUser;
+use common\models\Certificate;
 use common\models\Client;
+use common\models\ClientCategory;
+use common\models\ClientCategoryAssignment;
+use common\models\DepositTransaction;
+use common\models\DiscountRule;
 use common\models\LoyaltyAccount;
 use common\models\LoyaltyRule;
 use common\models\LoyaltyTransaction;
@@ -13,6 +20,8 @@ use common\models\OrderItem;
 use common\models\Service;
 use common\models\ServiceCategory;
 use common\models\Staff;
+use common\models\SubscriptionType;
+use common\models\Transaction;
 use common\models\User;
 use common\models\WorkingHours;
 use yii\console\Controller;
@@ -858,9 +867,159 @@ class SeedController extends Controller
             }
         }
 
+        // 6) Client categories (mijoz kategoriyalari) + assignments.
+        $catAdded = 0;
+        $categories = [];
+        foreach ([['VIP', '#f59e0b'], ['Doimiy', '#10b981'], ['Yangi', '#3b82f6'], ['Nofaol', '#6b7280']] as $ci => [$cn, $col]) {
+            $cat = ClientCategory::findOne(['business_id' => $bid, 'name' => $cn]);
+            if ($cat === null) {
+                $cat = $this->save(new ClientCategory(['business_id' => $bid, 'name' => $cn, 'color' => $col, 'sort' => $ci]));
+                $catAdded++;
+            }
+            $categories[$cn] = $cat;
+        }
+        foreach ($clients as $idx => $c) {
+            $cn = $idx < 4 ? 'VIP' : ($idx < 10 ? 'Doimiy' : ($idx < 15 ? 'Yangi' : 'Nofaol'));
+            $cat = $categories[$cn];
+            if (!ClientCategoryAssignment::find()->where(['client_id' => $c->id, 'category_id' => $cat->id])->exists()) {
+                (new ClientCategoryAssignment(['client_id' => (int) $c->id, 'category_id' => (int) $cat->id]))->save(false);
+            }
+        }
+
+        // 7) Auto-category rules (kategoriya qoidalari).
+        $acrAdded = 0;
+        foreach ([
+            ['VIP', 'sold', 2000000, 'add'], ['Doimiy', 'visits', 5, 'add'], ['Nofaol', 'inactive_days', 60, 'add'],
+        ] as [$cn, $metric, $th, $act]) {
+            $cat = $categories[$cn] ?? null;
+            if ($cat === null || AutoCategoryRule::find()->where(['business_id' => $bid, 'category_id' => $cat->id, 'metric' => $metric])->exists()) {
+                continue;
+            }
+            $this->save(new AutoCategoryRule(['business_id' => $bid, 'category_id' => (int) $cat->id, 'metric' => $metric, 'threshold' => $th, 'action' => $act, 'active' => 1]));
+            $acrAdded++;
+        }
+
+        // 8) Discount rules (chegirma qoidalari).
+        $drAdded = 0;
+        foreach ([['paid', 500000, 5], ['paid', 2000000, 10], ['visits', 10, 7]] as [$metric, $th, $pct]) {
+            if (DiscountRule::find()->where(['business_id' => $bid, 'metric' => $metric, 'threshold' => $th])->exists()) {
+                continue;
+            }
+            $this->save(new DiscountRule(['business_id' => $bid, 'metric' => $metric, 'threshold' => $th, 'percent' => $pct, 'active' => 1]));
+            $drAdded++;
+        }
+
+        // 9) Certificates (sertifikatlar).
+        $certAdded = 0;
+        if ((int) Certificate::find()->where(['business_id' => $bid])->count() < 4) {
+            $certDefs = [
+                ['Sovg\'a sertifikati 100k', 10000000, 10000000, 'active'],
+                ['Sovg\'a sertifikati 200k', 20000000, 20000000, 'active'],
+                ['Sovg\'a sertifikati 50k', 5000000, 5000000, 'active'],
+                ['Tug\'ilgan kun 150k', 15000000, 6000000, 'active'],
+                ['Sovg\'a sertifikati 100k', 10000000, 0, 'used'],
+                ['Aksiya 300k', 30000000, 30000000, 'active'],
+            ];
+            foreach ($certDefs as $k => [$name, $val, $bal, $st]) {
+                $c = $clients[array_rand($clients)];
+                $this->save(new Certificate([
+                    'business_id' => $bid, 'code' => 'TIZ-' . strtoupper(substr(md5($bid . $k . mt_rand()), 0, 6)),
+                    'name' => $name, 'value_tiyin' => $val, 'balance_tiyin' => $bal,
+                    'client_id' => (int) $c->id, 'status' => $st,
+                    'expires_at' => gmdate('Y-m-d', time() + mt_rand(30, 180) * 86400),
+                ]));
+                $certAdded++;
+            }
+        }
+
+        // 10) Subscription types (abonementlar).
+        $subAdded = 0;
+        foreach ([
+            ['10 ta kofe abonement', 10, 250000, 60], ['Oylik shirinlik klubi', 8, 400000, 30], ['VIP tort klub', 4, 600000, 90],
+        ] as [$name, $visits, $som, $days]) {
+            if (SubscriptionType::find()->where(['business_id' => $bid, 'name' => $name])->exists()) {
+                continue;
+            }
+            $this->save(new SubscriptionType(['business_id' => $bid, 'name' => $name, 'visits' => $visits, 'price_tiyin' => $som * 100, 'valid_days' => $days, 'is_active' => 1]));
+            $subAdded++;
+        }
+
+        // 11) Deposits (depozitlar) — top-ups (+ occasional spend) per client.
+        $depAdded = 0;
+        if ((int) DepositTransaction::find()->where(['business_id' => $bid])->count() === 0) {
+            foreach (array_slice($clients, 0, 9) as $c) {
+                $top = mt_rand(100, 800) * 1000; // 100k..800k so'm in tiyin? -> *100 below
+                $topTiyin = $top * 100;
+                $t = new DepositTransaction(['business_id' => $bid, 'client_id' => (int) $c->id, 'delta_tiyin' => $topTiyin, 'type' => 'topup', 'reason' => 'Balans to\'ldirish']);
+                $t->save(false);
+                $this->backdate('{{%deposit_transactions}}', (int) $t->id, time() - mt_rand(2, 25) * 86400);
+                $depAdded++;
+                if (mt_rand(1, 100) <= 50) {
+                    $spend = min($topTiyin, mt_rand(20, 200) * 1000 * 100);
+                    $s = new DepositTransaction(['business_id' => $bid, 'client_id' => (int) $c->id, 'delta_tiyin' => -$spend, 'type' => 'spend', 'reason' => 'Buyurtma to\'lovi']);
+                    $s->save(false);
+                    $this->backdate('{{%deposit_transactions}}', (int) $s->id, time() - mt_rand(1, 20) * 86400);
+                    $depAdded++;
+                }
+            }
+        }
+
+        // 12) Payments (Finance / Hisobotlar money) — paid Payme/Click transactions.
+        $txAdded = 0;
+        if ((int) Transaction::find()->where(['business_id' => $bid])->count() < 10) {
+            for ($i = 0; $i < 30; $i++) {
+                $dayOffset = mt_rand(0, 29);
+                $ts = time() - $dayOffset * 86400 - mt_rand(0, 40000);
+                $status = $this->pick(['paid' => 80, 'pending' => 10, 'refunded' => 6, 'canceled' => 4]);
+                $tx = new Transaction([
+                    'business_id' => $bid, 'provider' => $this->pick(['payme' => 60, 'click' => 40]),
+                    'amount_tiyin' => mt_rand(30, 350) * 1000 * 100, 'type' => $this->pick(['deposit' => 70, 'float' => 30]),
+                    'status' => $status, 'external_id' => 'seed-' . mt_rand(100000, 999999),
+                    'idempotency_key' => 'seed:' . $bid . ':' . $i . ':' . mt_rand(1000, 9999),
+                ]);
+                $tx->save(false);
+                $this->backdate('{{%transactions}}', (int) $tx->id, $ts);
+                $txAdded++;
+            }
+        }
+
+        // 13) Appointments — analytics (Hisobotlar) reads these; the menu items
+        // become the services so revenue / top-services / staff-load populate.
+        $apptAdded = 0;
+        $staffList = Staff::find()->where(['business_id' => $bid, 'is_active' => 1])->all();
+        if ($staffList !== [] && (int) Appointment::find()->where(['business_id' => $bid])->count() < 20) {
+            for ($i = 0; $i < 46; $i++) {
+                $dayOffset = mt_rand(0, 29);
+                $hour = mt_rand(9, 19);
+                $min = [0, 15, 30, 45][mt_rand(0, 3)];
+                $ts = strtotime(gmdate('Y-m-d', time() - $dayOffset * 86400) . ' 00:00:00 UTC')
+                    + ($hour * 3600 + $min * 60) - 5 * 3600;
+                $svc = $services[array_rand($services)];
+                $st = $staffList[array_rand($staffList)];
+                $c = $clients[array_rand($clients)];
+                $dur = (int) ($svc->duration_min ?: 30);
+                $status = $dayOffset === 0
+                    ? $this->pick(['confirmed' => 45, 'pending' => 30, 'completed' => 25])
+                    : $this->pick(['completed' => 74, 'no_show' => 12, 'canceled' => 9, 'confirmed' => 5]);
+                $appt = new Appointment([
+                    'business_id' => $bid, 'client_id' => (int) $c->id, 'staff_id' => (int) $st->id,
+                    'service_id' => (int) $svc->id, 'starts_at' => gmdate('Y-m-d H:i:s', $ts),
+                    'ends_at' => gmdate('Y-m-d H:i:s', $ts + $dur * 60), 'status' => $status,
+                    'source' => $this->pick(['site' => 40, 'bot' => 40, 'admin' => 20]),
+                    'paid' => $status === 'completed' ? 1 : 0,
+                ]);
+                $appt->save(false);
+                $this->backdate('{{%appointments}}', (int) $appt->id, $ts);
+                $apptAdded++;
+            }
+        }
+
         $this->stdout(sprintf(
-            "Tayyor: +%d hodim, %d mijoz, +%d loyallik karta, +%d zakaz — '%s'.\n",
-            $staffAdded, count($clients), $loyAdded, $ordersAdded, $business->name
+            "Tayyor '%s': +%d hodim, %d mijoz, +%d loyallik, +%d zakaz, +%d kategoriya, "
+            . "+%d kat.qoida, +%d chegirma, +%d sertifikat, +%d abonement, +%d depozit, "
+            . "+%d to'lov, +%d appointment(hisobot).\n",
+            $business->name, $staffAdded, count($clients), $loyAdded, $ordersAdded,
+            $catAdded, $acrAdded, $drAdded, $certAdded, $subAdded, $depAdded, $txAdded, $apptAdded
         ));
         return ExitCode::OK;
     }
