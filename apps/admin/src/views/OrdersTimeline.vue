@@ -41,6 +41,9 @@ const anchor = ref(selectedDate.value)
 const today = ref(todayInput())
 
 const monday = computed(() => mondayOf(anchor.value))
+// The visible week as a unix-seconds window (Tashkent is a fixed UTC+5).
+const weekFrom = computed(() => Math.floor(Date.parse(monday.value + 'T00:00:00+05:00') / 1000))
+const weekTo = computed(() => weekFrom.value + 7 * 86400)
 const weekDays = computed(() => {
   const days = []
   for (let i = 0; i < 7; i++) {
@@ -96,7 +99,9 @@ async function load() {
   loading.value = true
   error.value = ''
   try {
-    orders.value = await api.get('/v1/orders')
+    // Fetch exactly the week on screen so a busy catalog (30-40/day) isn't
+    // capped to the API's "latest" slice — every day of the week fills in.
+    orders.value = await api.get(`/v1/orders?from=${weekFrom.value}&to=${weekTo.value}`)
   } catch (e) {
     error.value = e instanceof ApiError ? e.message : 'Buyurtmalarni yuklab bo\'lmadi'
     orders.value = []
@@ -106,6 +111,8 @@ async function load() {
 }
 
 watch(selectedDate, (d) => { anchor.value = d })
+// Reload whenever the visible week changes.
+watch(monday, () => load())
 const prevWeek = () => setSelectedDate(addDays(selectedDate.value, -7))
 const nextWeek = () => setSelectedDate(addDays(selectedDate.value, 7))
 const goToday = () => setSelectedDate(todayInput())

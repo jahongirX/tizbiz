@@ -136,13 +136,32 @@ class OrderController extends Controller
      */
     public function actionIndex(): array
     {
+        $req = Yii::$app->request;
         $q = Order::find()->with('items')->orderBy(['id' => SORT_DESC]);
 
-        $status = (string) Yii::$app->request->get('status', '');
+        $status = (string) $req->get('status', '');
         if ($status !== '' && in_array($status, Order::STATUSES, true)) {
             $q->andWhere(['status' => $status]);
         }
-        $limit = min(200, max(1, (int) Yii::$app->request->get('limit', 100)));
+
+        // Optional created_at window (unix seconds) — the weekly Jadval sends the
+        // exact week it renders so a busy catalog isn't capped to the latest slice.
+        $from = (int) $req->get('from', 0);
+        $to = (int) $req->get('to', 0);
+        if ($from > 0) {
+            $q->andWhere(['>=', 'created_at', $from]);
+        }
+        if ($to > 0) {
+            $q->andWhere(['<', 'created_at', $to]);
+        }
+
+        // A bounded window may legitimately hold a whole busy week (~300); the
+        // unbounded "latest" call (kanban) stays capped to the recent slice.
+        $ranged = $from > 0 || $to > 0;
+        $limit = min(
+            $ranged ? 2000 : 200,
+            max(1, (int) $req->get('limit', $ranged ? 2000 : 100))
+        );
 
         return $q->limit($limit)->all();
     }
