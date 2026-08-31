@@ -1024,6 +1024,196 @@ class SeedController extends Controller
         return ExitCode::OK;
     }
 
+    /**
+     * Rebuild a catalog business's demo data from a clean slate for a screencast:
+     * 5 BRANCHES instead of cook-staff, a busy order stream (~30-40/day), and a
+     * large per-branch appointment volume so Payroll (Ish haqi) and Hisobotlar
+     * show 30-40 records/day per branch. Orders stay bounded (~14 days) because
+     * the kanban renders every one; appointments can be many (only aggregated).
+     *
+     * Usage: php yii seed/refill [slug]   (default 'tort'). WIPES the business's
+     * demo transactions/staff first (keeps the business, clients and menu).
+     */
+    public function actionRefill(string $slug = 'tort'): int
+    {
+        $business = Business::findOne(['slug' => $slug]);
+        if ($business === null) {
+            $this->stderr("Business '$slug' topilmadi. Mavjud catalog bizneslar:\n");
+            foreach (Business::find()->where(['engine' => 'catalog'])->all() as $b) {
+                $this->stdout(sprintf("  %-18s %s\n", $b->slug, $b->name));
+            }
+            return ExitCode::DATAERR;
+        }
+        $bid = (int) $business->id;
+        $db = \Yii::$app->db;
+        $this->stdout("Refilling '{$business->name}' (id=$bid) — clean slate…\n");
+
+        // --- 1) Wipe demo transactions + staff (keep business, clients, menu) ---
+        $del = static function (string $sql) use ($db): void {
+            try { $db->createCommand($sql)->execute(); } catch (\Throwable $e) { /* optional table */ }
+        };
+        $db->createCommand()->delete('{{%order_items}}', ['business_id' => $bid])->execute();
+        $db->createCommand()->delete('{{%orders}}', ['business_id' => $bid])->execute();
+        $del("DELETE ai FROM {{%appointment_items}} ai JOIN {{%appointments}} a ON a.id=ai.appointment_id WHERE a.business_id=$bid");
+        $db->createCommand()->delete('{{%appointments}}', ['business_id' => $bid])->execute();
+        $db->createCommand()->delete('{{%transactions}}', ['business_id' => $bid])->execute();
+        $db->createCommand()->delete('{{%deposit_transactions}}', ['business_id' => $bid])->execute();
+        $del("DELETE lt FROM {{%loyalty_transactions}} lt JOIN {{%loyalty_accounts}} la ON la.id=lt.account_id WHERE la.business_id=$bid");
+        $db->createCommand()->delete('{{%loyalty_accounts}}', ['business_id' => $bid])->execute();
+        $db->createCommand()->delete('{{%certificates}}', ['business_id' => $bid])->execute();
+        $db->createCommand()->delete('{{%discount_rules}}', ['business_id' => $bid])->execute();
+        $db->createCommand()->delete('{{%auto_category_rules}}', ['business_id' => $bid])->execute();
+        $db->createCommand()->delete('{{%subscription_types}}', ['business_id' => $bid])->execute();
+        $del("DELETE ca FROM {{%client_category_assignment}} ca JOIN {{%client_categories}} cc ON cc.id=ca.category_id WHERE cc.business_id=$bid");
+        $db->createCommand()->delete('{{%client_categories}}', ['business_id' => $bid])->execute();
+        $del("DELETE wh FROM {{%working_hours}} wh JOIN {{%staff}} s ON s.id=wh.staff_id WHERE s.business_id=$bid");
+        $del("DELETE t FROM {{%time_off}} t JOIN {{%staff}} s ON s.id=t.staff_id WHERE s.business_id=$bid");
+        $db->createCommand()->delete('{{%staff}}', ['business_id' => $bid])->execute();
+
+        // --- 2) Branches (filiallar) as "staff" ---
+        $branches = [];
+        foreach (['Chilonzor filiali', 'Yunusobod filiali', 'Sergeli filiali', 'Yakkasaroy filiali', 'Olmazor filiali'] as $bn) {
+            $s = $this->save(new Staff(['business_id' => $bid, 'name' => $bn, 'specialization' => 'Filial', 'is_active' => 1]));
+            for ($wd = 1; $wd <= 7; $wd++) {
+                $this->save(new WorkingHours(['staff_id' => $s->id, 'weekday' => $wd, 'start_time' => '09:00:00', 'end_time' => '22:00:00']));
+            }
+            $branches[] = $s;
+        }
+
+        // --- 3) Menu + clients (create if missing) ---
+        $services = Service::find()->where(['business_id' => $bid, 'is_active' => 1])->all();
+        if ($services === []) {
+            $cat = ServiceCategory::findOne(['business_id' => $bid]) ?? $this->save(new ServiceCategory(['business_id' => $bid, 'name' => 'Tortlar', 'sort' => 0]));
+            foreach ([['Napoleon tort (1kg)', 150000], ['Medovik tort (1kg)', 160000], ['Shokoladli tort (1kg)', 170000], ['Chizkeyk (1kg)', 180000], ['Ekler (6 dona)', 45000], ['Kapuchino', 28000], ['Choy (choynak)', 15000]] as [$n, $som]) {
+                $services[] = $this->save(new Service(['business_id' => $bid, 'category_id' => $cat->id, 'name' => $n, 'duration_min' => 30, 'price_tiyin' => $som * 100, 'deposit_tiyin' => 0, 'is_active' => 1]));
+            }
+        }
+        $clients = Client::find()->where(['business_id' => $bid])->all();
+        if (count($clients) < 12) {
+            for ($i = count($clients); $i < 20; $i++) {
+                $clients[] = $this->save(new Client(['business_id' => $bid, 'name' => 'Mijoz ' . ($i + 1), 'phone' => '+99890' . mt_rand(1000000, 9999999), 'tags' => []]));
+            }
+        }
+
+        // --- 4) Orders (~30-40/day over 14 days) ---
+        $notes = ['tezda kerak', 'muzsiz', 'kam shakar', '2 qavatli bo\'lsin', 'yozuv bilan', null, null, null, null];
+        $ordersAdded = 0;
+        for ($d = 0; $d < 14; $d++) {
+            $count = mt_rand(28, 42);
+            for ($j = 0; $j < $count; $j++) {
+                $hour = mt_rand(9, 21);
+                $ts = strtotime(gmdate('Y-m-d', time() - $d * 86400) . ' 00:00:00 UTC') + ($hour * 3600 + mt_rand(0, 59) * 60) - 5 * 3600;
+                if ($d >= 5) {
+                    $status = $this->pick(['delivered' => 74, 'cancelled' => 16, 'ready' => 10]);
+                } elseif ($d >= 2) {
+                    $status = $this->pick(['delivered' => 42, 'ready' => 20, 'preparing' => 18, 'confirmed' => 12, 'cancelled' => 8]);
+                } else {
+                    $status = $this->pick(['new' => 32, 'confirmed' => 24, 'preparing' => 22, 'ready' => 14, 'delivered' => 8]);
+                }
+                $c = $clients[array_rand($clients)];
+                $order = new Order(['business_id' => $bid, 'client_id' => (int) $c->id, 'customer_name' => $c->name, 'customer_phone' => $c->phone, 'status' => $status, 'source' => $this->pick(['bot' => 55, 'site' => 30, 'admin' => 15]), 'note' => $notes[array_rand($notes)], 'total_tiyin' => 0]);
+                $order->save(false);
+                $total = 0;
+                $used = [];
+                $lines = mt_rand(1, 3);
+                for ($l = 0; $l < $lines; $l++) {
+                    $svc = $services[array_rand($services)];
+                    if (isset($used[$svc->id])) { continue; }
+                    $used[$svc->id] = true;
+                    $qty = mt_rand(1, 2);
+                    $it = new OrderItem(['order_id' => (int) $order->id, 'business_id' => $bid, 'service_id' => (int) $svc->id, 'name' => $svc->name, 'price_tiyin' => (int) $svc->price_tiyin, 'qty' => $qty]);
+                    $it->save(false);
+                    $this->backdate('{{%order_items}}', (int) $it->id, $ts);
+                    $total += (int) $svc->price_tiyin * $qty;
+                }
+                $order->total_tiyin = $total;
+                $order->save(false);
+                $this->backdate('{{%orders}}', (int) $order->id, $ts);
+                $ordersAdded++;
+            }
+        }
+
+        // --- 5) Appointments: 30-40/day PER BRANCH over 14 days (Payroll/Hisobot) ---
+        $rows = [];
+        for ($d = 0; $d < 14; $d++) {
+            foreach ($branches as $st) {
+                $n = mt_rand(30, 40);
+                for ($k = 0; $k < $n; $k++) {
+                    $hour = mt_rand(9, 20);
+                    $min = [0, 15, 30, 45][mt_rand(0, 3)];
+                    $ts = strtotime(gmdate('Y-m-d', time() - $d * 86400) . ' 00:00:00 UTC') + ($hour * 3600 + $min * 60) - 5 * 3600;
+                    $svc = $services[array_rand($services)];
+                    $c = $clients[array_rand($clients)];
+                    $dur = (int) ($svc->duration_min ?: 30);
+                    $status = $d === 0
+                        ? $this->pick(['confirmed' => 45, 'pending' => 30, 'completed' => 25])
+                        : $this->pick(['completed' => 78, 'no_show' => 10, 'canceled' => 8, 'confirmed' => 4]);
+                    $rows[] = [$bid, (int) $c->id, (int) $st->id, (int) $svc->id, gmdate('Y-m-d H:i:s', $ts), gmdate('Y-m-d H:i:s', $ts + $dur * 60), $status, $this->pick(['site' => 40, 'bot' => 40, 'admin' => 20]), (int) $svc->deposit_tiyin, $status === 'completed' ? 1 : 0, $ts, $ts];
+                }
+            }
+        }
+        $cols = ['business_id', 'client_id', 'staff_id', 'service_id', 'starts_at', 'ends_at', 'status', 'source', 'deposit_tiyin', 'paid', 'created_at', 'updated_at'];
+        $apptAdded = count($rows);
+        foreach (array_chunk($rows, 400) as $chunk) {
+            $db->createCommand()->batchInsert('{{%appointments}}', $cols, $chunk)->execute();
+        }
+
+        // --- 6) Loyalty + finance + categories (aggregated views) ---
+        $this->fillAux($bid, $clients, $services, $branches);
+
+        $this->stdout(sprintf(
+            "Tayyor '%s': %d filial, %d zakaz (~%d/kun), %d appointment (payroll/hisobot uchun).\n",
+            $business->name, count($branches), $ordersAdded, (int) round($ordersAdded / 14), $apptAdded
+        ));
+        return ExitCode::OK;
+    }
+
+    /** Categories, rules, certificates, subscriptions, deposits, payments. */
+    private function fillAux(int $bid, array $clients, array $services, array $branches): void
+    {
+        LoyaltyRule::findOne(['business_id' => $bid]) ?? $this->save(new LoyaltyRule(['business_id' => $bid, 'earn_rate' => 500, 'active' => 1, 'gift_config' => ['referral_bonus_tiyin' => 2000000, 'referral_bonus_points' => 20]]));
+
+        $categories = [];
+        foreach ([['VIP', '#f59e0b'], ['Doimiy', '#10b981'], ['Yangi', '#3b82f6'], ['Nofaol', '#6b7280']] as $ci => [$cn, $col]) {
+            $categories[$cn] = $this->save(new ClientCategory(['business_id' => $bid, 'name' => $cn, 'color' => $col, 'sort' => $ci]));
+        }
+        foreach ($clients as $idx => $c) {
+            $cn = $idx < 4 ? 'VIP' : ($idx < 10 ? 'Doimiy' : ($idx < 15 ? 'Yangi' : 'Nofaol'));
+            (new ClientCategoryAssignment(['client_id' => (int) $c->id, 'category_id' => (int) $categories[$cn]->id]))->save(false);
+
+            if ($idx < 12) {
+                $acc = new LoyaltyAccount(['business_id' => $bid, 'client_id' => (int) $c->id, 'points' => mt_rand(20, 400), 'cashback_tiyin' => mt_rand(30, 900) * 1000]);
+                $acc->save(false);
+                (new LoyaltyTransaction(['account_id' => (int) $acc->id, 'delta_points' => (int) $acc->points, 'delta_cashback_tiyin' => (int) $acc->cashback_tiyin, 'reason' => 'earn', 'ref' => 'seed']))->save(false);
+            }
+        }
+        foreach ([['VIP', 'sold', 2000000, 'add'], ['Doimiy', 'visits', 5, 'add'], ['Nofaol', 'inactive_days', 60, 'add']] as [$cn, $m, $th, $a]) {
+            $this->save(new AutoCategoryRule(['business_id' => $bid, 'category_id' => (int) $categories[$cn]->id, 'metric' => $m, 'threshold' => $th, 'action' => $a, 'active' => 1]));
+        }
+        foreach ([['paid', 500000, 5], ['paid', 2000000, 10], ['visits', 10, 7]] as [$m, $th, $p]) {
+            $this->save(new DiscountRule(['business_id' => $bid, 'metric' => $m, 'threshold' => $th, 'percent' => $p, 'active' => 1]));
+        }
+        foreach ([['Sovg\'a 100k', 10000000, 10000000, 'active'], ['Sovg\'a 200k', 20000000, 20000000, 'active'], ['Sovg\'a 50k', 5000000, 5000000, 'active'], ['Tug\'ilgan kun 150k', 15000000, 6000000, 'active'], ['Sovg\'a 100k', 10000000, 0, 'used'], ['Aksiya 300k', 30000000, 30000000, 'active']] as $k => [$name, $val, $bal, $stx]) {
+            $c = $clients[array_rand($clients)];
+            $this->save(new Certificate(['business_id' => $bid, 'code' => 'TIZ-' . strtoupper(substr(md5($bid . $k . mt_rand()), 0, 6)), 'name' => $name, 'value_tiyin' => $val, 'balance_tiyin' => $bal, 'client_id' => (int) $c->id, 'status' => $stx, 'expires_at' => gmdate('Y-m-d', time() + mt_rand(30, 180) * 86400)]));
+        }
+        foreach ([['10 ta kofe abonement', 10, 250000, 60], ['Oylik shirinlik klubi', 8, 400000, 30], ['VIP tort klub', 4, 600000, 90]] as [$name, $v, $som, $days]) {
+            $this->save(new SubscriptionType(['business_id' => $bid, 'name' => $name, 'visits' => $v, 'price_tiyin' => $som * 100, 'valid_days' => $days, 'is_active' => 1]));
+        }
+        foreach (array_slice($clients, 0, 9) as $c) {
+            $top = mt_rand(100, 800) * 1000 * 100;
+            $t = new DepositTransaction(['business_id' => $bid, 'client_id' => (int) $c->id, 'delta_tiyin' => $top, 'type' => 'topup', 'reason' => 'Balans to\'ldirish']);
+            $t->save(false);
+            $this->backdate('{{%deposit_transactions}}', (int) $t->id, time() - mt_rand(2, 25) * 86400);
+        }
+        for ($i = 0; $i < 40; $i++) {
+            $ts = time() - mt_rand(0, 29) * 86400 - mt_rand(0, 40000);
+            $tx = new Transaction(['business_id' => $bid, 'provider' => $this->pick(['payme' => 60, 'click' => 40]), 'amount_tiyin' => mt_rand(30, 350) * 1000 * 100, 'type' => $this->pick(['deposit' => 70, 'float' => 30]), 'status' => $this->pick(['paid' => 82, 'pending' => 9, 'refunded' => 6, 'canceled' => 3]), 'external_id' => 'seed-' . mt_rand(100000, 999999), 'idempotency_key' => 'refill:' . $bid . ':' . $i . ':' . mt_rand(1000, 9999)]);
+            $tx->save(false);
+            $this->backdate('{{%transactions}}', (int) $tx->id, $ts);
+        }
+    }
+
     /** Backdate a row's created_at directly (bypasses TimestampBehavior). */
     private function backdate(string $table, int $id, int $ts): void
     {
