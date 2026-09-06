@@ -32,13 +32,13 @@ watch(() => route.fullPath, closeMenu)
       </router-link>
 
       <nav class="nav__links" :class="{ 'nav__links--open': menuOpen }" aria-label="Asosiy menyu">
-        <router-link to="/" @click="closeMenu">Bosh sahifa</router-link>
+        <router-link :to="{ path: '/', hash: '#features' }" @click="closeMenu">Imkoniyatlar</router-link>
         <router-link to="/how-it-works" @click="closeMenu">Qanday ishlaydi</router-link>
+        <router-link :to="{ path: '/', hash: '#pricing' }" @click="closeMenu">Narxlar</router-link>
         <router-link to="/blog" @click="closeMenu">Blog</router-link>
         <router-link to="/about" @click="closeMenu">Loyiha haqida</router-link>
-        <router-link :to="{ path: '/', hash: '#pricing' }" @click="closeMenu">Narxlar</router-link>
         <a class="nav__login" :href="LOGIN_URL">Kirish</a>
-        <a class="btn btn-primary nav__cta" :href="REGISTER_URL">Boshlash</a>
+        <a class="btn btn-primary btn-sm nav__cta" :href="REGISTER_URL">Bepul boshlash</a>
       </nav>
 
       <button
@@ -77,7 +77,7 @@ watch(() => route.fullPath, closeMenu)
   align-items: center;
 }
 .brand__logo {
-  height: 34px;
+  height: 40px;
   width: auto;
   display: block;
 }

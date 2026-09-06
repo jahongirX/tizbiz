@@ -14,7 +14,7 @@ export const posts = [
     body: [
       {
         type: 'p',
-        text: 'Har bir kelmay qolgan mijoz — bu shunchaki bo‘sh vaqt emas. Usta bo‘sh o‘tiradi, o‘sha vaqtga boshqa mijozni yozib bo‘lmaydi va kunlik daromad tushadi. Surxondaryodagi ko‘pchilik barber va salonlar uchun no-show haftalik bir necha yuz ming so‘m yo‘qotish demakdir.',
+        text: 'Har bir kelmay qolgan mijoz — bu shunchaki bo‘sh vaqt emas. Usta bo‘sh o‘tiradi, o‘sha vaqtga boshqa mijozni yozib bo‘lmaydi va kunlik daromad tushadi. O‘zbekistondagi ko‘pchilik barber va salonlar uchun no-show haftalik bir necha yuz ming so‘m yo‘qotish demakdir.',
       },
       { type: 'h2', text: 'Nega mijozlar kelmay qoladi' },
       {

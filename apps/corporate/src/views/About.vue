@@ -41,7 +41,7 @@ const phases = [
       <span class="eyebrow">Loyiha haqida</span>
       <h1>Mahalliy biznesni onlaynga olib chiqamiz</h1>
       <p>
-        TizBiz — Surxondaryo va Termiz xizmat bizneslari uchun onlayn borliq, booking, CRM/loyallik
+        TizBiz — O‘zbekiston xizmat bizneslari uchun onlayn borliq, booking, CRM/loyallik
         va AI platformasi. Telegram-native. Biz “arzon YClients” emasmiz.
       </p>
     </section>
@@ -185,7 +185,7 @@ const phases = [
 
 /* CTA (shared look) */
 .cta__box {
-  background: linear-gradient(135deg, var(--accent), #6b93ff);
+  background: linear-gradient(135deg, var(--brand), #0e7a45);
   color: #fff;
   border-radius: 26px;
   padding: 56px 32px;
@@ -210,17 +210,18 @@ const phases = [
 }
 .cta__box .btn-primary {
   background: #fff;
-  color: var(--accent);
+  color: var(--brand-ink);
 }
 .cta__box .btn-primary:hover {
-  background: #f0f4ff;
+  background: #eafaf1;
 }
 .cta__box .btn-ghost {
-  border-color: rgba(255, 255, 255, 0.5);
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.6);
   color: #fff;
 }
 .cta__box .btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.14);
 }
 
 @media (max-width: 980px) {
