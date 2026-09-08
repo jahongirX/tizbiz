@@ -1,0 +1,11 @@
+TizBiz SMS
+Copyright 2026 TizBiz
+
+This product is a rebranded derivative of "SMS Gateway for Android"
+(https://github.com/capcom6/android-sms-gateway), Copyright capcom6,
+licensed under the Apache License, Version 2.0.
+
+The original source is used under the terms of that license (see LICENSE).
+Modifications by TizBiz include: application identity (name, package,
+launcher icon, brand colors) and the default gateway endpoint
+(https://gate.tizbiz.uz). All original notices are retained.

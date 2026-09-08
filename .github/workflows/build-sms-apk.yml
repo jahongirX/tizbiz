@@ -1,0 +1,80 @@
+name: Build TizBiz SMS APK
+
+# Manually triggered from GitHub → Actions → "Build TizBiz SMS APK" → Run workflow.
+# Builds a SIGNED release APK of the Android app in mobile/tizbiz-sms and uploads it
+# as an artifact. No local Android SDK needed — everything runs on GitHub's runner.
+#
+# Required repo secrets (Settings → Secrets and variables → Actions):
+#   SIGNING_KEY_STORE_BASE64  base64 of your keystore.jks
+#   SIGNING_STORE_PASSWORD    keystore password
+#   SIGNING_KEY_ALIAS         key alias (e.g. tizbiz)
+#   SIGNING_KEY_PASSWORD      key password
+#   GOOGLE_SERVICES_JSON      (optional) base64 of a real google-services.json.
+#                             Leave UNSET → a placeholder is used (app builds; FCM push
+#                             off, delivery via SSE). Set it → real Firebase push.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version-name:
+        description: "Version name (e.g. 1.0.0)"
+        required: true
+        default: "1.0.0"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      GS: ${{ secrets.GOOGLE_SERVICES_JSON }}
+      KS: ${{ secrets.SIGNING_KEY_STORE_BASE64 }}
+    defaults:
+      run:
+        working-directory: mobile/tizbiz-sms
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('mobile/tizbiz-sms/**/*.gradle*', 'mobile/tizbiz-sms/gradle/wrapper/gradle-wrapper.properties') }}
+
+      - name: Google Services (real, from secret)
+        if: ${{ env.GS != '' }}
+        run: echo "$GS" | base64 --decode > ./app/google-services.json
+
+      - name: Google Services (placeholder)
+        if: ${{ env.GS == '' }}
+        run: cp ./app/google-services.json.example ./app/google-services.json
+
+      - name: Stamp version
+        run: |
+          VERSION_NAME="${{ github.event.inputs.version-name }}"
+          sed -i "s/versionName.*/versionName \"${VERSION_NAME#v}\"/" app/build.gradle
+          sed -i "s/versionCode.*/versionCode $(( ($(date +%s) - $(date -d "2022-06-15" +%s)) / 86400 ))/" app/build.gradle
+
+      - name: Decode keystore
+        run: echo "$KS" | base64 --decode > app/keystore.jks
+
+      - name: Assemble signed release APK
+        env:
+          SIGNING_KEY_STORE_PATH: app/keystore.jks
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+        run: ./gradlew assembleRelease
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tizbiz-sms-release-apk
+          path: mobile/tizbiz-sms/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error

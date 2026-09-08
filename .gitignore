@@ -20,6 +20,8 @@ runtime/*.sqlite
 .env
 .env.*
 !.env.example
+contabo-access.md
+db-seed/
 
 # Build output
 dist/

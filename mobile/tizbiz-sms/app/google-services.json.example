@@ -1,0 +1,30 @@
+{
+  "_comment": "PLACEHOLDER. Real Firebase kerak bo'lsa Firebase Console'dan haqiqiy google-services.json yuklab, shu papkaga google-services.json nomi bilan qo'ying (u .gitignore'da). package_name MAJBURIY: uz.tizbiz.gateway",
+  "project_info": {
+    "project_number": "000000000000",
+    "project_id": "tizbiz-sms-placeholder",
+    "storage_bucket": "tizbiz-sms-placeholder.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+        "android_client_info": {
+          "package_name": "uz.tizbiz.gateway"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyPLACEHOLDERPLACEHOLDER0000000000000000"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
