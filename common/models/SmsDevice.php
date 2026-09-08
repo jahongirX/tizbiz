@@ -39,6 +39,48 @@ class SmsDevice extends ActiveRecord
         return [TimestampBehavior::class];
     }
 
+    public function beforeSave($insert): bool
+    {
+        if (!parent::beforeSave($insert)) {
+            return false;
+        }
+        if ($this->server !== null && trim((string) $this->server) !== '') {
+            $this->server = self::normalizeServer((string) $this->server);
+        }
+        return true;
+    }
+
+    /**
+     * Normalize a user-entered gateway address into the full 3rd-party send base
+     * URL. The sender appends "/message" to this, so it must end at
+     * ".../api/3rdparty/v1". Handles the common mistakes:
+     *   gate.tizbiz.uz:443            -> https://gate.tizbiz.uz/api/3rdparty/v1
+     *   https://gate.tizbiz.uz        -> https://gate.tizbiz.uz/api/3rdparty/v1
+     *   .../api/mobile/v1 (wrong API) -> .../api/3rdparty/v1
+     */
+    public static function normalizeServer(string $raw): string
+    {
+        $s = trim($raw);
+        if ($s === '') {
+            return $s;
+        }
+        if (!preg_match('#^https?://#i', $s)) {
+            $s = 'https://' . $s;
+        }
+        $s = rtrim($s, '/');
+        // Mobile-API address entered by mistake -> the 3rd-party send API.
+        $s = str_ireplace('/api/mobile/v1', '/api/3rdparty/v1', $s);
+        // Just a host[:port] with no path -> append the 3rd-party base path.
+        $path = (string) parse_url($s, PHP_URL_PATH);
+        if ($path === '' || $path === '/') {
+            $s = rtrim($s, '/') . '/api/3rdparty/v1';
+        }
+        // Drop the redundant default port.
+        $s = preg_replace('#^(https)://([^/:]+):443(/|$)#i', '$1://$2$3', $s);
+        $s = preg_replace('#^(http)://([^/:]+):80(/|$)#i', '$1://$2$3', $s);
+        return $s;
+    }
+
     public function rules(): array
     {
         return [

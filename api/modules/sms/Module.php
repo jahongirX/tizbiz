@@ -31,7 +31,9 @@ class Module extends BaseModule implements BootstrapInterface
             'PATCH v1/sms/templates/<id:\d+>' => 'sms/template/update',
             'DELETE v1/sms/templates/<id:\d+>' => 'sms/template/delete',
 
+            'GET v1/sms/contacts/categories' => 'sms/contact/categories',
             'GET v1/sms/contacts' => 'sms/contact/index',
+            'POST v1/sms/contacts/import' => 'sms/contact/import',
             'POST v1/sms/contacts' => 'sms/contact/create',
             'PATCH v1/sms/contacts/<id:\d+>' => 'sms/contact/update',
             'DELETE v1/sms/contacts/<id:\d+>' => 'sms/contact/delete',

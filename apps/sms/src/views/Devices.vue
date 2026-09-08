@@ -1,7 +1,10 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { api, ApiError } from '@tizbiz/api-client'
+import { api, ApiError, config } from '@tizbiz/api-client'
 import { Plus, Pencil, Trash2 } from 'lucide-vue-next'
+
+// The self-hosted gateway's 3rd-party send base (the sender appends /message).
+const DEFAULT_SERVER = `https://gate.${config.rootDomain || 'tizbiz.uz'}/api/3rdparty/v1`
 
 const loading = ref(true)
 const devices = ref([])
@@ -24,7 +27,7 @@ onMounted(load)
 
 function openNew() {
   editing.value = null
-  Object.assign(form, { name: '', server: '', login: '', password: '', is_active: true })
+  Object.assign(form, { name: '', server: DEFAULT_SERVER, login: '', password: '', is_active: true })
   error.value = ''
   modal.value = true
 }
@@ -110,8 +113,12 @@ async function remove(d) {
         <input v-model="form.name" placeholder="POCO F3" />
       </div>
       <div class="field">
-        <label>Server URL (bo‘sh = Cloud)</label>
-        <input v-model="form.server" placeholder="https://api.sms-gate.app/3rdparty/v1 yoki http://192.168.x.x:8080" />
+        <label>Server URL</label>
+        <input v-model="form.server" :placeholder="DEFAULT_SERVER" />
+        <p class="muted" style="font-size: 11px; margin: 6px 0 0">
+          Odatda o‘zgartirmaysiz. Telefon ekranidagi <b>gate.tizbiz.uz:443</b> emas — to‘liq manzil kerak
+          (avtomatik to‘g‘rilanadi).
+        </p>
       </div>
       <div class="row" style="gap: 12px">
         <div class="field" style="flex: 1"><label>Login</label><input v-model="form.login" placeholder="username" /></div>

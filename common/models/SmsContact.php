@@ -37,12 +37,13 @@ class SmsContact extends ActiveRecord
             [['name'], 'string', 'max' => 120],
             [['phone'], 'string', 'max' => 32],
             [['note'], 'string', 'max' => 255],
+            [['category'], 'string', 'max' => 60],
             [['phone'], 'unique', 'targetAttribute' => ['user_id', 'phone'], 'message' => 'Bu raqam allaqachon qo\'shilgan.'],
         ];
     }
 
     public function fields(): array
     {
-        return ['id', 'name', 'phone', 'note', 'created_at'];
+        return ['id', 'name', 'phone', 'note', 'category', 'created_at'];
     }
 }
