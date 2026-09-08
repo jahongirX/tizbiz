@@ -7,6 +7,7 @@ use common\models\SmsAccount;
 use common\models\SmsBlacklist;
 use common\models\SmsDevice;
 use common\models\SmsMessage;
+use common\models\SmsRecipient;
 use yii\web\BadRequestHttpException;
 use yii\web\UnprocessableEntityHttpException;
 
@@ -105,6 +106,9 @@ class SmsDispatcher
                 'status' => SmsMessage::STATUS_PENDING,
             ]);
             $msg->save(false);
+
+            // Collect every recipient number into the central base.
+            SmsRecipient::record($userId, $phone);
 
             $r = AndroidSmsSender::sendVerbose($phone, $text, $override);
             if ($r['ok']) {

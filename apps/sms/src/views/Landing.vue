@@ -1,10 +1,45 @@
 <script setup>
+import { ref, reactive } from 'vue'
 import { RouterLink } from 'vue-router'
+import { api } from '@tizbiz/api-client'
 import logoUrl from '../assets/logo.png'
 import {
   Send, Smartphone, ShieldCheck, Code2, Globe, Layers,
-  Check, ArrowRight, MessageSquare, Phone,
+  Check, ArrowRight, MessageSquare, Phone, X,
 } from 'lucide-vue-next'
+
+// Lead form ("Ariza qoldirish") — no login needed.
+const leadOpen = ref(false)
+const leadSent = ref(false)
+const leadSaving = ref(false)
+const leadError = ref('')
+const lead = reactive({ name: '', phone: '', business: '', tariff: '', note: '' })
+
+function openLead(tariff = '') {
+  Object.assign(lead, { name: '', phone: '', business: '', tariff, note: '' })
+  leadError.value = ''
+  leadSent.value = false
+  leadOpen.value = true
+}
+async function submitLead() {
+  leadError.value = ''
+  if (!lead.phone.trim()) { leadError.value = 'Telefon raqamingizni kiriting'; return }
+  leadSaving.value = true
+  try {
+    await api.post('/v1/leads', {
+      name: lead.name.trim(),
+      phone: lead.phone.trim(),
+      business: lead.business.trim(),
+      tariff: lead.tariff,
+      note: lead.note.trim(),
+    })
+    leadSent.value = true
+  } catch (e) {
+    leadError.value = 'Xatolik — birozdan so‘ng qayta urinib ko‘ring'
+  } finally {
+    leadSaving.value = false
+  }
+}
 
 const stats = [
   { v: '99%', l: 'telefonlarga yetib boradi' },
@@ -83,7 +118,7 @@ const plans = [
           Qisqa raqam, shartnoma va yuridik shaxs shart emas.
         </p>
         <div class="lp-cta">
-          <RouterLink to="/login" class="lp-btn lp-btn-solid">Boshlash <ArrowRight :size="17" /></RouterLink>
+          <button type="button" class="lp-btn lp-btn-solid" @click="openLead()">Ariza qoldirish <ArrowRight :size="17" /></button>
           <a href="#pricing" class="lp-btn lp-btn-ghost">Tariflarni ko‘rish</a>
         </div>
         <div class="lp-stats">
@@ -139,9 +174,9 @@ const plans = [
             <ul class="lp-perks">
               <li v-for="perk in p.perks" :key="perk"><Check :size="15" /> {{ perk }}</li>
             </ul>
-            <RouterLink to="/login" class="lp-btn" :class="p.highlight ? 'lp-btn-solid' : 'lp-btn-ghost'" style="width: 100%; justify-content: center">
+            <button type="button" class="lp-btn" :class="p.highlight ? 'lp-btn-solid' : 'lp-btn-ghost'" style="width: 100%; justify-content: center" @click="openLead(p.name.toLowerCase())">
               Tanlash
-            </RouterLink>
+            </button>
           </div>
         </div>
         <p class="lp-note">Barcha tariflarda: Web panel, Android ilova, API, shablon, kontakt, qora ro‘yxat. Narxlar QQSsiz.</p>
@@ -155,7 +190,7 @@ const plans = [
           <h2>Bugun boshlang</h2>
           <p>Telefoningizni ulang va birinchi SMS’ni bir necha daqiqada yuboring.</p>
         </div>
-        <RouterLink to="/login" class="lp-btn lp-btn-solid">Kirish <ArrowRight :size="17" /></RouterLink>
+        <button type="button" class="lp-btn lp-btn-solid" @click="openLead()">Ariza qoldirish <ArrowRight :size="17" /></button>
       </div>
     </section>
 
@@ -170,6 +205,39 @@ const plans = [
         <div class="lp-copy">© 2026 TizBiz</div>
       </div>
     </footer>
+
+    <!-- Lead form modal -->
+    <div v-if="leadOpen" class="lp-modal-back" @click.self="leadOpen = false">
+      <div class="lp-modal">
+        <button class="lp-modal-x" @click="leadOpen = false"><X :size="18" /></button>
+        <template v-if="!leadSent">
+          <h3 style="margin:0 0 4px">Ariza qoldirish</h3>
+          <p class="lp-modal-sub">Telefon raqamingizni qoldiring — o‘zimiz bog‘lanamiz. Login/parol shart emas.</p>
+          <div v-if="leadError" class="lp-alert">{{ leadError }}</div>
+          <div class="lp-f"><label>Ism</label><input v-model="lead.name" placeholder="Ismingiz" /></div>
+          <div class="lp-f"><label>Telefon *</label><input v-model="lead.phone" placeholder="+998 __ ___ __ __" inputmode="tel" /></div>
+          <div class="lp-f"><label>Biznes (ixtiyoriy)</label><input v-model="lead.business" placeholder="Biznes nomi" /></div>
+          <div class="lp-f"><label>Tarif</label>
+            <select v-model="lead.tariff">
+              <option value="">Tanlanmagan</option>
+              <option value="start">Start</option>
+              <option value="pro">Pro</option>
+              <option value="expert">Expert</option>
+            </select>
+          </div>
+          <div class="lp-f"><label>Izoh (ixtiyoriy)</label><textarea v-model="lead.note" rows="2" placeholder="Qo‘shimcha..."></textarea></div>
+          <button class="lp-btn lp-btn-solid" style="width:100%; justify-content:center" :disabled="leadSaving" @click="submitLead">
+            {{ leadSaving ? 'Yuborilmoqda…' : 'Yuborish' }}
+          </button>
+        </template>
+        <template v-else>
+          <div class="lp-ok"><Check :size="30" /></div>
+          <h3 style="margin:0 0 4px">Rahmat! ✅</h3>
+          <p class="lp-modal-sub">Arizangiz qabul qilindi — tez orada bog‘lanamiz.</p>
+          <button class="lp-btn lp-btn-ghost" style="width:100%; justify-content:center" @click="leadOpen = false">Yopish</button>
+        </template>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -276,6 +344,19 @@ const plans = [
 .lp-foot-links a { color: var(--lp-mut); text-decoration: none; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; }
 .lp-foot-links a:hover { color: var(--lp-txt); }
 .lp-copy { color: var(--lp-mut); font-size: 13px; }
+
+/* lead modal */
+.lp-modal-back { position: fixed; inset: 0; z-index: 50; background: rgba(4, 8, 16, 0.72); backdrop-filter: blur(3px); display: grid; place-items: center; padding: 20px; }
+.lp-modal { position: relative; width: 100%; max-width: 420px; background: var(--lp-card); border: 1px solid var(--lp-line); border-radius: 18px; padding: 26px; max-height: 90vh; overflow-y: auto; text-align: left; }
+.lp-modal-x { position: absolute; top: 14px; right: 14px; background: none; border: 0; color: var(--lp-mut); cursor: pointer; }
+.lp-modal-x:hover { color: var(--lp-txt); }
+.lp-modal-sub { color: var(--lp-mut); font-size: 14px; margin: 0 0 18px; }
+.lp-alert { background: rgba(239, 83, 80, 0.15); color: #ff9b98; border-radius: 10px; padding: 9px 12px; font-size: 13px; margin-bottom: 12px; }
+.lp-f { margin-bottom: 12px; }
+.lp-f label { display: block; font-size: 12px; color: var(--lp-mut); margin-bottom: 5px; }
+.lp-f input, .lp-f select, .lp-f textarea { width: 100%; box-sizing: border-box; background: var(--lp-bg2); border: 1px solid var(--lp-line); border-radius: 10px; padding: 11px 12px; color: var(--lp-txt); font-size: 15px; font-family: inherit; }
+.lp-f input:focus, .lp-f select:focus, .lp-f textarea:focus { outline: none; border-color: var(--lp-brand); }
+.lp-ok { width: 60px; height: 60px; border-radius: 50%; background: rgba(45, 126, 236, 0.18); color: var(--lp-brand2); display: grid; place-items: center; margin: 0 auto 14px; }
 
 @media (max-width: 860px) {
   .lp-grid, .lp-steps, .lp-plans { grid-template-columns: 1fr; }

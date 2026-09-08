@@ -4,6 +4,8 @@ namespace api\modules\superadmin\controllers;
 
 use common\helpers\Phone;
 use common\models\SmsAccount;
+use common\models\SmsContact;
+use common\models\SmsMessage;
 use common\models\User;
 use Yii;
 use yii\web\NotFoundHttpException;
@@ -20,6 +22,54 @@ class SmsAccountController extends BaseController
     {
         $accounts = SmsAccount::find()->with('user')->orderBy(['id' => SORT_DESC])->all();
         return ['items' => array_map([$this, 'serialize'], $accounts)];
+    }
+
+    /** What this account has sent (recent messages: text/phone/status/date). */
+    public function actionMessages(int $id): array
+    {
+        return SmsMessage::find()
+            ->where(['user_id' => $this->accountUserId($id)])
+            ->orderBy(['id' => SORT_DESC])
+            ->limit(200)
+            ->all();
+    }
+
+    /** This account's saved contacts. */
+    public function actionContacts(int $id): array
+    {
+        return SmsContact::find()
+            ->where(['user_id' => $this->accountUserId($id)])
+            ->orderBy(['name' => SORT_ASC])
+            ->limit(1000)
+            ->all();
+    }
+
+    /** Activity counters for one account. */
+    public function actionActivity(int $id): array
+    {
+        $uid = $this->accountUserId($id);
+        $monthStart = strtotime(date('Y-m-01 00:00:00'));
+        $dayStart = strtotime('today');
+        $last = SmsMessage::find()->where(['user_id' => $uid])->orderBy(['id' => SORT_DESC])->one();
+        $base = fn () => SmsMessage::find()->where(['user_id' => $uid]);
+        return [
+            'total' => (int) $base()->count(),
+            'sent' => (int) $base()->andWhere(['status' => SmsMessage::STATUS_SENT])->count(),
+            'failed' => (int) $base()->andWhere(['status' => SmsMessage::STATUS_FAILED])->count(),
+            'month' => (int) $base()->andWhere(['>=', 'created_at', $monthStart])->count(),
+            'today' => (int) $base()->andWhere(['>=', 'created_at', $dayStart])->count(),
+            'contacts' => (int) SmsContact::find()->where(['user_id' => $uid])->count(),
+            'last_sent_at' => $last ? (int) $last->created_at : null,
+        ];
+    }
+
+    private function accountUserId(int $id): int
+    {
+        $acc = SmsAccount::findOne($id);
+        if ($acc === null) {
+            throw new NotFoundHttpException('Akkaunt topilmadi.');
+        }
+        return (int) $acc->user_id;
     }
 
     public function actionCreate()

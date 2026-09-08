@@ -1,7 +1,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { api, ApiError } from '@tizbiz/api-client'
-import { Plus, Pencil, Trash2, KeyRound, Copy, RefreshCw } from 'lucide-vue-next'
+import { Plus, Pencil, Trash2, KeyRound, Copy, RefreshCw, Activity } from 'lucide-vue-next'
 
 const loading = ref(true)
 const items = ref([])
@@ -114,6 +114,38 @@ async function regenKey(a) {
 }
 
 const quotaText = (a) => (a.quota_monthly > 0 ? `${a.usage} / ${a.quota_monthly}` : `${a.usage} / ∞`)
+
+// ---- Per-account activity ----
+const actOpen = ref(false)
+const actAcc = ref(null)
+const actTab = ref('messages')
+const actStats = ref(null)
+const actMessages = ref([])
+const actContacts = ref([])
+const actLoading = ref(false)
+const dtm = (t) => (t ? new Date(t * 1000).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—')
+
+async function openActivity(a) {
+  actAcc.value = a
+  actTab.value = 'messages'
+  actStats.value = null
+  actMessages.value = []
+  actContacts.value = []
+  actOpen.value = true
+  actLoading.value = true
+  try {
+    const [st, ms, ct] = await Promise.all([
+      api.get('/v1/superadmin/sms-accounts/' + a.id + '/activity'),
+      api.get('/v1/superadmin/sms-accounts/' + a.id + '/messages'),
+      api.get('/v1/superadmin/sms-accounts/' + a.id + '/contacts'),
+    ])
+    actStats.value = st
+    actMessages.value = ms
+    actContacts.value = ct
+  } finally {
+    actLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -160,6 +192,7 @@ const quotaText = (a) => (a.quota_monthly > 0 ? `${a.usage} / ${a.quota_monthly}
           <td class="muted">{{ a.note || '—' }}</td>
           <td>
             <div class="row" style="gap: 6px; justify-content: flex-end">
+              <button class="btn ghost sm" title="Faoliyat (nima yuborgan)" @click="openActivity(a)"><Activity :size="14" /></button>
               <button class="btn ghost sm" title="Yangi API kalit" @click="regenKey(a)"><RefreshCw :size="14" /></button>
               <button class="btn ghost sm" title="Parolni tiklash" @click="resetPassword(a)"><KeyRound :size="14" /></button>
               <button class="btn ghost sm" title="Tahrirlash" @click="openEdit(a)"><Pencil :size="14" /></button>
@@ -213,6 +246,56 @@ const quotaText = (a) => (a.quota_monthly > 0 ? `${a.usage} / ${a.quota_monthly}
       </div>
     </div>
   </div>
+
+  <!-- Activity modal -->
+  <div v-if="actOpen" class="modal-back" @click.self="actOpen = false">
+    <div class="modal" style="max-width: 700px">
+      <h3>{{ actAcc?.name }} — faoliyat</h3>
+      <div v-if="actLoading" class="spinner"></div>
+      <template v-else>
+        <div v-if="actStats" class="act-stats">
+          <div><b>{{ actStats.total }}</b><span>Jami</span></div>
+          <div><b>{{ actStats.sent }}</b><span>Yuborilgan</span></div>
+          <div><b>{{ actStats.failed }}</b><span>Xato</span></div>
+          <div><b>{{ actStats.month }}</b><span>Bu oy</span></div>
+          <div><b>{{ actStats.today }}</b><span>Bugun</span></div>
+          <div><b>{{ actStats.contacts }}</b><span>Kontakt</span></div>
+        </div>
+        <div class="row" style="gap: 8px; margin: 14px 0">
+          <button class="btn sm" :class="actTab === 'messages' ? '' : 'ghost'" @click="actTab = 'messages'">Xabarlar ({{ actMessages.length }})</button>
+          <button class="btn sm" :class="actTab === 'contacts' ? '' : 'ghost'" @click="actTab = 'contacts'">Kontaktlar ({{ actContacts.length }})</button>
+        </div>
+        <div class="table-wrap" style="max-height: 340px; overflow: auto">
+          <table v-if="actTab === 'messages'" class="table">
+            <thead><tr><th>Raqam</th><th>Xabar</th><th>Holat</th><th>Sana</th></tr></thead>
+            <tbody>
+              <tr v-if="!actMessages.length"><td colspan="4" class="muted">Xabar yo‘q</td></tr>
+              <tr v-for="m in actMessages" :key="m.id">
+                <td class="muted" style="white-space: nowrap">{{ m.phone }}</td>
+                <td style="max-width: 280px">{{ m.text }}</td>
+                <td><span class="badge" :class="m.status === 'sent' ? 'online' : (m.status === 'failed' ? 'offline' : '')">{{ m.status }}</span></td>
+                <td class="muted" style="white-space: nowrap; font-size: 12px">{{ dtm(m.created_at) }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <table v-else class="table">
+            <thead><tr><th>Ism</th><th>Raqam</th><th>Kategoriya</th></tr></thead>
+            <tbody>
+              <tr v-if="!actContacts.length"><td colspan="3" class="muted">Kontakt yo‘q</td></tr>
+              <tr v-for="c in actContacts" :key="c.id">
+                <td style="font-weight: 600">{{ c.name }}</td>
+                <td class="muted">{{ c.phone }}</td>
+                <td class="muted">{{ c.category || '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="row" style="justify-content: flex-end; margin-top: 14px">
+          <button class="btn ghost" @click="actOpen = false">Yopish</button>
+        </div>
+      </template>
+    </div>
+  </div>
 </template>
 
 <style scoped>
@@ -223,4 +306,9 @@ const quotaText = (a) => (a.quota_monthly > 0 ? `${a.usage} / ${a.quota_monthly}
   border: 1px solid var(--border, #e2e8f0); background: rgba(127, 127, 127, 0.06); color: inherit;
 }
 .keychip:hover { background: rgba(127, 127, 127, 0.14); }
+.act-stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+.act-stats > div { background: rgba(127, 127, 127, 0.06); border-radius: 10px; padding: 10px; text-align: center; }
+.act-stats b { display: block; font-size: 18px; }
+.act-stats span { color: var(--muted, #93a1bd); font-size: 11px; }
+@media (max-width: 600px) { .act-stats { grid-template-columns: repeat(3, 1fr); } }
 </style>

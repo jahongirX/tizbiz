@@ -7,7 +7,11 @@ const routes = [
     path: '/',
     component: () => import('../components/AppLayout.vue'),
     children: [
-      { path: '', name: 'accounts', component: () => import('../views/Accounts.vue') },
+      { path: '', name: 'dashboard', component: () => import('../views/Dashboard.vue') },
+      { path: 'leads', name: 'leads', component: () => import('../views/Leads.vue') },
+      { path: 'accounts', name: 'accounts', component: () => import('../views/Accounts.vue') },
+      { path: 'sales', name: 'sales', component: () => import('../views/Sales.vue') },
+      { path: 'recipients', name: 'recipients', component: () => import('../views/Recipients.vue') },
     ],
   },
 ]
