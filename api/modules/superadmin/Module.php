@@ -28,6 +28,7 @@ class Module extends BaseModule implements BootstrapInterface
             'GET v1/superadmin/sms-accounts/<id:\d+>/activity' => 'superadmin/sms-account/activity',
             // Leads (public create + CRM)
             'POST v1/leads' => 'superadmin/lead/create',
+            'POST v1/trial' => 'superadmin/lead/trial',
             'GET v1/superadmin/leads' => 'superadmin/lead/index',
             'PATCH v1/superadmin/leads/<id:\d+>' => 'superadmin/lead/update',
             'DELETE v1/superadmin/leads/<id:\d+>' => 'superadmin/lead/delete',

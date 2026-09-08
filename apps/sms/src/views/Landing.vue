@@ -41,6 +41,42 @@ async function submitLead() {
   }
 }
 
+// Free trial ("Bepul boshlash") — instant 100-SMS account.
+const trialOpen = ref(false)
+const trialSent = ref(false)
+const trialSaving = ref(false)
+const trialError = ref('')
+const trialLogin = ref('')
+const trial = reactive({ name: '', phone: '', password: '' })
+
+function openTrial() {
+  Object.assign(trial, { name: '', phone: '', password: '' })
+  trialError.value = ''
+  trialSent.value = false
+  trialOpen.value = true
+}
+async function submitTrial() {
+  trialError.value = ''
+  if (!trial.phone.trim()) { trialError.value = 'Telefon raqamingizni kiriting'; return }
+  if (trial.password.trim().length < 5) { trialError.value = 'Parol kamida 5 ta belgi'; return }
+  trialSaving.value = true
+  try {
+    const r = await api.post('/v1/trial', {
+      name: trial.name.trim(),
+      phone: trial.phone.trim(),
+      password: trial.password.trim(),
+    })
+    trialLogin.value = r.login || trial.phone.trim()
+    trialSent.value = true
+  } catch (e) {
+    trialError.value = e?.status === 409
+      ? 'Bu raqamda akkaunt bor — Kirish tugmasidan kiring.'
+      : 'Xatolik — birozdan so‘ng qayta urinib ko‘ring'
+  } finally {
+    trialSaving.value = false
+  }
+}
+
 const stats = [
   { v: '99%', l: 'telefonlarga yetib boradi' },
   { v: '87%', l: "SMS o'qilish darajasi" },
@@ -104,7 +140,10 @@ const plans = [
           <a href="#how">Qanday ishlaydi</a>
           <a href="#pricing">Narxlar</a>
         </nav>
-        <RouterLink to="/login" class="lp-btn lp-btn-solid sm">Kirish</RouterLink>
+        <div class="lp-head-cta">
+          <button type="button" class="lp-btn lp-btn-solid sm" @click="openTrial()">Bepul boshlash</button>
+          <RouterLink to="/login" class="lp-btn lp-btn-ghost sm">Kirish</RouterLink>
+        </div>
       </div>
     </header>
 
@@ -238,6 +277,31 @@ const plans = [
         </template>
       </div>
     </div>
+
+    <!-- Free trial modal -->
+    <div v-if="trialOpen" class="lp-modal-back" @click.self="trialOpen = false">
+      <div class="lp-modal">
+        <button class="lp-modal-x" @click="trialOpen = false"><X :size="18" /></button>
+        <template v-if="!trialSent">
+          <div class="lp-badge" style="margin-bottom:12px">🎁 Bepul sinov · 100 SMS</div>
+          <h3 style="margin:0 0 4px">Bepul boshlash</h3>
+          <p class="lp-modal-sub">Akkaunt oching va 100 ta SMS’ni bepul sinab ko‘ring. Karta shart emas.</p>
+          <div v-if="trialError" class="lp-alert">{{ trialError }}</div>
+          <div class="lp-f"><label>Ism</label><input v-model="trial.name" placeholder="Ismingiz" /></div>
+          <div class="lp-f"><label>Telefon (login) *</label><input v-model="trial.phone" placeholder="+998 __ ___ __ __" inputmode="tel" /></div>
+          <div class="lp-f"><label>Parol *</label><input v-model="trial.password" type="password" placeholder="kamida 5 ta belgi" /></div>
+          <button class="lp-btn lp-btn-solid" style="width:100%; justify-content:center" :disabled="trialSaving" @click="submitTrial">
+            {{ trialSaving ? 'Yaratilmoqda…' : 'Bepul akkaunt ochish' }}
+          </button>
+        </template>
+        <template v-else>
+          <div class="lp-ok"><Check :size="30" /></div>
+          <h3 style="margin:0 0 4px">Akkaunt tayyor! 🎉</h3>
+          <p class="lp-modal-sub">Login: <b style="color:var(--lp-txt)">{{ trialLogin }}</b> · parol — o‘zingiz kiritgan. 100 SMS bepul.</p>
+          <RouterLink to="/login" class="lp-btn lp-btn-solid" style="width:100%; justify-content:center">Kirish <ArrowRight :size="16" /></RouterLink>
+        </template>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -268,6 +332,8 @@ const plans = [
 .lp-nav { display: flex; gap: 22px; margin-left: auto; }
 .lp-nav a { color: var(--lp-mut); text-decoration: none; font-size: 14px; font-weight: 500; }
 .lp-nav a:hover { color: var(--lp-txt); }
+.lp-head-cta { display: flex; gap: 10px; align-items: center; }
+.lp-nav + .lp-head-cta { margin-left: 0; }
 
 /* buttons */
 .lp-btn { display: inline-flex; align-items: center; gap: 7px; border-radius: 11px; padding: 12px 20px; font-weight: 700; font-size: 15px; text-decoration: none; cursor: pointer; border: 1px solid transparent; transition: transform .06s, background .15s; }
@@ -361,6 +427,7 @@ const plans = [
 @media (max-width: 860px) {
   .lp-grid, .lp-steps, .lp-plans { grid-template-columns: 1fr; }
   .lp-nav { display: none; }
+  .lp-head-cta { margin-left: auto; }
   .lp-plan.hot { transform: none; }
   .lp-foot-links { margin-left: 0; }
 }
