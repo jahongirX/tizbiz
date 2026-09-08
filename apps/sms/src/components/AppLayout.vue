@@ -10,14 +10,14 @@ const route = useRoute()
 const menuOpen = ref(false)
 
 const nav = [
-  { to: '/', label: 'Statistika', icon: BarChart3 },
-  { to: '/devices', label: 'Serverlar', icon: Smartphone },
-  { to: '/send', label: 'Xabar Yuborish', icon: Send },
-  { to: '/messages', label: 'Xabarlar', icon: MessageSquare },
-  { to: '/templates', label: 'Shablonlar', icon: FileText },
-  { to: '/contacts', label: 'Kontaktlar', icon: Users },
-  { to: '/blacklist', label: 'Qora ro‘yxat', icon: Ban },
-  { to: '/api', label: 'API', icon: Code2 },
+  { to: '/panel/stats', label: 'Statistika', icon: BarChart3 },
+  { to: '/panel/devices', label: 'Serverlar', icon: Smartphone },
+  { to: '/panel/send', label: 'Xabar Yuborish', icon: Send },
+  { to: '/panel/messages', label: 'Xabarlar', icon: MessageSquare },
+  { to: '/panel/templates', label: 'Shablonlar', icon: FileText },
+  { to: '/panel/contacts', label: 'Kontaktlar', icon: Users },
+  { to: '/panel/blacklist', label: 'Qora ro‘yxat', icon: Ban },
+  { to: '/panel/api', label: 'API', icon: Code2 },
 ]
 
 const title = computed(() => nav.find((n) => n.to === route.path)?.label || 'SMS')

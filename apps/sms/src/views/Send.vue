@@ -173,7 +173,7 @@ async function send() {
         <option v-for="d in devices" :key="d.id" :value="String(d.id)">{{ d.name }}</option>
       </select>
       <p v-if="!devices.length" class="muted" style="font-size: 12px; margin: 6px 0 0">
-        Avval <RouterLink to="/devices" style="color: var(--brand-2)">Serverlar</RouterLink> bo‘limidan telefon qo‘shing.
+        Avval <RouterLink to="/panel/devices" style="color: var(--brand-2)">Serverlar</RouterLink> bo‘limidan telefon qo‘shing.
       </p>
     </div>
 
@@ -247,7 +247,7 @@ async function send() {
       </div>
 
       <div v-if="!contacts.length" class="empty" style="padding: 20px 0">
-        Kontakt yo‘q. <RouterLink to="/contacts" style="color: var(--brand-2)">Kontaktlar</RouterLink> bo‘limida qo‘shing.
+        Kontakt yo‘q. <RouterLink to="/panel/contacts" style="color: var(--brand-2)">Kontaktlar</RouterLink> bo‘limida qo‘shing.
       </div>
       <div v-else class="pick-list">
         <label v-for="c in contactFiltered" :key="c.id" class="pick-row">

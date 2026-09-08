@@ -17,7 +17,7 @@ async function submit() {
   busy.value = true
   try {
     await auth.login(phone.value.trim(), password.value)
-    router.push('/')
+    router.push('/panel')
   } catch (e) {
     error.value = e instanceof ApiError ? e.message : 'Kirishda xatolik'
   } finally {

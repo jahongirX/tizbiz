@@ -2,12 +2,14 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { auth } from '@tizbiz/api-client'
 
 const routes = [
+  { path: '/', name: 'landing', component: () => import('../views/Landing.vue') },
   { path: '/login', name: 'login', component: () => import('../views/Login.vue') },
   {
-    path: '/',
+    path: '/panel',
     component: () => import('../components/AppLayout.vue'),
     children: [
-      { path: '', name: 'stats', component: () => import('../views/Stats.vue') },
+      { path: '', redirect: '/panel/stats' },
+      { path: 'stats', name: 'stats', component: () => import('../views/Stats.vue') },
       { path: 'devices', name: 'devices', component: () => import('../views/Devices.vue') },
       { path: 'send', name: 'send', component: () => import('../views/Send.vue') },
       { path: 'messages', name: 'messages', component: () => import('../views/Messages.vue') },
@@ -24,9 +26,12 @@ const router = createRouter({
   routes,
 })
 
+const PUBLIC = ['landing', 'login']
+
 router.beforeEach((to) => {
-  if (to.name !== 'login' && !auth.isAuthed) return { name: 'login' }
-  if (to.name === 'login' && auth.isAuthed) return { path: '/' }
+  const isPublic = PUBLIC.includes(to.name)
+  if (!isPublic && !auth.isAuthed) return { name: 'login' }
+  if (to.name === 'login' && auth.isAuthed) return { path: '/panel' }
   return true
 })
 
