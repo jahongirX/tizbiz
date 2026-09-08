@@ -1,13 +1,15 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { api, ApiError, config } from '@tizbiz/api-client'
-import { Plus, Pencil, Trash2 } from 'lucide-vue-next'
+import { Plus, Pencil, Trash2, Smartphone, Check } from 'lucide-vue-next'
 
 // The self-hosted gateway's 3rd-party send base (the sender appends /message).
 const DEFAULT_SERVER = `https://gate.${config.rootDomain || 'tizbiz.uz'}/api/3rdparty/v1`
 
 const loading = ref(true)
 const devices = ref([])
+const available = ref([])
+const claiming = ref('')
 
 const modal = ref(false)
 const editing = ref(null)
@@ -23,7 +25,21 @@ async function load() {
     loading.value = false
   }
 }
-onMounted(load)
+async function loadAvailable() {
+  available.value = await api.get('/v1/sms/devices/available').catch(() => [])
+}
+async function claim(p) {
+  claiming.value = p.device_id
+  try {
+    await api.post('/v1/sms/devices/claim', { device_id: p.device_id })
+    await Promise.all([load(), loadAvailable()])
+  } catch (e) {
+    alert(e instanceof ApiError ? e.message : 'Qo‘shib bo‘lmadi')
+  } finally {
+    claiming.value = ''
+  }
+}
+onMounted(() => Promise.all([load(), loadAvailable()]))
 
 function openNew() {
   editing.value = null
@@ -72,6 +88,33 @@ async function remove(d) {
   <div class="page-head">
     <h2>Serverlar</h2>
     <button class="btn" @click="openNew"><Plus :size="16" /> Server qo‘shish</button>
+  </div>
+
+  <!-- Phones that announced themselves from the app — attach with one click -->
+  <div v-if="available.length" class="card" style="margin-bottom: 16px; border: 1px solid var(--brand, #2d7eec)">
+    <div class="row" style="align-items: center; gap: 6px; font-weight: 600">
+      <Smartphone :size="16" /> Yangi telefonlar
+      <span class="muted" style="font-weight: 500; font-size: 12px">— ilovada ro‘yxatdan o‘tgan, qo‘shishga tayyor</span>
+    </div>
+    <div class="table-wrap" style="margin-top: 10px">
+      <table class="table">
+        <thead><tr><th>Nom</th><th>SIM raqam</th><th>ID</th><th></th></tr></thead>
+        <tbody>
+          <tr v-for="p in available" :key="p.device_id">
+            <td style="font-weight: 600">{{ p.name || 'Telefon' }}</td>
+            <td class="muted">{{ p.sim_number || '—' }}</td>
+            <td class="muted" style="font-size: 12px">{{ String(p.device_id).slice(0, 10) }}…</td>
+            <td>
+              <div class="row" style="justify-content: flex-end">
+                <button class="btn sm" :disabled="claiming === p.device_id" @click="claim(p)">
+                  <Check :size="14" /> {{ claiming === p.device_id ? '…' : 'Qo‘shish' }}
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <div v-if="loading" class="spinner"></div>

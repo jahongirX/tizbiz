@@ -13,4 +13,8 @@ return [
     // Public storefront URL template. Empty -> SPA builds https://{slug}.{root.domain}.
     // Locally set this to a query-param form, e.g. http://t.startup/?slug={slug}.
     'public.base' => getenv('PUBLIC_BASE') ?: '',
+    // SMS gateway: the 3rd-party send base a claimed phone defaults to, and the
+    // shared token the TizBiz SMS app presents when it announces itself.
+    'sms.gateway.base' => getenv('SMS_GATEWAY_BASE') ?: 'https://gate.tizbiz.uz/api/3rdparty/v1',
+    'sms.announce.token' => getenv('SMS_ANNOUNCE_TOKEN') ?: '',
 ];

@@ -17,6 +17,9 @@ class Module extends BaseModule implements BootstrapInterface
     public function bootstrap($app): void
     {
         $app->getUrlManager()->addRules([
+            'POST v1/sms/devices/announce' => 'sms/device/announce',
+            'GET v1/sms/devices/available' => 'sms/device/available',
+            'POST v1/sms/devices/claim' => 'sms/device/claim',
             'GET v1/sms/devices' => 'sms/device/index',
             'POST v1/sms/devices' => 'sms/device/create',
             'PATCH v1/sms/devices/<id:\d+>' => 'sms/device/update',

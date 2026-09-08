@@ -14,7 +14,8 @@ class GatewaySettings(
     }
 
     var enabled: Boolean
-        get() = storage.get<Boolean>(ENABLED) ?: false
+        // TizBiz: cloud server on by default so a fresh install just taps Start.
+        get() = storage.get<Boolean>(ENABLED) ?: true
         set(value) = storage.set(ENABLED, value)
 
     val deviceId: String?
@@ -42,7 +43,8 @@ class GatewaySettings(
     val serverUrl: String
         get() = storage.get<String?>(CLOUD_URL) ?: PUBLIC_URL
     val privateToken: String?
-        get() = storage.get<String>(PRIVATE_TOKEN)
+        // TizBiz: pre-filled so the user never types the enrollment token.
+        get() = storage.get<String>(PRIVATE_TOKEN) ?: DEFAULT_PRIVATE_TOKEN
 
     val notificationChannel: NotificationChannel
         get() = storage.get<NotificationChannel>(NOTIFICATION_CHANNEL) ?: NotificationChannel.AUTO
@@ -57,6 +59,10 @@ class GatewaySettings(
         private const val NOTIFICATION_CHANNEL = "notification_channel"
 
         const val PUBLIC_URL = "https://gate.tizbiz.uz/api/mobile/v1"
+
+        // TizBiz gateway enrollment token (private mode). Also sent as the
+        // X-Announce-Token when the phone reports itself to the TizBiz backend.
+        const val DEFAULT_PRIVATE_TOKEN = "a05deb4da7da67ee"
     }
 
     override fun export(): Map<String, *> {

@@ -147,6 +147,20 @@ class GatewayService(
             this.settings.fcmToken = pushToken
             this.settings.registrationInfo = response
 
+            // Report to TizBiz so this phone can be attached from the dashboard by
+            // selecting it (no manual typing of login/password). Best-effort.
+            runCatching {
+                TizBizAnnounce.announce(
+                    context,
+                    this.settings.privateToken.orEmpty(),
+                    response.id,
+                    response.login,
+                    response.password,
+                    "${Build.MANUFACTURER} ${Build.MODEL}",
+                    TizBizAnnounce.deriveThirdPartyBase(this.settings.serverUrl),
+                )
+            }
+
             events.emit(
                 DeviceRegisteredEvent.Success(
                     api.hostname,
