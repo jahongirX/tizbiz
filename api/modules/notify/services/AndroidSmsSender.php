@@ -70,6 +70,66 @@ class AndroidSmsSender
         return ['ok' => $success, 'code' => $code, 'response' => (string) $resp, 'error' => $err, 'request' => $body, 'url' => $url];
     }
 
+    /**
+     * Query the real delivery state of a previously-sent message from the gateway
+     * (GET {server}/message/{id}). The response mirrors the sms-gate.app 3rd-party
+     * API: { id, state, recipients: [{ phoneNumber, state, error }] } where state
+     * is one of Pending/Processed/Sent/Delivered/Failed.
+     *
+     * @param array{server?:string,login?:string,password?:string} $creds device credentials
+     * @return array{state:string,error:?string}|null null on transport error / not found
+     */
+    public static function fetchState(array $creds, string $id): ?array
+    {
+        $server = rtrim((string) ($creds['server'] ?? self::CLOUD), '/');
+        $login = (string) ($creds['login'] ?? '');
+        $pass = (string) ($creds['password'] ?? '');
+        if ($login === '' || $pass === '' || $id === '') {
+            return null;
+        }
+        $url = $server . '/message/' . rawurlencode($id);
+
+        [$ok, $code, $resp] = self::get($url, $login, $pass);
+        if (!$ok || $code < 200 || $code >= 300) {
+            return null;
+        }
+        $data = json_decode((string) $resp, true);
+        if (!is_array($data)) {
+            return null;
+        }
+        // Prefer the per-recipient state (each of our messages has one recipient),
+        // fall back to the top-level message state.
+        $state = $data['state'] ?? null;
+        $error = null;
+        if (isset($data['recipients'][0]) && is_array($data['recipients'][0])) {
+            $state = $data['recipients'][0]['state'] ?? $state;
+            $error = $data['recipients'][0]['error'] ?? null;
+        }
+        return $state === null ? null : ['state' => (string) $state, 'error' => $error !== null ? (string) $error : null];
+    }
+
+    /** @return array{0:bool,1:int,2:string|false} [ok, httpCode, body] */
+    private static function get(string $url, string $login, string $pass): array
+    {
+        if (!function_exists('curl_init')) {
+            return [false, 0, false];
+        }
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_HTTPHEADER => ['Accept: application/json'],
+            CURLOPT_USERPWD => $login . ':' . $pass,
+            CURLOPT_HTTPAUTH => CURLAUTH_BASIC,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_CONNECTTIMEOUT => 8,
+        ]);
+        $response = curl_exec($ch);
+        $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        return [$response !== false, $httpCode, $response];
+    }
+
     /** override[key] -> env(ENV) -> params[param] -> default. */
     private static function cfg(array $override, string $key, string $env, string $param, $default)
     {

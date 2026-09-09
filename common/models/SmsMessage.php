@@ -23,10 +23,11 @@ use yii\behaviors\TimestampBehavior;
 class SmsMessage extends ActiveRecord
 {
     public const STATUS_PENDING = 'pending';
-    public const STATUS_SENT = 'sent';
+    public const STATUS_SENT = 'sent';        // handed to the network (gateway-accepted)
+    public const STATUS_DELIVERED = 'delivered'; // confirmed delivered (DLR)
     public const STATUS_FAILED = 'failed';
 
-    public const STATUSES = [self::STATUS_PENDING, self::STATUS_SENT, self::STATUS_FAILED];
+    public const STATUSES = [self::STATUS_PENDING, self::STATUS_SENT, self::STATUS_DELIVERED, self::STATUS_FAILED];
 
     public static function tableName(): string
     {

@@ -10,7 +10,7 @@ const offset = ref(0)
 const fStatus = ref('')
 const fPhone = ref('')
 
-const STATUS_LABEL = { sent: 'Yuborildi', failed: 'Xato', pending: 'Kutilmoqda' }
+const STATUS_LABEL = { sent: 'Yuborildi', delivered: 'Yetkazildi', failed: 'Yetmadi', pending: 'Kutilmoqda' }
 
 function fmt(ts) {
   if (!ts) return '—'
@@ -44,8 +44,9 @@ function next() { if (offset.value + limit < total.value) { offset.value += limi
     <div class="row" style="gap: 12px; flex-wrap: wrap">
       <select v-model="fStatus" style="width: auto" @change="search">
         <option value="">Barcha holat</option>
+        <option value="delivered">Yetkazildi</option>
         <option value="sent">Yuborildi</option>
-        <option value="failed">Xato</option>
+        <option value="failed">Yetmadi</option>
         <option value="pending">Kutilmoqda</option>
       </select>
       <input v-model="fPhone" style="width: auto; flex: 1; min-width: 180px" placeholder="Raqam bo‘yicha qidirish" @keyup.enter="search" />

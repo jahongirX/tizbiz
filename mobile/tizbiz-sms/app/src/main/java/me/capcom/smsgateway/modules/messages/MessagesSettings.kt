@@ -146,11 +146,24 @@ class MessagesSettings(
             storage.set(SEND_INTERVAL_MAX, storage.get<Int>(SECONDS_BETWEEN_MESSAGES)?.toString())
         }
 
+        if (version < 2) {
+            // Seed a gentle 3–8s send interval so a fresh phone never machine-guns
+            // the operator — Uzbek carriers flag rapid bulk SMS as spam and silently
+            // drop a large share of them. Only when the user has set no maximum yet,
+            // so anyone who deliberately configured (or cleared) it keeps their value.
+            if (storage.get<Int>(SEND_INTERVAL_MAX) == null) {
+                storage.set(SEND_INTERVAL_MIN, DEFAULT_SEND_INTERVAL_MIN.toString())
+                storage.set(SEND_INTERVAL_MAX, DEFAULT_SEND_INTERVAL_MAX.toString())
+            }
+        }
+
         version = VERSION_CODE
     }
 
     companion object {
-        private const val VERSION_CODE = 1
+        private const val VERSION_CODE = 2
+        private const val DEFAULT_SEND_INTERVAL_MIN = 3
+        private const val DEFAULT_SEND_INTERVAL_MAX = 8
         private const val VERSION = "version"
 
         private const val SEND_INTERVAL_MIN = "send_interval_min"

@@ -24,7 +24,9 @@ class StatsController extends BaseController
         return [
             'messages' => [
                 'total' => (int) $base()->count(),
-                'sent' => (int) $base()->andWhere(['status' => SmsMessage::STATUS_SENT])->count(),
+                // "sent" = successfully handed off (accepted or confirmed-delivered).
+                'sent' => (int) $base()->andWhere(['status' => [SmsMessage::STATUS_SENT, SmsMessage::STATUS_DELIVERED]])->count(),
+                'delivered' => (int) $base()->andWhere(['status' => SmsMessage::STATUS_DELIVERED])->count(),
                 'failed' => (int) $base()->andWhere(['status' => SmsMessage::STATUS_FAILED])->count(),
                 'pending' => (int) $base()->andWhere(['status' => SmsMessage::STATUS_PENDING])->count(),
                 'today' => (int) $base()->andWhere(['>=', 'created_at', $startOfDay])->count(),
