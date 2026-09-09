@@ -17,4 +17,8 @@ return [
     // shared token the TizBiz SMS app presents when it announces itself.
     'sms.gateway.base' => getenv('SMS_GATEWAY_BASE') ?: 'https://gate.tizbiz.uz/api/3rdparty/v1',
     'sms.announce.token' => getenv('SMS_ANNOUNCE_TOKEN') ?: '',
+    // Contract-expiry reminders (superadmin/contract-reminders cron): the SMS
+    // account used to send and the phone that receives them. Empty = dashboard-only.
+    'sms.admin.notify_user_id' => (int) (getenv('SMS_ADMIN_NOTIFY_USER_ID') ?: 0),
+    'sms.admin.notify_phone' => getenv('SMS_ADMIN_NOTIFY_PHONE') ?: '',
 ];

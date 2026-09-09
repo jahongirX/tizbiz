@@ -12,7 +12,8 @@ const filter = ref('')
 // sale modal
 const saleOpen = ref(false)
 const saleLead = ref(null)
-const sale = reactive({ tariff: 'pro', amount: 590000, period_months: 12, note: '' })
+const todayISO = () => new Date().toISOString().slice(0, 10)
+const sale = reactive({ tariff: 'pro', amount: 590000, period_months: 12, starts_at: todayISO(), note: '' })
 const saleSaving = ref(false)
 const saleErr = ref('')
 
@@ -39,7 +40,7 @@ async function remove(l) {
 function openSale(l) {
   saleLead.value = l
   const t = l.tariff && TARIFF_PRICE[l.tariff] ? l.tariff : 'pro'
-  Object.assign(sale, { tariff: t, amount: TARIFF_PRICE[t], period_months: 12, note: '' })
+  Object.assign(sale, { tariff: t, amount: TARIFF_PRICE[t], period_months: 12, starts_at: todayISO(), note: '' })
   saleErr.value = ''
   saleOpen.value = true
 }
@@ -55,6 +56,7 @@ async function saveSale() {
       tariff: sale.tariff,
       amount: Number(sale.amount) || 0,
       period_months: Number(sale.period_months) || 12,
+      starts_at: sale.starts_at || null,
       note: sale.note.trim(),
     })
     saleOpen.value = false
@@ -97,7 +99,7 @@ async function saveSale() {
           <td class="muted" style="white-space:nowrap; font-size:12px">{{ dt(l.created_at) }}</td>
           <td>
             <div class="row" style="gap:6px; justify-content:flex-end">
-              <button class="btn sm" @click="openSale(l)">Sotuv</button>
+              <button class="btn sm" @click="openSale(l)">Shartnoma</button>
               <button class="btn ghost sm" style="color:var(--danger,#ef5350)" @click="remove(l)">🗑</button>
             </div>
           </td>
@@ -109,7 +111,7 @@ async function saveSale() {
   <!-- Sale modal -->
   <div v-if="saleOpen" class="modal-back" @click.self="saleOpen = false">
     <div class="modal">
-      <h3>Sotuvga aylantirish</h3>
+      <h3>Shartnoma tuzish</h3>
       <p class="muted" style="font-size:13px; margin:0 0 14px">{{ saleLead?.name }} · {{ saleLead?.phone }}</p>
       <div v-if="saleErr" class="alert err">{{ saleErr }}</div>
       <div class="field"><label>Tarif</label>
@@ -121,10 +123,11 @@ async function saveSale() {
         <div class="field" style="flex:1"><label>Summa (so‘m)</label><input v-model="sale.amount" type="number" /></div>
         <div class="field" style="flex:1"><label>Muddat (oy)</label><input v-model="sale.period_months" type="number" /></div>
       </div>
+      <div class="field"><label>Boshlanish sanasi</label><input v-model="sale.starts_at" type="date" /></div>
       <div class="field"><label>Izoh</label><input v-model="sale.note" placeholder="ixtiyoriy" /></div>
       <div class="row" style="justify-content:flex-end; gap:10px">
         <button class="btn ghost" @click="saleOpen = false">Bekor</button>
-        <button class="btn" :disabled="saleSaving" @click="saveSale">{{ saleSaving ? '…' : 'Sotuvni saqlash' }}</button>
+        <button class="btn" :disabled="saleSaving" @click="saveSale">{{ saleSaving ? '…' : 'Shartnomani saqlash' }}</button>
       </div>
     </div>
   </div>

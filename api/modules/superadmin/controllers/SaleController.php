@@ -13,7 +13,12 @@ class SaleController extends BaseController
 {
     public function actionIndex(): array
     {
-        return SmsSale::find()->orderBy(['created_at' => SORT_DESC])->limit(500)->all();
+        $sales = SmsSale::find()->orderBy(['created_at' => SORT_DESC])->limit(500)->all();
+        return array_map(static function (SmsSale $s): array {
+            $row = $s->toArray();
+            $row['days_left'] = $s->daysLeft();
+            return $row;
+        }, $sales);
     }
 
     public function actionCreate()
@@ -26,8 +31,8 @@ class SaleController extends BaseController
         $sale->tariff = self::clip($this->body('tariff'), 20);
         $sale->amount = max(0, (int) $this->body('amount', 0));
         $sale->period_months = max(1, (int) ($this->body('period_months') ?: 12));
-        $sale->starts_at = time();
-        $sale->ends_at = strtotime('+' . $sale->period_months . ' months');
+        $sale->starts_at = self::parseDate($this->body('starts_at')) ?? time();
+        $sale->ends_at = strtotime('+' . $sale->period_months . ' months', $sale->starts_at);
         $sale->note = self::clip($this->body('note'), 500);
         if (!$sale->save()) {
             return $this->fail422($sale);
@@ -54,6 +59,19 @@ class SaleController extends BaseController
     private static function intOrNull($v): ?int
     {
         return ($v === null || $v === '') ? null : (int) $v;
+    }
+
+    /** Accept a 'YYYY-MM-DD' date or a unix timestamp; null if empty/invalid. */
+    private static function parseDate($v): ?int
+    {
+        if ($v === null || $v === '') {
+            return null;
+        }
+        if (is_numeric($v)) {
+            return (int) $v;
+        }
+        $ts = strtotime((string) $v);
+        return $ts === false ? null : $ts;
     }
 
     private static function clip($v, int $max): ?string

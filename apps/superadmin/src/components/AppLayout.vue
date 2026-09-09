@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { RouterView, RouterLink, useRoute } from 'vue-router'
-import { LayoutDashboard, ClipboardList, Users, BadgeDollarSign, Database, LogOut } from 'lucide-vue-next'
+import { LayoutDashboard, ClipboardList, Users, FileSignature, Database, LogOut } from 'lucide-vue-next'
 import { useAuthStore } from '../stores/auth'
 import logoUrl from '../assets/logo.png'
 
@@ -12,7 +12,7 @@ const nav = [
   { to: '/', label: 'Boshqaruv', icon: LayoutDashboard },
   { to: '/leads', label: 'Arizalar', icon: ClipboardList },
   { to: '/accounts', label: 'SMS Akkauntlar', icon: Users },
-  { to: '/sales', label: 'Sotuvlar', icon: BadgeDollarSign },
+  { to: '/sales', label: 'Shartnomalar', icon: FileSignature },
   { to: '/recipients', label: 'Raqamlar bazasi', icon: Database },
 ]
 const title = computed(() => nav.find((n) => n.to === route.path)?.label || 'Superadmin')
