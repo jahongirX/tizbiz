@@ -1,7 +1,7 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { api, ApiError, config } from '@tizbiz/api-client'
-import { Plus, Pencil, Trash2, Smartphone, Check } from 'lucide-vue-next'
+import { Plus, Pencil, Trash2, Smartphone, Check, Phone } from 'lucide-vue-next'
 
 // The self-hosted gateway's 3rd-party send base (the sender appends /message).
 const DEFAULT_SERVER = `https://gate.${config.rootDomain || 'tizbiz.uz'}/api/3rdparty/v1`
@@ -11,6 +11,16 @@ const devices = ref([])
 const available = ref([])
 const claiming = ref('')
 
+// Pairing (add-by-number + phone confirmation)
+const pairModal = ref(false)
+const pairPhone = ref('')
+const pairState = ref('form') // form | waiting | error
+const pairMsg = ref('')
+const pairError = ref('')
+let pollTimer = null
+let pollDeadline = 0
+
+// Manual (advanced) add / edit
 const modal = ref(false)
 const editing = ref(null)
 const form = reactive({ name: '', server: '', login: '', password: '', is_active: true })
@@ -28,20 +38,85 @@ async function load() {
 async function loadAvailable() {
   available.value = await api.get('/v1/sms/devices/available').catch(() => [])
 }
+onMounted(() => Promise.all([load(), loadAvailable()]))
+onUnmounted(stopPolling)
+
+// ---- Pairing ----
+function openNew() {
+  pairPhone.value = ''
+  pairState.value = 'form'
+  pairError.value = ''
+  pairMsg.value = ''
+  pairModal.value = true
+}
+
+async function startPairByPhone() {
+  const phone = pairPhone.value.trim()
+  if (!phone) { pairError.value = 'Telefon raqamini kiriting'; return }
+  await requestPair({ phone })
+}
+
+// From the "Yangi telefonlar" list — request by device_id.
 async function claim(p) {
   claiming.value = p.device_id
+  pairModal.value = true
   try {
-    await api.post('/v1/sms/devices/claim', { device_id: p.device_id })
-    await Promise.all([load(), loadAvailable()])
-  } catch (e) {
-    alert(e instanceof ApiError ? e.message : 'Qo‘shib bo‘lmadi')
+    await requestPair({ device_id: p.device_id, label: p.name || p.sim_number })
   } finally {
     claiming.value = ''
   }
 }
-onMounted(() => Promise.all([load(), loadAvailable()]))
 
-function openNew() {
+async function requestPair(payload) {
+  pairError.value = ''
+  try {
+    const before = new Set(devices.value.map((d) => d.id))
+    const r = await api.post('/v1/sms/devices/claim', payload)
+    pairState.value = 'waiting'
+    pairMsg.value = (r.name || r.phone || payload.label || 'Telefon')
+    startPolling(before)
+  } catch (e) {
+    pairState.value = 'error'
+    pairError.value = e instanceof ApiError ? e.message : 'So‘rov yuborilmadi'
+  }
+}
+
+function startPolling(beforeIds) {
+  stopPolling()
+  pollDeadline = Date.now() + 120000 // 2 min
+  const tick = async () => {
+    try {
+      const list = await api.get('/v1/sms/devices')
+      const fresh = list.find((d) => !beforeIds.has(d.id))
+      if (fresh) {
+        devices.value = list
+        pairModal.value = false
+        stopPolling()
+        await loadAvailable()
+        return
+      }
+    } catch { /* keep waiting */ }
+    if (Date.now() > pollDeadline) {
+      pairState.value = 'error'
+      pairError.value = 'Tasdiqlanmadi. Telefondagi ilovada tasdiqlang va qayta urining.'
+      stopPolling()
+      return
+    }
+    pollTimer = setTimeout(tick, 3000)
+  }
+  pollTimer = setTimeout(tick, 3000)
+}
+function stopPolling() {
+  if (pollTimer) { clearTimeout(pollTimer); pollTimer = null }
+}
+function closePair() {
+  stopPolling()
+  pairModal.value = false
+}
+
+// ---- Manual add / edit ----
+function openManual() {
+  pairModal.value = false
   editing.value = null
   Object.assign(form, { name: '', server: DEFAULT_SERVER, login: '', password: '', is_active: true })
   error.value = ''
@@ -90,7 +165,6 @@ async function remove(d) {
     <button class="btn" @click="openNew"><Plus :size="16" /> Server qo‘shish</button>
   </div>
 
-  <!-- Phones that announced themselves from the app — attach with one click -->
   <div v-if="available.length" class="card" style="margin-bottom: 16px; border: 1px solid var(--brand, #2d7eec)">
     <div class="row" style="align-items: center; gap: 6px; font-weight: 600">
       <Smartphone :size="16" /> Yangi telefonlar
@@ -120,7 +194,8 @@ async function remove(d) {
   <div v-if="loading" class="spinner"></div>
 
   <div v-else-if="!devices.length" class="card empty">
-    Hali server yo‘q. Android telefonga "SMS Gateway" ilovasini o‘rnatib, uning login/parolini shu yerga qo‘shing.
+    Hali server yo‘q. Android telefonga <b>TizBiz SMS</b> ilovasini o‘rnatib, raqamni kiriting —
+    keyin shu yerda “Server qo‘shish” tugmasi orqali raqam bo‘yicha ulang.
   </div>
 
   <div v-else class="table-wrap">
@@ -146,10 +221,57 @@ async function remove(d) {
     </table>
   </div>
 
-  <!-- Add/edit modal -->
+  <!-- Pair-by-number modal -->
+  <div v-if="pairModal" class="modal-back" @click.self="closePair">
+    <div class="modal">
+      <template v-if="pairState === 'form'">
+        <h3>Server qo‘shish</h3>
+        <p class="muted" style="font-size: 13px; margin: 0 0 14px">
+          Telefon raqamini kiriting. Qolgan ma’lumotlar (login, parol, server) shu raqamga
+          moslab avtomatik olinadi.
+        </p>
+        <div v-if="pairError" class="alert err">{{ pairError }}</div>
+        <div class="field">
+          <label>Telefon raqami</label>
+          <input v-model="pairPhone" type="tel" placeholder="+998 90 123 45 67" @keyup.enter="startPairByPhone" />
+        </div>
+        <div class="row" style="justify-content: space-between; gap: 10px; margin-top: 4px">
+          <button class="btn ghost sm" @click="openManual">Qo‘lda kiritish</button>
+          <div class="row" style="gap: 10px">
+            <button class="btn ghost" @click="closePair">Bekor</button>
+            <button class="btn" @click="startPairByPhone"><Phone :size="15" /> Qo‘shish</button>
+          </div>
+        </div>
+      </template>
+
+      <template v-else-if="pairState === 'waiting'">
+        <h3>📲 Telefonda tasdiqlang</h3>
+        <div class="spinner" style="margin: 10px auto"></div>
+        <p style="text-align: center; margin: 6px 0 2px"><b>{{ pairMsg }}</b></p>
+        <p class="muted" style="text-align: center; font-size: 13px; margin: 0 0 16px">
+          Telefonga tasdiqlash so‘rovi yuborildi. Ilovadagi bildirishnomani oching va
+          <b>“Tasdiqlash”</b>ni bosing — shundan so‘ng server ulanadi.
+        </p>
+        <div class="row" style="justify-content: center">
+          <button class="btn ghost" @click="closePair">Bekor</button>
+        </div>
+      </template>
+
+      <template v-else>
+        <h3>Ulanmadi</h3>
+        <div class="alert err">{{ pairError }}</div>
+        <div class="row" style="justify-content: flex-end; gap: 10px">
+          <button class="btn ghost" @click="closePair">Yopish</button>
+          <button class="btn" @click="pairState = 'form'">Qayta urinish</button>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- Manual add / edit modal -->
   <div v-if="modal" class="modal-back" @click.self="modal = false">
     <div class="modal">
-      <h3>{{ editing ? 'Serverni tahrirlash' : 'Yangi server' }}</h3>
+      <h3>{{ editing ? 'Serverni tahrirlash' : 'Qo‘lda server qo‘shish' }}</h3>
       <div v-if="error" class="alert err">{{ error }}</div>
       <div class="field">
         <label>Nom</label>

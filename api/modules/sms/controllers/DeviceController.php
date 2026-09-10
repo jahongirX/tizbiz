@@ -5,8 +5,8 @@ namespace api\modules\sms\controllers;
 use common\helpers\Phone;
 use common\models\SmsDevice;
 use common\models\SmsPendingDevice;
+use common\models\User;
 use Yii;
-use yii\web\ForbiddenHttpException;
 use yii\web\NotFoundHttpException;
 
 /**
@@ -15,10 +15,18 @@ use yii\web\NotFoundHttpException;
  */
 class DeviceController extends BaseController
 {
-    /** The phone announces itself with a shared token, not a user JWT. */
+    /** These use the shared announce token (X-Announce-Token), not a user JWT. */
     protected function authOptional(): array
     {
-        return ['announce'];
+        return ['announce', 'claim-request', 'confirm-claim'];
+    }
+
+    /** True if the request carries the valid shared announce token. */
+    private function announceAuthorized(): bool
+    {
+        $token = (string) Yii::$app->request->headers->get('X-Announce-Token', '');
+        $expected = (string) (Yii::$app->params['sms.announce.token'] ?? '');
+        return $expected !== '' && hash_equals($expected, $token);
     }
 
     public function actionIndex(): array
@@ -37,9 +45,7 @@ class DeviceController extends BaseController
      */
     public function actionAnnounce(): array
     {
-        $token = (string) Yii::$app->request->headers->get('X-Announce-Token', '');
-        $expected = (string) (Yii::$app->params['sms.announce.token'] ?? '');
-        if ($expected === '' || !hash_equals($expected, $token)) {
+        if (!$this->announceAuthorized()) {
             Yii::$app->response->statusCode = 401;
             return ['ok' => false, 'error' => 'unauthorized'];
         }
@@ -120,42 +126,124 @@ class DeviceController extends BaseController
         ));
     }
 
-    /** Attach an announced phone to the current account (no typing of credentials). */
-    public function actionClaim()
+    /**
+     * Step 1 of pairing (dashboard): the operator asks to attach a phone by its
+     * NUMBER (or by a device_id from the available list). This does NOT bind yet —
+     * it records the request; the phone must confirm from the app before the two
+     * are linked ({@see actionConfirmClaim}).
+     */
+    public function actionClaim(): array
     {
         $deviceId = trim((string) $this->body('device_id'));
+        $phone = Phone::normalize((string) $this->body('phone'));
+
+        $base = SmsPendingDevice::find()->where(['status' => SmsPendingDevice::STATUS_AVAILABLE]);
+        if ($deviceId !== '') {
+            $p = $base->andWhere(['device_id' => $deviceId])->one();
+        } elseif ($phone !== null) {
+            // Match by the phone's own SIM / entered number, newest announce first.
+            $p = null;
+            foreach ($base->orderBy(['announced_at' => SORT_DESC])->all() as $cand) {
+                if (Phone::normalize($cand->sim_number) === $phone) {
+                    $p = $cand;
+                    break;
+                }
+            }
+        } else {
+            Yii::$app->response->statusCode = 422;
+            return ['ok' => false, 'error' => 'Telefon raqamini kiriting.'];
+        }
+
+        if ($p === null) {
+            throw new NotFoundHttpException('Bu raqamli telefon topilmadi. Ilovani o‘rnatib, raqamni kiriting.');
+        }
+
+        $p->claim_requested_by = $this->uid();
+        $p->claim_requested_at = time();
+        $p->save(false);
+
+        return [
+            'ok' => true,
+            'waiting' => true,
+            'device_id' => $p->device_id,
+            'name' => $p->name,
+            'phone' => $p->sim_number,
+        ];
+    }
+
+    /**
+     * The phone polls this (shared token) to learn whether an operator is waiting
+     * to attach it, so it can prompt the user to confirm.
+     */
+    public function actionClaimRequest(): array
+    {
+        if (!$this->announceAuthorized()) {
+            Yii::$app->response->statusCode = 401;
+            return ['ok' => false, 'error' => 'unauthorized'];
+        }
+        $deviceId = trim((string) Yii::$app->request->get('device_id'));
+        $p = SmsPendingDevice::findOne(['device_id' => $deviceId]);
+        if ($p === null || $p->status !== SmsPendingDevice::STATUS_AVAILABLE || !$p->claim_requested_by) {
+            return ['pending' => false];
+        }
+        $acc = User::findOne($p->claim_requested_by);
+        return [
+            'pending' => true,
+            'requested_at' => (int) $p->claim_requested_at,
+            'account' => $acc ? ($acc->name ?: $acc->phone) : null,
+        ];
+    }
+
+    /**
+     * Step 2 of pairing: the phone approves/rejects from the app (shared token).
+     * On approve we finally create the {@see SmsDevice} for the requesting account.
+     */
+    public function actionConfirmClaim(): array
+    {
+        if (!$this->announceAuthorized()) {
+            Yii::$app->response->statusCode = 401;
+            return ['ok' => false, 'error' => 'unauthorized'];
+        }
+        $deviceId = trim((string) $this->body('device_id'));
+        $approve = filter_var($this->body('approve'), FILTER_VALIDATE_BOOLEAN);
+
         $p = SmsPendingDevice::findOne([
             'device_id' => $deviceId,
             'status' => SmsPendingDevice::STATUS_AVAILABLE,
         ]);
-        if ($p === null) {
-            throw new NotFoundHttpException('Telefon topilmadi yoki band.');
+        if ($p === null || !$p->claim_requested_by) {
+            Yii::$app->response->statusCode = 404;
+            return ['ok' => false, 'error' => 'no request'];
         }
 
-        // Only the account whose number matches the phone's SIM may claim it.
-        $mine = Phone::normalize($this->currentUser()?->phone);
-        if ($mine === null || Phone::normalize($p->sim_number) !== $mine) {
-            throw new ForbiddenHttpException('Bu telefon raqami akkauntingizga mos emas.');
+        if (!$approve) {
+            $p->claim_requested_by = null;
+            $p->claim_requested_at = null;
+            $p->save(false);
+            return ['ok' => true, 'status' => 'rejected'];
         }
 
         $dev = new SmsDevice();
-        $dev->user_id = $this->uid();
+        $dev->user_id = (int) $p->claim_requested_by;
         $dev->name = $p->name ?: ('Telefon ' . substr($p->device_id, 0, 6));
         $dev->server = $p->server ?: (string) (Yii::$app->params['sms.gateway.base'] ?? '');
         $dev->login = $p->login;
         $dev->password = $p->password;
         $dev->is_active = true;
         if (!$dev->save()) {
-            return $this->fail422($dev);
+            Yii::$app->response->statusCode = 422;
+            return ['ok' => false, 'error' => 'device save failed'];
         }
 
         $p->status = SmsPendingDevice::STATUS_CLAIMED;
-        $p->claimed_by = $this->uid();
-        $p->sms_device_id = $dev->id;
+        $p->claimed_by = (int) $p->claim_requested_by;
+        $p->sms_device_id = (int) $dev->id;
         $p->claimed_at = time();
+        $p->claim_requested_by = null;
+        $p->claim_requested_at = null;
         $p->save(false);
 
-        return $this->created($dev);
+        return ['ok' => true, 'status' => 'claimed'];
     }
 
     public function actionCreate()

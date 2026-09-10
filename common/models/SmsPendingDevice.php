@@ -19,6 +19,8 @@ use yii\behaviors\TimestampBehavior;
  * @property string|null $server
  * @property string|null $sim_number
  * @property string $status
+ * @property int|null $claim_requested_by  account waiting for the phone to confirm
+ * @property int|null $claim_requested_at
  * @property int|null $claimed_by
  * @property int|null $sms_device_id
  * @property int $announced_at
@@ -51,7 +53,7 @@ class SmsPendingDevice extends ActiveRecord
             [['sim_number'], 'string', 'max' => 32],
             [['status'], 'in', 'range' => [self::STATUS_AVAILABLE, self::STATUS_CLAIMED]],
             [['status'], 'default', 'value' => self::STATUS_AVAILABLE],
-            [['claimed_by', 'sms_device_id', 'announced_at', 'claimed_at'], 'integer'],
+            [['claim_requested_by', 'claim_requested_at', 'claimed_by', 'sms_device_id', 'announced_at', 'claimed_at'], 'integer'],
         ];
     }
 

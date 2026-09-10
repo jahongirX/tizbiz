@@ -20,6 +20,8 @@ class Module extends BaseModule implements BootstrapInterface
             'POST v1/sms/devices/announce' => 'sms/device/announce',
             'GET v1/sms/devices/available' => 'sms/device/available',
             'POST v1/sms/devices/claim' => 'sms/device/claim',
+            'GET v1/sms/devices/claim-request' => 'sms/device/claim-request',
+            'POST v1/sms/devices/confirm-claim' => 'sms/device/confirm-claim',
             'GET v1/sms/devices' => 'sms/device/index',
             'POST v1/sms/devices' => 'sms/device/create',
             'PATCH v1/sms/devices/<id:\d+>' => 'sms/device/update',
