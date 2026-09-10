@@ -9,6 +9,7 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import me.capcom.smsgateway.MainActivity
 import me.capcom.smsgateway.R
+import me.capcom.smsgateway.modules.gateway.ClaimActionReceiver
 
 class NotificationsService(
     context: Context
@@ -52,8 +53,63 @@ class NotificationsService(
             // Register the channel with the system; you can't change the importance
             // or other notification behaviors after this
             notificationManager.createNotificationChannel(mChannel)
+
+            // A separate high-importance channel so a pairing request pops as a
+            // heads-up the operator can confirm right away.
+            val pairing = NotificationChannel(
+                PAIRING_CHANNEL_ID,
+                context.getString(R.string.pairing_channel_name),
+                NotificationManager.IMPORTANCE_HIGH
+            )
+            notificationManager.createNotificationChannel(pairing)
         }
     }
+
+    /**
+     * Heads-up notification asking the phone owner to confirm attaching this
+     * device to the account named by [account]. The two actions broadcast to
+     * {@link me.capcom.smsgateway.modules.gateway.ClaimActionReceiver}.
+     */
+    fun notifyClaimRequest(context: Context, deviceId: String, account: String?) {
+        val approve = PendingIntent.getBroadcast(
+            context,
+            1,
+            claimActionIntent(context, deviceId, true),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val reject = PendingIntent.getBroadcast(
+            context,
+            2,
+            claimActionIntent(context, deviceId, false),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val who = account ?: context.getString(R.string.pairing_account_generic)
+        val n = NotificationCompat.Builder(context, PAIRING_CHANNEL_ID)
+            .setContentTitle(context.getString(R.string.pairing_title))
+            .setContentText(context.getString(R.string.pairing_body, who))
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText(context.getString(R.string.pairing_body, who))
+            )
+            .setSmallIcon(R.drawable.ic_sms)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_CALL)
+            .setAutoCancel(true)
+            .addAction(0, context.getString(R.string.pairing_approve), approve)
+            .addAction(0, context.getString(R.string.pairing_reject), reject)
+            .build()
+        notificationManager.notify(NOTIFICATION_ID_CLAIM_REQUEST, n)
+    }
+
+    fun cancelClaimRequest() {
+        notificationManager.cancel(NOTIFICATION_ID_CLAIM_REQUEST)
+    }
+
+    private fun claimActionIntent(context: Context, deviceId: String, approve: Boolean) =
+        android.content.Intent(context, ClaimActionReceiver::class.java).apply {
+            action = if (approve) ACTION_CLAIM_APPROVE else ACTION_CLAIM_REJECT
+            putExtra(EXTRA_DEVICE_ID, deviceId)
+        }
 
     fun notify(context: Context, id: Int, contentText: String) {
         notificationManager.notify(id, makeNotification(context, id, contentText))
@@ -85,6 +141,7 @@ class NotificationsService(
 
     companion object {
         const val NOTIFICATION_CHANNEL_ID = "sms-gateway"
+        const val PAIRING_CHANNEL_ID = "tizbiz-pairing"
 
         const val NOTIFICATION_ID_LOCAL_SERVICE = 1
         const val NOTIFICATION_ID_SEND_WORKER = 2
@@ -93,5 +150,10 @@ class NotificationsService(
         const val NOTIFICATION_ID_SETTINGS_CHANGED = 5
         const val NOTIFICATION_ID_SMS_RECEIVED_WEBHOOK = 6
         const val NOTIFICATION_ID_REALTIME_EVENTS = 7
+        const val NOTIFICATION_ID_CLAIM_REQUEST = 8
+
+        const val ACTION_CLAIM_APPROVE = "me.capcom.smsgateway.CLAIM_APPROVE"
+        const val ACTION_CLAIM_REJECT = "me.capcom.smsgateway.CLAIM_REJECT"
+        const val EXTRA_DEVICE_ID = "device_id"
     }
 }

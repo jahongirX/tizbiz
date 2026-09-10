@@ -82,6 +82,14 @@
     <string name="private_token">Private Token</string>
     <string name="owner_number_title">This phone\'s number</string>
     <string name="owner_number_summary">Used to attach this phone to your TizBiz account and hide it from others. Enter it in +998… format if the SIM number is not detected.</string>
+    <string name="owner_number_prompt_title">Your phone number</string>
+    <string name="owner_number_prompt_message">Enter this phone\'s number (+998…). It links the phone to your TizBiz account so you can attach it from the dashboard.</string>
+    <string name="pairing_channel_name">Device pairing</string>
+    <string name="pairing_title">Confirm connection</string>
+    <string name="pairing_body">%1$s wants to connect this phone as an SMS server. Approve?</string>
+    <string name="pairing_account_generic">TizBiz dashboard</string>
+    <string name="pairing_approve">Approve</string>
+    <string name="pairing_reject">Reject</string>
     <string name="public_address">Public address</string>
     <string name="require_internet_connection">Require Internet connection</string>
     <string name="restart_required_to_apply_changes">Restart required to apply changes</string>

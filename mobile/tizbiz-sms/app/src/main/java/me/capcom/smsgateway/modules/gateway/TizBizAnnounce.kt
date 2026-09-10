@@ -22,11 +22,62 @@ import java.util.concurrent.TimeUnit
  * fire-and-forget: never blocks or breaks device registration.
  */
 object TizBizAnnounce {
-    private const val ANNOUNCE_URL = "https://api.tizbiz.uz/v1/sms/devices/announce"
+    private const val API_BASE = "https://api.tizbiz.uz/v1/sms/devices"
+    private const val ANNOUNCE_URL = "$API_BASE/announce"
 
     private val client = OkHttpClient.Builder()
         .callTimeout(15, TimeUnit.SECONDS)
         .build()
+
+    /** A pending pairing request an operator raised for this phone. */
+    data class ClaimRequest(val account: String?)
+
+    /**
+     * Ask the backend whether an operator is waiting to attach this phone.
+     * Blocking; call off the main thread. Returns null when there is no request
+     * (or on any error).
+     */
+    fun checkClaimRequest(token: String, deviceId: String): ClaimRequest? {
+        if (token.isBlank() || deviceId.isBlank()) return null
+        return try {
+            val q = java.net.URLEncoder.encode(deviceId, "UTF-8")
+            val req = Request.Builder()
+                .url("$API_BASE/claim-request?device_id=$q")
+                .header("X-Announce-Token", token)
+                .get()
+                .build()
+            client.newCall(req).execute().use { resp ->
+                val body = resp.body?.string() ?: return null
+                val data = JSONObject(body).optJSONObject("data") ?: return null
+                if (data.optBoolean("pending", false)) {
+                    ClaimRequest(data.optString("account").ifBlank { null })
+                } else {
+                    null
+                }
+            }
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    /** Approve or reject the pending pairing request. Blocking; returns success. */
+    fun confirmClaim(token: String, deviceId: String, approve: Boolean): Boolean {
+        if (token.isBlank() || deviceId.isBlank()) return false
+        return try {
+            val body = JSONObject()
+                .put("device_id", deviceId)
+                .put("approve", approve)
+                .toString()
+            val req = Request.Builder()
+                .url("$API_BASE/confirm-claim")
+                .header("X-Announce-Token", token)
+                .post(body.toRequestBody("application/json".toMediaType()))
+                .build()
+            client.newCall(req).execute().use { it.isSuccessful }
+        } catch (_: Throwable) {
+            false
+        }
+    }
 
     /** gate.tizbiz.uz/api/mobile/v1 -> gate.tizbiz.uz/api/3rdparty/v1 (the send base). */
     fun deriveThirdPartyBase(mobileUrl: String): String =

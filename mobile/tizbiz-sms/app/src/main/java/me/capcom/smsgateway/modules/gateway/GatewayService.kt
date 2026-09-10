@@ -162,6 +162,9 @@ class GatewayService(
                 )
             }
 
+            // Watch for a dashboard pairing request so the owner can confirm it.
+            runCatching { ClaimPollWorker.start(context.applicationContext) }
+
             events.emit(
                 DeviceRegisteredEvent.Success(
                     api.hostname,

@@ -82,6 +82,14 @@
     <string name="private_token">Приватный токен</string>
     <string name="owner_number_title">Номер этого телефона</string>
     <string name="owner_number_summary">Нужен, чтобы привязать телефон к вашему аккаунту TizBiz и скрыть его от других. Укажите в формате +998…, если номер SIM не определяется.</string>
+    <string name="owner_number_prompt_title">Ваш номер телефона</string>
+    <string name="owner_number_prompt_message">Укажите номер этого телефона (+998…). Он привязывает телефон к вашему аккаунту TizBiz, чтобы вы могли подключить его из кабинета.</string>
+    <string name="pairing_channel_name">Привязка устройства</string>
+    <string name="pairing_title">Подтвердите подключение</string>
+    <string name="pairing_body">%1$s хочет подключить этот телефон как SMS-сервер. Подтвердить?</string>
+    <string name="pairing_account_generic">Кабинет TizBiz</string>
+    <string name="pairing_approve">Подтвердить</string>
+    <string name="pairing_reject">Отклонить</string>
     <string name="public_address">Публичный адрес</string>
     <string name="require_internet_connection">Требуется интернет-соединение</string>
     <string name="restart_required_to_apply_changes">Для применения изменений требуется перезапуск</string>

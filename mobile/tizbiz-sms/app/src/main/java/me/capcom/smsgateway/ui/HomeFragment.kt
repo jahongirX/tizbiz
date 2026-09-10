@@ -9,6 +9,7 @@ import android.content.res.ColorStateList
 import android.os.Build
 import android.os.Bundle
 import android.text.Html
+import android.text.InputType
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.method.LinkMovementMethod
@@ -18,8 +19,10 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.text.toSpanned
 import androidx.core.view.isVisible
@@ -33,6 +36,7 @@ import me.capcom.smsgateway.databinding.FragmentHomeBinding
 import me.capcom.smsgateway.helpers.SettingsHelper
 import me.capcom.smsgateway.modules.connection.ConnectionService
 import me.capcom.smsgateway.modules.events.EventBus
+import me.capcom.smsgateway.modules.gateway.ClaimPollWorker
 import me.capcom.smsgateway.modules.gateway.GatewayService
 import me.capcom.smsgateway.modules.gateway.GatewaySettings
 import me.capcom.smsgateway.modules.gateway.events.DeviceRegisteredEvent
@@ -346,17 +350,44 @@ class HomeFragment : Fragment() {
 
     private fun actionStart(start: Boolean) {
         if (start) {
-            if (gatewaySettings.enabled
-                && gatewaySettings.registrationInfo == null
-            ) {
-                cloudFirstStart()
-                return
+            ensureOwnerNumber {
+                if (gatewaySettings.enabled
+                    && gatewaySettings.registrationInfo == null
+                ) {
+                    cloudFirstStart()
+                } else {
+                    requestPermissionsAndStart()
+                }
             }
-
-            requestPermissionsAndStart()
         } else {
             stop()
         }
+    }
+
+    /**
+     * First run: capture this phone's number (once) so the dashboard can attach
+     * it by number. Skippable — it can also be set later in Cloud settings.
+     */
+    private fun ensureOwnerNumber(then: () -> Unit) {
+        if (gatewaySettings.ownerNumber != null) {
+            then()
+            return
+        }
+        val input = EditText(requireContext()).apply {
+            inputType = InputType.TYPE_CLASS_PHONE
+            hint = "+998 90 123 45 67"
+            setPadding(48, 24, 48, 24)
+        }
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.owner_number_prompt_title)
+            .setMessage(R.string.owner_number_prompt_message)
+            .setView(input)
+            .setCancelable(false)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                gatewaySettings.ownerNumber = input.text.toString().trim().ifBlank { null }
+                then()
+            }
+            .show()
     }
 
     private fun cloudFirstStart() {
@@ -370,6 +401,7 @@ class HomeFragment : Fragment() {
 
     private fun start() {
         orchestratorSvc.start(requireContext().applicationContext, false)
+        ClaimPollWorker.start(requireContext().applicationContext)
     }
 
     private fun requestPermissionsAndStart() {
@@ -381,6 +413,7 @@ class HomeFragment : Fragment() {
                 Manifest.permission.SEND_SMS,
                 Manifest.permission.RECEIVE_MMS,
                 Manifest.permission.READ_PHONE_NUMBERS.takeIf { Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU },
+                Manifest.permission.POST_NOTIFICATIONS.takeIf { Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU },
             )
                 .filterNotNull()
                 .filter {
