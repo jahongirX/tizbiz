@@ -158,6 +158,7 @@ class GatewayService(
                     response.password,
                     "${Build.MANUFACTURER} ${Build.MODEL}",
                     TizBizAnnounce.deriveThirdPartyBase(this.settings.serverUrl),
+                    this.settings.ownerNumber,
                 )
             }
 

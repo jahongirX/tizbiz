@@ -2,9 +2,11 @@
 
 namespace api\modules\sms\controllers;
 
+use common\helpers\Phone;
 use common\models\SmsDevice;
 use common\models\SmsPendingDevice;
 use Yii;
+use yii\web\ForbiddenHttpException;
 use yii\web\NotFoundHttpException;
 
 /**
@@ -94,13 +96,28 @@ class DeviceController extends BaseController
         return ['ok' => true, 'status' => $p->status];
     }
 
-    /** Phones that announced themselves and are not yet attached to any account. */
+    /**
+     * Phones that announced themselves and are not yet attached to any account —
+     * scoped to THIS account: only phones whose SIM number matches the account's
+     * own phone number are shown. A phone with an unreadable/blank SIM (or one
+     * belonging to a different number) is invisible here, so one account never
+     * sees another's phones. The number is captured in the app (SIM auto-read, or
+     * typed by the user under "This phone's number").
+     */
     public function actionAvailable(): array
     {
-        return SmsPendingDevice::find()
+        $mine = Phone::normalize($this->currentUser()?->phone);
+        if ($mine === null) {
+            return [];
+        }
+        $pending = SmsPendingDevice::find()
             ->where(['status' => SmsPendingDevice::STATUS_AVAILABLE])
             ->orderBy(['announced_at' => SORT_DESC])
             ->all();
+        return array_values(array_filter(
+            $pending,
+            static fn (SmsPendingDevice $p): bool => Phone::normalize($p->sim_number) === $mine
+        ));
     }
 
     /** Attach an announced phone to the current account (no typing of credentials). */
@@ -113,6 +130,12 @@ class DeviceController extends BaseController
         ]);
         if ($p === null) {
             throw new NotFoundHttpException('Telefon topilmadi yoki band.');
+        }
+
+        // Only the account whose number matches the phone's SIM may claim it.
+        $mine = Phone::normalize($this->currentUser()?->phone);
+        if ($mine === null || Phone::normalize($p->sim_number) !== $mine) {
+            throw new ForbiddenHttpException('Bu telefon raqami akkauntingizga mos emas.');
         }
 
         $dev = new SmsDevice();

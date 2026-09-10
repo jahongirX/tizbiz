@@ -80,6 +80,8 @@
     <string name="port_credentials_etc">Порт, учётные данные и т.д.</string>
     <string name="port">Порт</string>
     <string name="private_token">Приватный токен</string>
+    <string name="owner_number_title">Номер этого телефона</string>
+    <string name="owner_number_summary">Нужен, чтобы привязать телефон к вашему аккаунту TizBiz и скрыть его от других. Укажите в формате +998…, если номер SIM не определяется.</string>
     <string name="public_address">Публичный адрес</string>
     <string name="require_internet_connection">Требуется интернет-соединение</string>
     <string name="restart_required_to_apply_changes">Для применения изменений требуется перезапуск</string>

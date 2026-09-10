@@ -94,7 +94,7 @@ async function remove(d) {
   <div v-if="available.length" class="card" style="margin-bottom: 16px; border: 1px solid var(--brand, #2d7eec)">
     <div class="row" style="align-items: center; gap: 6px; font-weight: 600">
       <Smartphone :size="16" /> Yangi telefonlar
-      <span class="muted" style="font-weight: 500; font-size: 12px">— ilovada ro‘yxatdan o‘tgan, qo‘shishga tayyor</span>
+      <span class="muted" style="font-weight: 500; font-size: 12px">— faqat sizning raqamingizga tegishli, qo‘shishga tayyor</span>
     </div>
     <div class="table-wrap" style="margin-top: 10px">
       <table class="table">

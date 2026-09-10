@@ -12,6 +12,11 @@
             app:key="gateway.private_token"
             app:summary="@string/ignored_for_public_server"
             app:title="@string/private_token" />
+        <EditTextPreference
+            app:icon="@drawable/ic_username"
+            app:key="gateway.owner_number"
+            app:summary="@string/owner_number_summary"
+            app:title="@string/owner_number_title" />
         <ListPreference
             app:icon="@drawable/ic_notifications"
             app:key="gateway.notification_channel"

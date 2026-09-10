@@ -46,6 +46,13 @@ class GatewaySettings(
         // TizBiz: pre-filled so the user never types the enrollment token.
         get() = storage.get<String>(PRIVATE_TOKEN) ?: DEFAULT_PRIVATE_TOKEN
 
+    // TizBiz: this phone's own number. Announced to the backend so the dashboard
+    // can bind the phone to the matching account (and hide it from all others).
+    // Falls back to the SIM auto-read when the user leaves it blank.
+    var ownerNumber: String?
+        get() = storage.get<String?>(OWNER_NUMBER)?.takeIf { it.isNotBlank() }
+        set(value) = storage.set(OWNER_NUMBER, value?.takeIf { it.isNotBlank() })
+
     val notificationChannel: NotificationChannel
         get() = storage.get<NotificationChannel>(NOTIFICATION_CHANNEL) ?: NotificationChannel.AUTO
 
@@ -56,6 +63,7 @@ class GatewaySettings(
 
         private const val CLOUD_URL = "cloud_url"
         private const val PRIVATE_TOKEN = "private_token"
+        private const val OWNER_NUMBER = "owner_number"
         private const val NOTIFICATION_CHANNEL = "notification_channel"
 
         const val PUBLIC_URL = "https://gate.tizbiz.uz/api/mobile/v1"
@@ -68,6 +76,7 @@ class GatewaySettings(
     override fun export(): Map<String, *> {
         return mapOf(
             CLOUD_URL to serverUrl,
+            OWNER_NUMBER to ownerNumber,
             NOTIFICATION_CHANNEL to notificationChannel.name,
         )
     }
@@ -91,6 +100,15 @@ class GatewaySettings(
                 PRIVATE_TOKEN -> {
                     val newValue = it.value?.toString()
                     val changed = privateToken != newValue
+
+                    storage.set(it.key, newValue)
+
+                    changed
+                }
+
+                OWNER_NUMBER -> {
+                    val newValue = it.value?.toString()?.takeIf { v -> v.isNotBlank() }
+                    val changed = ownerNumber != newValue
 
                     storage.set(it.key, newValue)
 

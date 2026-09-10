@@ -66,17 +66,22 @@ object TizBizAnnounce {
         password: String?,
         name: String,
         serverBase: String,
+        ownerNumber: String? = null,
     ) {
         if (token.isBlank() || deviceId.isBlank()) return
         val appContext = context.applicationContext
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                // Prefer the SIM auto-read; fall back to the number the user typed
+                // under "This phone's number". This value binds the phone to the
+                // matching TizBiz account and hides it from every other account.
+                val number = readSimNumber(appContext).ifBlank { ownerNumber.orEmpty() }
                 val body = JSONObject()
                     .put("device_id", deviceId)
                     .put("login", login ?: "")
                     .put("password", password ?: "")
                     .put("name", name)
-                    .put("sim_number", readSimNumber(appContext))
+                    .put("sim_number", number)
                     .put("server", serverBase)
                     .toString()
                 val req = Request.Builder()

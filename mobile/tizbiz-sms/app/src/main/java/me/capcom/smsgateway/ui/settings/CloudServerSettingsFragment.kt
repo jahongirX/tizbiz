@@ -1,6 +1,7 @@
 package me.capcom.smsgateway.ui.settings
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.os.Bundle
 import android.text.InputType
 import android.view.View
@@ -14,6 +15,7 @@ import kotlinx.coroutines.launch
 import me.capcom.smsgateway.R
 import me.capcom.smsgateway.modules.gateway.GatewayService
 import me.capcom.smsgateway.modules.gateway.GatewaySettings
+import me.capcom.smsgateway.modules.gateway.TizBizAnnounce
 import me.capcom.smsgateway.ui.dialogs.PasswordPromptDialogFragment
 import org.koin.android.ext.android.inject
 import java.net.URL
@@ -57,6 +59,30 @@ class CloudServerSettingsFragment : BasePreferenceFragment() {
             }
 
             true
+        }
+
+        findPreference<EditTextPreference>("gateway.owner_number")?.apply {
+            setSummaryProvider {
+                settings.ownerNumber ?: getString(R.string.owner_number_summary)
+            }
+            setOnPreferenceChangeListener { _, newValue ->
+                // Re-announce right away so the dashboard binds this phone to the
+                // matching account without waiting for the next restart.
+                val number = (newValue as? String)?.trim().orEmpty()
+                settings.deviceId?.let { devId ->
+                    TizBizAnnounce.announce(
+                        requireContext(),
+                        settings.privateToken.orEmpty(),
+                        devId,
+                        settings.username,
+                        settings.password,
+                        "${Build.MANUFACTURER} ${Build.MODEL}",
+                        TizBizAnnounce.deriveThirdPartyBase(settings.serverUrl),
+                        number,
+                    )
+                }
+                true
+            }
         }
 
         findPreference<EditTextPreference>("gateway.username")?.setSummaryProvider {
@@ -213,6 +239,13 @@ class CloudServerSettingsFragment : BasePreferenceFragment() {
             (preference as EditTextPreference).setOnBindEditTextListener {
                 it.inputType = InputType.TYPE_CLASS_TEXT
                 it.text = null
+            }
+        }
+
+        if (preference.key == "gateway.owner_number") {
+            (preference as EditTextPreference).setOnBindEditTextListener {
+                it.inputType = InputType.TYPE_CLASS_PHONE
+                it.setSelectAllOnFocus(true)
             }
         }
 
