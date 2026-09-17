@@ -35,3 +35,9 @@ dist/
 
 # User uploads (menu/category images)
 **/web/uploads/
+
+# Local ops/credentials docs (never commit)
+CREDENTIALS.local.md
+SESSION.md
+NOTES.md
+DEPLOY.md

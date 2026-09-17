@@ -51,6 +51,9 @@ importers:
 
   apps/corporate:
     dependencies:
+      '@tizbiz/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
       vue:
         specifier: ^3.5.13
         version: 3.5.40

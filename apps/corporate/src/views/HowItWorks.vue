@@ -1,7 +1,7 @@
 <script setup>
 import { RouterLink } from 'vue-router'
 
-const REGISTER_URL = 'https://admin.tizbiz.uz/app/register'
+const REGISTER_URL = '/register'
 
 const steps = [
   {

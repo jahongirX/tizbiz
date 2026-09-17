@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { posts, formatDate } from '../data/posts'
 
-const REGISTER_URL = 'https://admin.tizbiz.uz/app/register'
+const REGISTER_URL = '/register'
 const PHONE = '+998 90 000 00 00'
 const TELEGRAM = 'https://t.me/tizbiz'
 

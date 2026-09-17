@@ -5,7 +5,16 @@ import AppLayout from '../components/AppLayout.vue'
 
 const routes = [
   { path: '/login', name: 'login', component: () => import('../views/Login.vue') },
-  { path: '/register', name: 'register', component: () => import('../views/Register.vue') },
+  {
+    // Registration now lives on the marketing site (tizbiz.uz/register); keep
+    // this path working by redirecting anyone who lands on the old admin URL.
+    path: '/register',
+    name: 'register',
+    beforeEnter() {
+      window.location.href = `https://tizbiz.uz/register`
+    },
+    component: { render: () => null },
+  },
   {
     path: '/',
     component: AppLayout,

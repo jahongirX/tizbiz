@@ -3,7 +3,7 @@ import { RouterLink } from 'vue-router'
 import logoUrl from '../assets/logo.png'
 
 const LOGIN_URL = 'https://admin.tizbiz.uz/app/login'
-const REGISTER_URL = 'https://admin.tizbiz.uz/app/register'
+const REGISTER_URL = '/register'
 const TELEGRAM = 'https://t.me/tizbiz'
 const YEAR = 2026
 
