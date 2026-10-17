@@ -1,0 +1,94 @@
+name: Build mobile APKs (Bizcat + TizBiz Biznes)
+
+# Builds release APKs of both Flutter apps and uploads them as artifacts
+# (Actions → this run → Artifacts). Runs automatically when the apps or the
+# shared core package change on main, or manually via "Run workflow".
+#
+# Signing reuses the TizBiz SMS app secrets, so each new APK installs over the
+# previous one. Without them the APK is signed with a throwaway debug key
+# (still installable, but you must uninstall the old build first):
+#   SIGNING_KEY_STORE_BASE64, SIGNING_STORE_PASSWORD, SIGNING_KEY_ALIAS, SIGNING_KEY_PASSWORD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "bizcat/**"
+      - "mobile-app/**"
+      - "mobile/tizbiz_core/**"
+      - ".github/workflows/build-mobile-apks.yml"
+  workflow_dispatch:
+    inputs:
+      api-base:
+        description: "API base URL baked into the apps"
+        required: true
+        default: "https://api.tizbiz.uz"
+
+jobs:
+  apk:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Bizcat
+            dir: bizcat
+            artifact: bizcat-release-apk
+          - name: TizBiz Biznes
+            dir: mobile-app
+            artifact: tizbiz-biznes-release-apk
+    env:
+      KS: ${{ secrets.SIGNING_KEY_STORE_BASE64 }}
+      API_BASE: ${{ github.event.inputs.api-base || 'https://api.tizbiz.uz' }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.dir }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.47.7"
+          cache: true
+
+      - name: Decode signing keystore
+        if: ${{ env.KS != '' }}
+        run: |
+          echo "$KS" | base64 --decode > "$RUNNER_TEMP/tizbiz.jks"
+          echo "SIGNING_KEY_STORE_PATH=$RUNNER_TEMP/tizbiz.jks" >> "$GITHUB_ENV"
+
+      - name: Pub get
+        run: flutter pub get
+
+      - name: Build release APK
+        env:
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+        run: >
+          flutter build apk --release
+          --dart-define=API_BASE=${{ env.API_BASE }}
+          --build-name=1.0.0
+          --build-number=${{ github.run_number }}
+
+      - name: Name the APK
+        run: |
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk "dist/${{ matrix.artifact }}-${{ github.run_number }}.apk"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}-${{ github.run_number }}
+          path: ${{ matrix.dir }}/dist/*.apk
+          if-no-files-found: error
+          retention-days: 30
