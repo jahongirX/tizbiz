@@ -2,6 +2,8 @@
 
 namespace api\modules\notify\services;
 
+use api\modules\sms\services\SmsDispatcher;
+use Throwable;
 use Yii;
 
 /**
@@ -21,6 +23,18 @@ class SmsSender
     /** Send `text` to a phone number in international format. Returns true on success. */
     public static function send(string $phone, string $text): bool
     {
+        // A platform SMS account (sms.tizbiz.uz user) wins over the env drivers:
+        // its first active phone sends, and the message shows up in its dashboard.
+        $platformUserId = (int) (Yii::$app->params['sms.platform.user_id'] ?? 0);
+        if ($platformUserId > 0) {
+            try {
+                return SmsDispatcher::send($platformUserId, [$phone], $text)['sent'] > 0;
+            } catch (Throwable $e) {
+                Yii::warning('Platform SMS send failed: ' . $e->getMessage(), 'notify');
+                return false;
+            }
+        }
+
         // Driver selector: 'android' routes through the Android SMS Gateway
         // (a phone as modem); anything else uses the Eskiz-style HTTP gateway.
         $driver = getenv('SMS_DRIVER') ?: (string) (Yii::$app->params['sms.driver'] ?? '');

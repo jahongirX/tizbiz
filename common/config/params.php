@@ -21,6 +21,9 @@ return [
     // account used to send and the phone that receives them. Empty = dashboard-only.
     'sms.admin.notify_user_id' => (int) (getenv('SMS_ADMIN_NOTIFY_USER_ID') ?: 0),
     'sms.admin.notify_phone' => getenv('SMS_ADMIN_NOTIFY_PHONE') ?: '',
+    // Platform SMS (consumer OTP, reminders): when set, SmsSender sends through
+    // this sms.tizbiz.uz account's phone (logged + counted in its dashboard).
+    'sms.platform.user_id' => (int) (getenv('SMS_PLATFORM_USER_ID') ?: 0),
     // Bizcat consumer app: phone + OTP login, long-lived consumer JWT (typ=consumer).
     'consumer.jwt.ttl' => 60 * 60 * 24 * 30, // 30 days, no refresh token
     'consumer.otp.ttl' => 120, // seconds a code stays valid
