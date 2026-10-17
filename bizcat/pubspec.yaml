@@ -1,0 +1,48 @@
+name: bizcat
+description: "Bizcat: shahar biznes katalogi (TizBiz consumer app)."
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.9.0              # local toolchain: Flutter 3.47.7 / Dart 3.13.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  material_ui: ^1.6.0      # ships GlobalMaterialLocalizations; the ONLY Material library used
+  cupertino_ui: ^1.1.0     # required transitively by go_router 18
+  tizbiz_core:
+    path: ../mobile/tizbiz_core
+  flutter_riverpod: ^3.4.3
+  go_router: ^18.0.2
+  dio: ^5.9.0              # only so tests can inject a Dio; lib/ uses tizbiz_core's ApiClient
+  flutter_svg: ^2.3.0
+  google_fonts: ^6.3.3     # TextStyle helpers only (it still imports SDK material)
+  intl: any                # pinned transitively (material_ui -> flutter_localizations)
+  url_launcher: ^6.3.2
+  cached_network_image: ^4.0.4
+  flutter_secure_storage: ^11.2.0   # API used: read/write/delete only
+  shared_preferences: ^2.5.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/brand/
+    - assets/brand/png/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/brand/png/bizcat-app-icon-1024.png
+  remove_alpha_ios: true
+  web:
+    generate: true
+    image_path: assets/brand/png/bizcat-app-icon-512.png
+    background_color: "#FAF6F0"
+    theme_color: "#1E1B4B"

@@ -1,0 +1,36 @@
+name: tizbiz_biznes
+description: TizBiz Biznes - business owner and staff app.
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.13.0
+  flutter: ">=3.47.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  material_ui: ^1.6.0
+  cupertino_ui: ^1.1.0
+  tizbiz_core:
+    path: ../mobile/tizbiz_core
+  flutter_riverpod: ^3.4.3
+  go_router: ^18.0.2
+  dio: ^5.9.0                 # only for tests' fake adapter and CancelToken typing; requests go through ApiClient
+  flutter_svg: ^2.3.0
+  intl: ^0.20.2
+  url_launcher: ^6.3.2
+  cached_network_image: ^4.0.4
+  flutter_secure_storage: ^11.2.0
+  shared_preferences: ^2.5.0
+  fl_chart: ^1.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/brand/
