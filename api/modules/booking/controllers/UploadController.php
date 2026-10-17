@@ -24,7 +24,7 @@ class UploadController extends Controller
      */
     public function actionCreate(): array
     {
-        $this->requireRole('business_owner', 'business_admin', 'staff');
+        $this->requireRole('business_owner', 'business_admin');
 
         $file = UploadedFile::getInstanceByName('file');
         if ($file === null || $file->error !== UPLOAD_ERR_OK) {

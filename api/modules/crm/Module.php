@@ -7,7 +7,7 @@ use yii\base\Module as BaseModule;
 use yii\rest\UrlRule;
 
 /**
- * CRM module — client database.
+ * CRM module — client database and consumer reviews (business side).
  */
 class Module extends BaseModule implements BootstrapInterface
 {
@@ -16,6 +16,9 @@ class Module extends BaseModule implements BootstrapInterface
     public function bootstrap($app): void
     {
         $app->getUrlManager()->addRules([
+            // Business-side reviews (owner/admin): list + reply.
+            'GET v1/reviews' => 'crm/review/index',
+            'POST v1/reviews/<id:\d+>/reply' => 'crm/review/reply',
             'PUT v1/clients/<id:\d+>/categories' => 'crm/client/set-categories',
             [
                 'class' => UrlRule::class,

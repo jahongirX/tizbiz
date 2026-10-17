@@ -17,8 +17,8 @@ use yii\web\NotFoundHttpException;
 /**
  * CRM client CRUD.
  *
- * Reads (index/view) are available to any authenticated tenant user; writes
- * (create/update/delete) require business_owner or business_admin. All rows are
+ * Reads (index/view) and writes (create/update/delete) require business_owner
+ * or business_admin (staff get 403). All rows are
  * tenant-scoped automatically by {@see Client} via the active business JWT.
  */
 class ClientController extends Controller
@@ -35,6 +35,7 @@ class ClientController extends Controller
      */
     public function actionIndex(): array
     {
+        $this->requireRole('business_owner', 'business_admin');
         $businessId = Yii::$app->tenant->require();
 
         $search = trim((string) Yii::$app->request->get('search', ''));
@@ -126,6 +127,7 @@ class ClientController extends Controller
      */
     public function actionView(int $id): array
     {
+        $this->requireRole('business_owner', 'business_admin');
         $client = $this->findClient($id);
 
         $history = Appointment::find()

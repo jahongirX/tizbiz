@@ -8,8 +8,8 @@ use Yii;
 use yii\web\NotFoundHttpException;
 
 /**
- * CRUD for subscription / pass types (Abonement turlari). Reads are open to any
- * authed tenant user; writes require owner/admin. All rows are tenant-scoped
+ * CRUD for subscription / pass types (Abonement turlari). Reads and writes
+ * require owner/admin (staff get 403). All rows are tenant-scoped
  * automatically via the active business JWT.
  */
 class SubscriptionTypeController extends Controller
@@ -17,6 +17,8 @@ class SubscriptionTypeController extends Controller
     /** GET /v1/subscription-types — newest first. */
     public function actionIndex(): array
     {
+        $this->requireRole('business_owner', 'business_admin');
+        Yii::$app->tenant->require();
         return SubscriptionType::find()
             ->orderBy(['id' => SORT_DESC])
             ->all();
@@ -25,6 +27,7 @@ class SubscriptionTypeController extends Controller
     /** GET /v1/subscription-types/<id> */
     public function actionView(int $id): SubscriptionType
     {
+        $this->requireRole('business_owner', 'business_admin');
         return $this->findType($id);
     }
 

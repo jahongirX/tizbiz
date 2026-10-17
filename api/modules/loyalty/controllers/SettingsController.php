@@ -10,7 +10,7 @@ use Yii;
  * Loyalty settings: a flat view over the active {@see LoyaltyRule} row.
  *
  * `earn_rate` is a real column; the remaining settings live inside the row's
- * `gift_config` JSON. Reads are open to any authed tenant user; writes require
+ * `gift_config` JSON. Reads and writes require
  * owner/admin. If no active rule exists yet, one is created on first read/write.
  */
 class SettingsController extends Controller
@@ -26,6 +26,7 @@ class SettingsController extends Controller
     /** GET /v1/loyalty/settings */
     public function actionView(): array
     {
+        $this->requireRole('business_owner', 'business_admin');
         return $this->present($this->activeRule());
     }
 

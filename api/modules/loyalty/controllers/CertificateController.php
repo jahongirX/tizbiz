@@ -8,8 +8,8 @@ use Yii;
 use yii\web\NotFoundHttpException;
 
 /**
- * CRUD for gift certificates. Reads are open to any authed tenant user; writes
- * require owner/admin. All rows are tenant-scoped automatically via the active
+ * CRUD for gift certificates. Reads and writes
+ * require owner/admin (staff get 403). All rows are tenant-scoped automatically via the active
  * business JWT.
  */
 class CertificateController extends Controller
@@ -17,6 +17,8 @@ class CertificateController extends Controller
     /** GET /v1/certificates — newest first. */
     public function actionIndex(): array
     {
+        $this->requireRole('business_owner', 'business_admin');
+        Yii::$app->tenant->require();
         return Certificate::find()
             ->orderBy(['id' => SORT_DESC])
             ->all();
@@ -25,6 +27,7 @@ class CertificateController extends Controller
     /** GET /v1/certificates/<id> */
     public function actionView(int $id): Certificate
     {
+        $this->requireRole('business_owner', 'business_admin');
         return $this->findCertificate($id);
     }
 

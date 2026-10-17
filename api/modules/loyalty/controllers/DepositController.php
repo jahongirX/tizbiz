@@ -14,8 +14,8 @@ use yii\web\UnprocessableEntityHttpException;
  * Client deposit (advance / account balance) ledger. Balance is the running
  * SUM(delta_tiyin) of a client's immutable transactions. Money in tiyin.
  *
- * Reads are available to any authed tenant user; writes (top-up / spend /
- * refund) require an owner/admin role. All rows are tenant-scoped via the
+ * Reads and writes (top-up / spend / refund) require an owner/admin role
+ * (staff get 403). All rows are tenant-scoped via the
  * active business JWT.
  */
 class DepositController extends Controller
@@ -31,6 +31,7 @@ class DepositController extends Controller
      */
     public function actionBalances(): array
     {
+        $this->requireRole('business_owner', 'business_admin');
         $businessId = Yii::$app->tenant->require();
 
         $search = trim((string) Yii::$app->request->get('search', ''));
@@ -90,6 +91,7 @@ class DepositController extends Controller
      */
     public function actionView(int $clientId): array
     {
+        $this->requireRole('business_owner', 'business_admin');
         $businessId = Yii::$app->tenant->require();
         $client = $this->requireClient($businessId, $clientId);
 

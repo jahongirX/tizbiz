@@ -25,10 +25,10 @@ class User extends ActiveRecord implements IdentityInterface
     public const STATUS_INACTIVE = 0;
     public const STATUS_ACTIVE = 10;
 
-    /** Active tenant id resolved from the JWT for the current request. */
+    /** Active tenant id resolved from the JWT (`tid`) for the current request. */
     public ?int $activeTenantId = null;
 
-    /** Role held in the active tenant, resolved from the JWT. */
+    /** Role held in the active tenant, re-read from business_user per request. */
     public ?string $activeRole = null;
 
     public static function tableName(): string
@@ -95,6 +95,13 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     /**
+     * Resolve a business (`typ=biz`) access token to a user.
+     *
+     * Consumer tokens are rejected (null). When the token names a tenant, the
+     * membership is re-checked against the DB on every request (cached briefly
+     * in {@see BusinessUser::activeRole()}): a removed member or a deactivated
+     * business yields null, and the DB role overrides the role claim.
+     *
      * @param string $token the raw JWT
      */
     public static function findIdentityByAccessToken($token, $type = null): ?self
@@ -103,10 +110,22 @@ class User extends ActiveRecord implements IdentityInterface
         if ($payload === null || empty($payload['sub'])) {
             return null;
         }
+        if (Jwt::typ($payload) !== Jwt::TYP_BIZ) {
+            return null;
+        }
         $user = static::findIdentity((int) $payload['sub']);
-        if ($user !== null) {
-            $user->activeTenantId = isset($payload['tid']) && $payload['tid'] !== null ? (int) $payload['tid'] : null;
-            $user->activeRole = isset($payload['role']) && $payload['role'] !== null ? (string) $payload['role'] : null;
+        if ($user === null) {
+            return null;
+        }
+        $tid = isset($payload['tid']) && $payload['tid'] !== null ? (int) $payload['tid'] : null;
+        $user->activeTenantId = $tid;
+        $user->activeRole = null;
+        if ($tid !== null) {
+            $role = BusinessUser::activeRole($user->getId(), $tid);
+            if ($role === null) {
+                return null;
+            }
+            $user->activeRole = $role;
         }
         return $user;
     }

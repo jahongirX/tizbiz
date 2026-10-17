@@ -1168,6 +1168,404 @@ class SeedController extends Controller
         return ExitCode::OK;
     }
 
+    /**
+     * Engine-aware demo timeline up to today. Unlike refill (branch-based, heavy,
+     * overlapping) this generates a *realistic* stream honoring each vertical's
+     * rules:
+     *   - slot / medical (barber, clinic): per-staff NON-overlapping appointments
+     *     within working hours — one client per specialist at a time.
+     *   - rental (hall): at most 2 bookings/day (morning + evening sessions).
+     *   - catalog / medical: an order stream too (the "Buyurtmalar" board).
+     * Keeps the business, staff, clients and menu; wipes only the transactions it
+     * rebuilds (future rental bookings are preserved).
+     *
+     * Usage: php yii seed/timeline <slug>
+     */
+    public function actionTimeline(string $slug): int
+    {
+        $business = Business::findOne(['slug' => $slug]);
+        if ($business === null) {
+            $this->stderr("Business '$slug' topilmadi.\n");
+            return ExitCode::DATAERR;
+        }
+        $bid = (int) $business->id;
+        $engine = (string) ($business->engine ?: 'slot');
+        $db = \Yii::$app->db;
+        $UTC_OFF = 5 * 3600; // Asia/Tashkent
+
+        $services = Service::find()->where(['business_id' => $bid, 'is_active' => 1])->all();
+        $staff = Staff::find()->where(['business_id' => $bid, 'is_active' => 1])->all();
+        if ($services === []) {
+            $this->stderr("'$slug' uchun faol xizmat yo'q.\n");
+            return ExitCode::DATAERR;
+        }
+        $clients = Client::find()->where(['business_id' => $bid])->all();
+        if (count($clients) < 15) {
+            for ($i = count($clients); $i < 18; $i++) {
+                $clients[] = $this->save(new Client(['business_id' => $bid, 'name' => 'Mijoz ' . ($i + 1), 'phone' => '+99890' . mt_rand(1000000, 9999999), 'tags' => []]));
+            }
+        }
+
+        $todayMidUtc = strtotime(gmdate('Y-m-d', time()) . ' 00:00:00 UTC');
+        $apptCols = ['business_id', 'client_id', 'staff_id', 'service_id', 'guests', 'starts_at', 'ends_at', 'status', 'source', 'deposit_tiyin', 'paid', 'notes', 'created_at', 'updated_at'];
+        $rows = [];
+
+        // --- Wipe the transactions we rebuild ---
+        $del = static function (string $sql) use ($db): void {
+            try { $db->createCommand($sql)->execute(); } catch (\Throwable $e) { /* optional */ }
+        };
+        if ($engine === 'rental') {
+            // Keep future bookings; rebuild only the past.
+            $nowUtc = gmdate('Y-m-d H:i:s');
+            $del("DELETE ai FROM {{%appointment_items}} ai JOIN {{%appointments}} a ON a.id=ai.appointment_id WHERE a.business_id=$bid AND a.starts_at < '$nowUtc'");
+            $db->createCommand()->delete('{{%appointments}}', ['and', ['business_id' => $bid], ['<', 'starts_at', $nowUtc]])->execute();
+        } else {
+            $del("DELETE ai FROM {{%appointment_items}} ai JOIN {{%appointments}} a ON a.id=ai.appointment_id WHERE a.business_id=$bid");
+            $db->createCommand()->delete('{{%appointments}}', ['business_id' => $bid])->execute();
+        }
+        // Slot/rental (barber, hall) have no catalog order board — clear it.
+        if ($engine === 'slot' || $engine === 'rental') {
+            $db->createCommand()->delete('{{%order_items}}', ['business_id' => $bid])->execute();
+            $db->createCommand()->delete('{{%orders}}', ['business_id' => $bid])->execute();
+        }
+
+        // ================= APPOINTMENTS / BOOKINGS =================
+        if ($engine === 'rental') {
+            // At most 2 bookings/day (morning + evening), only ~55% of days.
+            for ($d = 1; $d <= 60; $d++) {
+                $dayMid = $todayMidUtc - $d * 86400;
+                $n = $this->pick(['0' => 45, '1' => 33, '2' => 22]);
+                if ($n === '0') { continue; }
+                $sessions = (int) $n === 2 ? ['morning', 'evening'] : [mt_rand(0, 1) ? 'morning' : 'evening'];
+                foreach ($sessions as $sess) {
+                    [$sh, $eh] = $sess === 'morning' ? [10, 16] : [18, 23];
+                    $start = $dayMid + $sh * 3600 - $UTC_OFF;
+                    $end = $dayMid + $eh * 3600 - $UTC_OFF;
+                    $guests = mt_rand(12, 45) * 10;
+                    $tables = (int) ceil($guests / 10);
+                    $svc = $services[array_rand($services)];
+                    $c = $clients[array_rand($clients)];
+                    $label = $sess === 'morning' ? 'Ertalab' : 'Kechqurun';
+                    $rows[] = [$bid, (int) $c->id, (int) ($staff[0]->id ?? 0), (int) $svc->id, $guests,
+                        gmdate('Y-m-d H:i:s', $start), gmdate('Y-m-d H:i:s', $end),
+                        'completed', $this->pick(['link' => 55, 'admin' => 25, 'bot' => 20]),
+                        (int) $svc->deposit_tiyin, 1, "$label · $guests mehmon · $tables stol", $start, $start];
+                }
+            }
+        } else {
+            // slot / medical / catalog: per-day appointments.
+            $nonOverlap = ($engine === 'slot' || $engine === 'medical');
+            $workStaff = $staff !== [] ? $staff : [null];
+            for ($d = 0; $d <= 45; $d++) {
+                $dayMid = $todayMidUtc - $d * 86400;
+                $dow = (int) gmdate('w', $dayMid); // 0=Sun
+                if ($nonOverlap) {
+                    // Each specialist: a non-overlapping chain 09:00–20:00 local.
+                    foreach ($workStaff as $st) {
+                        if ($st === null) { continue; }
+                        $t = $dayMid + 9 * 3600 - $UTC_OFF;         // 09:00 local
+                        $endOfDay = $dayMid + 20 * 3600 - $UTC_OFF; // 20:00 local
+                        $slots = $dow === 0 ? mt_rand(2, 5) : mt_rand(5, 10);
+                        $placed = 0;
+                        while ($t < $endOfDay && $placed < $slots) {
+                            if (mt_rand(1, 100) <= 22) { $t += mt_rand(1, 3) * 15 * 60; continue; } // idle gap
+                            $svc = $services[array_rand($services)];
+                            $dur = max(15, (int) ($svc->duration_min ?: 30));
+                            if ($t + $dur * 60 > $endOfDay) { break; }
+                            $c = $clients[array_rand($clients)];
+                            $status = $this->apptStatus($d, $t);
+                            $rows[] = [$bid, (int) $c->id, (int) $st->id, (int) $svc->id, null,
+                                gmdate('Y-m-d H:i:s', $t), gmdate('Y-m-d H:i:s', $t + $dur * 60),
+                                $status, $this->pick(['site' => 38, 'bot' => 42, 'admin' => 20]),
+                                (int) $svc->deposit_tiyin, $status === 'completed' ? 1 : 0, null, $t, $t];
+                            $t += $dur * 60 + mt_rand(0, 2) * 15 * 60; // service + small gap
+                            $placed++;
+                        }
+                    }
+                } else {
+                    // catalog: loose pickup slots, overlaps allowed.
+                    $n = $dow === 0 ? mt_rand(6, 12) : mt_rand(14, 26);
+                    for ($k = 0; $k < $n; $k++) {
+                        $hour = mt_rand(9, 19);
+                        $min = [0, 15, 30, 45][mt_rand(0, 3)];
+                        $t = $dayMid + ($hour * 3600 + $min * 60) - $UTC_OFF;
+                        $svc = $services[array_rand($services)];
+                        $dur = max(15, (int) ($svc->duration_min ?: 30));
+                        $c = $clients[array_rand($clients)];
+                        $st = $workStaff[array_rand($workStaff)];
+                        $status = $this->apptStatus($d, $t);
+                        $rows[] = [$bid, (int) $c->id, $st ? (int) $st->id : null, (int) $svc->id, null,
+                            gmdate('Y-m-d H:i:s', $t), gmdate('Y-m-d H:i:s', $t + $dur * 60),
+                            $status, $this->pick(['site' => 40, 'bot' => 40, 'admin' => 20]),
+                            (int) $svc->deposit_tiyin, $status === 'completed' ? 1 : 0, null, $t, $t];
+                    }
+                }
+            }
+        }
+
+        $apptAdded = count($rows);
+        foreach (array_chunk($rows, 400) as $chunk) {
+            $db->createCommand()->batchInsert('{{%appointments}}', $apptCols, $chunk)->execute();
+        }
+
+        // ================= ORDERS (catalog / medical) =================
+        $ordersAdded = 0;
+        if ($engine === 'catalog' || $engine === 'medical') {
+            $notes = ['tezda kerak', 'muzsiz', 'kam shakar', 'yozuv bilan', null, null, null, null];
+            for ($d = 0; $d < 21; $d++) {
+                $dayMid = $todayMidUtc - $d * 86400;
+                $count = mt_rand(14, 28);
+                for ($j = 0; $j < $count; $j++) {
+                    $hour = mt_rand(9, 20);
+                    $ts = $dayMid + ($hour * 3600 + mt_rand(0, 59) * 60) - $UTC_OFF;
+                    if ($d >= 4) {
+                        $status = $this->pick(['delivered' => 76, 'cancelled' => 14, 'ready' => 10]);
+                    } elseif ($d >= 1) {
+                        $status = $this->pick(['delivered' => 44, 'ready' => 22, 'preparing' => 18, 'confirmed' => 10, 'cancelled' => 6]);
+                    } else {
+                        $status = $this->pick(['new' => 34, 'confirmed' => 26, 'preparing' => 20, 'ready' => 12, 'delivered' => 8]);
+                    }
+                    $c = $clients[array_rand($clients)];
+                    $order = new Order(['business_id' => $bid, 'client_id' => (int) $c->id, 'customer_name' => $c->name, 'customer_phone' => $c->phone, 'status' => $status, 'source' => $this->pick(['bot' => 55, 'site' => 30, 'admin' => 15]), 'note' => $notes[array_rand($notes)], 'total_tiyin' => 0]);
+                    $order->save(false);
+                    $total = 0;
+                    $used = [];
+                    $lines = mt_rand(1, 3);
+                    for ($l = 0; $l < $lines; $l++) {
+                        $svc = $services[array_rand($services)];
+                        if (isset($used[$svc->id])) { continue; }
+                        $used[$svc->id] = true;
+                        $qty = mt_rand(1, 2);
+                        $it = new OrderItem(['order_id' => (int) $order->id, 'business_id' => $bid, 'service_id' => (int) $svc->id, 'name' => $svc->name, 'price_tiyin' => (int) $svc->price_tiyin, 'qty' => $qty]);
+                        $it->save(false);
+                        $this->backdate('{{%order_items}}', (int) $it->id, $ts);
+                        $total += (int) $svc->price_tiyin * $qty;
+                    }
+                    $order->total_tiyin = $total;
+                    $order->save(false);
+                    $this->backdate('{{%orders}}', (int) $order->id, $ts);
+                    $ordersAdded++;
+                }
+            }
+        }
+
+        $this->stdout(sprintf(
+            "Tayyor '%s' (%s): %d appointment/bron, %d zakaz — bugungacha.\n",
+            $business->name, $engine, $apptAdded, $ordersAdded
+        ));
+        return ExitCode::OK;
+    }
+
+    /** Appointment status by age (days back) and start instant vs now. */
+    private function apptStatus(int $daysBack, int $startTs): string
+    {
+        if ($startTs > time()) {
+            return $this->pick(['confirmed' => 55, 'pending' => 45]);
+        }
+        if ($daysBack === 0) {
+            return $this->pick(['completed' => 55, 'confirmed' => 25, 'no_show' => 12, 'canceled' => 8]);
+        }
+        return $this->pick(['completed' => 82, 'no_show' => 9, 'canceled' => 9]);
+    }
+
+    /** UTC midnight of today's date in Asia/Tashkent (robust to cron wall-clock). */
+    private function localTodayMidUtc(): int
+    {
+        $tz = new \DateTimeZone('Asia/Tashkent');
+        $today = (new \DateTimeImmutable('now', $tz))->format('Y-m-d');
+        return (int) strtotime($today . ' 00:00:00 UTC');
+    }
+
+    /**
+     * Appointment/booking rows for ONE local day (UTC midnight = $dayMid), honoring
+     * the engine's rules. Returns rows ready for batchInsert; creates nothing.
+     */
+    private function apptRowsForDay(int $bid, string $engine, int $dayMid, array $services, array $staff, array $clients, int $daysBack, int $UTC_OFF): array
+    {
+        $rows = [];
+        $dow = (int) gmdate('w', $dayMid); // 0=Sun
+
+        if ($engine === 'rental') {
+            $n = $this->pick(['0' => 45, '1' => 33, '2' => 22]);
+            if ($n === '0') { return []; }
+            $sessions = (int) $n === 2 ? ['morning', 'evening'] : [mt_rand(0, 1) ? 'morning' : 'evening'];
+            foreach ($sessions as $sess) {
+                [$sh, $eh] = $sess === 'morning' ? [10, 16] : [18, 23];
+                $start = $dayMid + $sh * 3600 - $UTC_OFF;
+                $end = $dayMid + $eh * 3600 - $UTC_OFF;
+                $guests = mt_rand(12, 45) * 10;
+                $tables = (int) ceil($guests / 10);
+                $svc = $services[array_rand($services)];
+                $c = $clients[array_rand($clients)];
+                $label = $sess === 'morning' ? 'Ertalab' : 'Kechqurun';
+                $status = $this->apptStatus($daysBack, $start);
+                $rows[] = [$bid, (int) $c->id, (int) ($staff[0]->id ?? 0), (int) $svc->id, $guests,
+                    gmdate('Y-m-d H:i:s', $start), gmdate('Y-m-d H:i:s', $end),
+                    $status, $this->pick(['link' => 55, 'admin' => 25, 'bot' => 20]),
+                    (int) $svc->deposit_tiyin, $status === 'completed' ? 1 : 0, "$label · $guests mehmon · $tables stol", $start, $start];
+            }
+            return $rows;
+        }
+
+        $nonOverlap = ($engine === 'slot' || $engine === 'medical');
+        $workStaff = $staff !== [] ? $staff : [null];
+        if ($nonOverlap) {
+            foreach ($workStaff as $st) {
+                if ($st === null) { continue; }
+                $t = $dayMid + 9 * 3600 - $UTC_OFF;         // 09:00 local
+                $endOfDay = $dayMid + 20 * 3600 - $UTC_OFF; // 20:00 local
+                $slots = $dow === 0 ? mt_rand(2, 5) : mt_rand(5, 10);
+                $placed = 0;
+                while ($t < $endOfDay && $placed < $slots) {
+                    if (mt_rand(1, 100) <= 22) { $t += mt_rand(1, 3) * 15 * 60; continue; }
+                    $svc = $services[array_rand($services)];
+                    $dur = max(15, (int) ($svc->duration_min ?: 30));
+                    if ($t + $dur * 60 > $endOfDay) { break; }
+                    $c = $clients[array_rand($clients)];
+                    $status = $this->apptStatus($daysBack, $t);
+                    $rows[] = [$bid, (int) $c->id, (int) $st->id, (int) $svc->id, null,
+                        gmdate('Y-m-d H:i:s', $t), gmdate('Y-m-d H:i:s', $t + $dur * 60),
+                        $status, $this->pick(['site' => 38, 'bot' => 42, 'admin' => 20]),
+                        (int) $svc->deposit_tiyin, $status === 'completed' ? 1 : 0, null, $t, $t];
+                    $t += $dur * 60 + mt_rand(0, 2) * 15 * 60;
+                    $placed++;
+                }
+            }
+        } else {
+            $n = $dow === 0 ? mt_rand(6, 12) : mt_rand(14, 26);
+            for ($k = 0; $k < $n; $k++) {
+                $hour = mt_rand(9, 19);
+                $min = [0, 15, 30, 45][mt_rand(0, 3)];
+                $t = $dayMid + ($hour * 3600 + $min * 60) - $UTC_OFF;
+                $svc = $services[array_rand($services)];
+                $dur = max(15, (int) ($svc->duration_min ?: 30));
+                $c = $clients[array_rand($clients)];
+                $st = $workStaff[array_rand($workStaff)];
+                $status = $this->apptStatus($daysBack, $t);
+                $rows[] = [$bid, (int) $c->id, $st ? (int) $st->id : null, (int) $svc->id, null,
+                    gmdate('Y-m-d H:i:s', $t), gmdate('Y-m-d H:i:s', $t + $dur * 60),
+                    $status, $this->pick(['site' => 40, 'bot' => 40, 'admin' => 20]),
+                    (int) $svc->deposit_tiyin, $status === 'completed' ? 1 : 0, null, $t, $t];
+            }
+        }
+        return $rows;
+    }
+
+    /** Create the order stream for ONE local day (catalog/medical). Returns count. */
+    private function ordersForDay(int $bid, int $dayMid, array $services, array $clients, int $daysBack, int $UTC_OFF): int
+    {
+        $db = \Yii::$app->db;
+        $notes = ['tezda kerak', 'muzsiz', 'kam shakar', 'yozuv bilan', null, null, null, null];
+        $count = mt_rand(14, 28);
+        $made = 0;
+        for ($j = 0; $j < $count; $j++) {
+            $hour = mt_rand(9, 20);
+            $ts = $dayMid + ($hour * 3600 + mt_rand(0, 59) * 60) - $UTC_OFF;
+            if ($ts > time()) { continue; } // don't place orders in the future
+            if ($daysBack >= 4) {
+                $status = $this->pick(['delivered' => 76, 'cancelled' => 14, 'ready' => 10]);
+            } elseif ($daysBack >= 1) {
+                $status = $this->pick(['delivered' => 44, 'ready' => 22, 'preparing' => 18, 'confirmed' => 10, 'cancelled' => 6]);
+            } else {
+                $status = $this->pick(['new' => 34, 'confirmed' => 26, 'preparing' => 20, 'ready' => 12, 'delivered' => 8]);
+            }
+            $c = $clients[array_rand($clients)];
+            $order = new Order(['business_id' => $bid, 'client_id' => (int) $c->id, 'customer_name' => $c->name, 'customer_phone' => $c->phone, 'status' => $status, 'source' => $this->pick(['bot' => 55, 'site' => 30, 'admin' => 15]), 'note' => $notes[array_rand($notes)], 'total_tiyin' => 0]);
+            $order->save(false);
+            $total = 0;
+            $used = [];
+            $lines = mt_rand(1, 3);
+            for ($l = 0; $l < $lines; $l++) {
+                $svc = $services[array_rand($services)];
+                if (isset($used[$svc->id])) { continue; }
+                $used[$svc->id] = true;
+                $qty = mt_rand(1, 2);
+                $it = new OrderItem(['order_id' => (int) $order->id, 'business_id' => $bid, 'service_id' => (int) $svc->id, 'name' => $svc->name, 'price_tiyin' => (int) $svc->price_tiyin, 'qty' => $qty]);
+                $it->save(false);
+                $this->backdate('{{%order_items}}', (int) $it->id, $ts);
+                $total += (int) $svc->price_tiyin * $qty;
+            }
+            $order->total_tiyin = $total;
+            $order->save(false);
+            $this->backdate('{{%orders}}', (int) $order->id, $ts);
+            $made++;
+        }
+        return $made;
+    }
+
+    /**
+     * Incremental daily demo fill — the cron entry point. For each demo business
+     * it fills every local day from the last populated day through today that is
+     * still empty, honoring the same engine rules as timeline. Idempotent: a day
+     * that already has rows is skipped, so running it twice a day is safe.
+     *
+     * Usage: php yii seed/daily [slug|all]   (default 'all')
+     */
+    public function actionDaily(string $slug = 'all'): int
+    {
+        $UTC_OFF = 5 * 3600;
+        $defaults = ['shox-barber', 'sanatrix', 'serenada', 'aziza-tortlari'];
+        $slugs = $slug === 'all' ? $defaults : [$slug];
+        $todayMid = $this->localTodayMidUtc();
+        $db = \Yii::$app->db;
+
+        foreach ($slugs as $sl) {
+            $business = Business::findOne(['slug' => $sl]);
+            if ($business === null) { $this->stderr("skip: '$sl' topilmadi\n"); continue; }
+            $bid = (int) $business->id;
+            $engine = (string) ($business->engine ?: 'slot');
+            $services = Service::find()->where(['business_id' => $bid, 'is_active' => 1])->all();
+            $staff = Staff::find()->where(['business_id' => $bid, 'is_active' => 1])->all();
+            $clients = Client::find()->where(['business_id' => $bid])->all();
+            if ($services === [] || $clients === []) { $this->stderr("skip: '$sl' uchun xizmat/mijoz yo'q\n"); continue; }
+
+            // Backfill start = the day after the last populated local day (≤ today),
+            // capped at 21 days back so a long gap doesn't explode.
+            $lastStart = (string) Appointment::find()
+                ->where(['business_id' => $bid])
+                ->andWhere(['<=', 'starts_at', gmdate('Y-m-d H:i:s', $todayMid + 86400 - $UTC_OFF)])
+                ->max('starts_at');
+            if ($lastStart !== '' && $lastStart !== null) {
+                $lastMid = (int) strtotime(gmdate('Y-m-d', strtotime($lastStart . ' UTC') + $UTC_OFF) . ' 00:00:00 UTC');
+                $startMid = $lastMid + 86400;
+            } else {
+                $startMid = $todayMid - 7 * 86400;
+            }
+            if ($startMid < $todayMid - 21 * 86400) { $startMid = $todayMid - 21 * 86400; }
+
+            $apptRows = [];
+            $ord = 0;
+            $daysFilled = 0;
+            for ($dayMid = $startMid; $dayMid <= $todayMid; $dayMid += 86400) {
+                $lo = gmdate('Y-m-d H:i:s', $dayMid - $UTC_OFF);
+                $hi = gmdate('Y-m-d H:i:s', $dayMid + 86400 - $UTC_OFF);
+                $daysBack = (int) round(($todayMid - $dayMid) / 86400);
+
+                $hasAppt = Appointment::find()->where(['business_id' => $bid])
+                    ->andWhere(['>=', 'starts_at', $lo])->andWhere(['<', 'starts_at', $hi])->exists();
+                if (!$hasAppt) {
+                    $apptRows = array_merge($apptRows, $this->apptRowsForDay($bid, $engine, $dayMid, $services, $staff, $clients, $daysBack, $UTC_OFF));
+                    $daysFilled++;
+                }
+
+                if ($engine === 'catalog' || $engine === 'medical') {
+                    $hasOrd = Order::find()->where(['business_id' => $bid])
+                        ->andWhere(['>=', 'created_at', $dayMid - $UTC_OFF])->andWhere(['<', 'created_at', $dayMid + 86400 - $UTC_OFF])->exists();
+                    if (!$hasOrd) {
+                        $ord += $this->ordersForDay($bid, $dayMid, $services, $clients, $daysBack, $UTC_OFF);
+                    }
+                }
+            }
+
+            $apptCols = ['business_id', 'client_id', 'staff_id', 'service_id', 'guests', 'starts_at', 'ends_at', 'status', 'source', 'deposit_tiyin', 'paid', 'notes', 'created_at', 'updated_at'];
+            foreach (array_chunk($apptRows, 400) as $chunk) {
+                $db->createCommand()->batchInsert('{{%appointments}}', $apptCols, $chunk)->execute();
+            }
+            $this->stdout(sprintf("daily '%s' (%s): %d kun to'ldirildi, +%d appt, +%d zakaz\n", $sl, $engine, $daysFilled, count($apptRows), $ord));
+        }
+        return ExitCode::OK;
+    }
+
     /** Categories, rules, certificates, subscriptions, deposits, payments. */
     private function fillAux(int $bid, array $clients, array $services, array $branches): void
     {

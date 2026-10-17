@@ -10,7 +10,7 @@ return [
     ],
     // Listing a module id in bootstrap triggers its Module::bootstrap(), which
     // self-registers that module's REST URL rules.
-    'bootstrap' => ['log', 'auth', 'booking', 'crm', 'loyalty', 'billing', 'notify', 'site', 'analytics', 'finance', 'payroll', 'inventory', 'catalog', 'sms', 'superadmin'],
+    'bootstrap' => ['log', 'auth', 'booking', 'crm', 'loyalty', 'billing', 'notify', 'site', 'analytics', 'finance', 'payroll', 'inventory', 'catalog', 'sms', 'superadmin', 'me', 'consumer', 'directory'],
     // When an appointment is completed, credit loyalty cashback for the client.
     'on appointmentCompleted' => [\api\modules\loyalty\services\LoyaltyService::class, 'onAppointmentCompleted'],
     // Answer CORS preflight (OPTIONS) before verb-scoped routing can 404 it.
@@ -68,6 +68,10 @@ return [
         'catalog' => ['class' => \api\modules\catalog\Module::class],
         'sms' => ['class' => \api\modules\sms\Module::class],
         'superadmin' => ['class' => \api\modules\superadmin\Module::class],
+        // Mobile apps: staff self-service (TizBiz Biznes) + consumer app (Bizcat).
+        'me' => ['class' => \api\modules\me\Module::class],
+        'consumer' => ['class' => \api\modules\consumer\Module::class],
+        'directory' => ['class' => \api\modules\directory\Module::class],
     ],
     'params' => $params,
 ];

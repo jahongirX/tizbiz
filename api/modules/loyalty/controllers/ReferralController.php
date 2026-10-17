@@ -11,14 +11,16 @@ use yii\web\NotFoundHttpException;
 use yii\web\UnprocessableEntityHttpException;
 
 /**
- * Referral tracking. Listing/creating a referral is open to any authed user;
- * granting a bonus requires owner/admin.
+ * Referral tracking. Listing, creating and crediting a referral
+ * require owner/admin (staff get 403).
  */
 class ReferralController extends Controller
 {
     /** GET /v1/referrals — referrals for the active business. */
     public function actionIndex(): array
     {
+        $this->requireRole('business_owner', 'business_admin');
+        Yii::$app->tenant->require();
         return Referral::find()
             ->orderBy(['id' => SORT_DESC])
             ->all();
@@ -27,6 +29,7 @@ class ReferralController extends Controller
     /** POST /v1/referrals { referrer_client_id, referred_client_id? } */
     public function actionCreate()
     {
+        $this->requireRole('business_owner', 'business_admin');
         $businessId = Yii::$app->tenant->require();
 
         $referrer = (int) $this->body('referrer_client_id');

@@ -10,8 +10,8 @@ use yii\web\NotFoundHttpException;
 /**
  * CRM client categories CRUD.
  *
- * Reads (index/view) are available to any authenticated tenant user; writes
- * (create/update/delete) require business_owner or business_admin. All rows are
+ * Reads (index) and writes (create/update/delete) require business_owner or
+ * business_admin (staff get 403). All rows are
  * tenant-scoped automatically by {@see ClientCategory} via the active business JWT.
  */
 class ClientCategoryController extends Controller
@@ -22,6 +22,7 @@ class ClientCategoryController extends Controller
      */
     public function actionIndex(): array
     {
+        $this->requireRole('business_owner', 'business_admin');
         Yii::$app->tenant->require();
 
         $rows = ClientCategory::find()

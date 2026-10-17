@@ -5,6 +5,8 @@ namespace common\engines;
 use common\models\Business;
 use common\models\Service;
 use common\models\Staff;
+use common\presenters\BusinessPresenter;
+use common\presenters\StaffPresenter;
 
 /**
  * The slot / online-booking engine (barber, salon, dentistry, clinic…). This is
@@ -37,30 +39,24 @@ class SlotEngine implements EngineInterface
             'engine' => static::key(),
             'business' => $this->businessPayload($business),
             'services' => $enabled ? $this->offerings($business) : [],
+            // Public staff view only: {id, name, specialization} — never user_id
+            // or commission_percent.
             'staff' => $enabled
-                ? Staff::find()->where(['business_id' => $business->id, 'is_active' => 1])->all()
+                ? array_map(
+                    [StaffPresenter::class, 'public'],
+                    Staff::find()->where(['business_id' => $business->id, 'is_active' => 1])->all()
+                )
                 : [],
         ];
     }
 
-    /** Shared public business profile (reused by sibling engines). */
+    /**
+     * Shared public business profile (reused by sibling engines). Delegates to
+     * the whitelisted presenter so the AR (bot token, features…) never leaks.
+     */
     protected function businessPayload(Business $business): array
     {
-        return [
-            'id' => (int) $business->id,
-            'name' => $business->name,
-            'slug' => $business->slug,
-            'category' => $business->category,
-            'phone' => $business->phone,
-            'timezone' => $business->timezone,
-            'online_booking_enabled' => (bool) $business->online_booking_enabled,
-            'tagline' => $business->tagline,
-            // Branding (nullable) — the public storefront themes itself from these.
-            'logo' => $business->logo,
-            'cover' => $business->cover,
-            'brand_color' => $business->brand_color,
-            'brand_color_2' => $business->brand_color_2,
-        ];
+        return BusinessPresenter::site($business);
     }
 
     /** Online-bookable, active services of the business. */

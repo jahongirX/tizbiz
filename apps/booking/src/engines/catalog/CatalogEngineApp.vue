@@ -8,6 +8,7 @@ import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { api, ApiError, config } from '@tizbiz/api-client'
 import { soms } from '../../format'
 import PhoneInput from '../../components/PhoneInput.vue'
+import LocationCard from '../../components/LocationCard.vue'
 
 const props = defineProps({
   slug: { type: String, default: '' },
@@ -417,6 +418,7 @@ const detailImages = computed(() => {
           <h2>Buyurtma qabul qilindi!</h2>
           <p>#{{ placedOrder?.id }} · {{ soms(placedOrder?.total_tiyin) }}</p>
         </div>
+        <LocationCard :business="business" />
         <button class="btn" @click="reset">Yana buyurtma</button>
       </template>
     </div>

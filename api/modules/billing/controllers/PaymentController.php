@@ -45,6 +45,19 @@ class PaymentController extends Controller
             throw new NotFoundHttpException('Bron topilmadi.');
         }
 
+        // Guards (checked before the idempotent replay): never start a second
+        // payment for a paid booking, nor any payment for a closed one.
+        if ($appointment->paid) {
+            throw new ConflictHttpException('Bu bron uchun to\'lov allaqachon qilingan.');
+        }
+        if (in_array((string) $appointment->status, [
+            Appointment::STATUS_CANCELED,
+            Appointment::STATUS_NO_SHOW,
+            Appointment::STATUS_COMPLETED,
+        ], true)) {
+            throw new ConflictHttpException('Bu bron uchun to\'lov qilib bo\'lmaydi.');
+        }
+
         // Deposit amount: appointment override, else the service default.
         $amount = $appointment->deposit_tiyin;
         if ($amount === null) {

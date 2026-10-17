@@ -27,6 +27,21 @@ use yii\db\ActiveQuery;
  * @property string|null $brand_color
  * @property string|null $brand_color_2
  * @property string|null $tagline
+ * @property string|null $description long "about" text for the directory (max 2000)
+ * @property string|null $address
+ * @property string|null $map_url
+ * @property string|null $city
+ * @property string|null $district
+ * @property string|null $lat decimal(10,7) as string from the driver
+ * @property string|null $lng decimal(10,7) as string from the driver
+ * @property bool $is_listed shown in the Bizcat directory
+ * @property string|float $rating_avg cached AVG of published reviews (see Review::recomputeBusinessRating)
+ * @property int $rating_count cached COUNT of published reviews
+ * @property int|null $featured_until unix ts; featured while > now
+ * @property bool $online_booking_enabled
+ * @property int $booking_lead_min
+ * @property int $booking_horizon_days
+ * @property string|null $engine
  * @property int $created_at
  * @property int $updated_at
  *
@@ -91,6 +106,18 @@ class Business extends ActiveRecord
             [['telegram_bot_username'], 'string', 'max' => 64],
             [['telegram_bot_token'], 'match', 'pattern' => '/^\d{6,}:[A-Za-z0-9_-]{20,}$/', 'message' => 'Bot token formati noto\'g\'ri.', 'skipOnEmpty' => true],
             [['tagline'], 'string', 'max' => 160],
+            [['address'], 'string', 'max' => 255],
+            [['map_url'], 'string', 'max' => 500],
+            // Directory (Bizcat) profile.
+            [['city', 'district'], 'string', 'max' => 64],
+            [['lat'], 'number', 'min' => -90, 'max' => 90],
+            [['lng'], 'number', 'min' => -180, 'max' => 180],
+            [['description'], 'string', 'max' => 2000],
+            [['is_listed'], 'boolean'],
+            [['is_listed'], 'default', 'value' => true],
+            // Aggregates maintained by the server only (never mass-assignable).
+            [['!rating_avg'], 'number', 'min' => 0, 'max' => 5],
+            [['!rating_count', '!featured_until'], 'integer', 'min' => 0],
             [['logo', 'cover'], 'string', 'max' => 500],
             [['brand_color', 'brand_color_2'], 'string', 'max' => 9],
             [['brand_color', 'brand_color_2'], 'match', 'pattern' => '/^#[0-9a-fA-F]{6}$/', 'message' => 'Rang #RRGGBB formatida bo\'lishi kerak.', 'skipOnEmpty' => true],
@@ -121,6 +148,17 @@ class Business extends ActiveRecord
             'brand_color' => 'Asosiy rang',
             'brand_color_2' => 'Qo\'shimcha rang',
             'tagline' => 'Sarlavha ostidagi matn',
+            'description' => 'Tavsif',
+            'address' => 'Manzil',
+            'map_url' => 'Xarita havolasi',
+            'city' => 'Shahar',
+            'district' => 'Tuman',
+            'lat' => 'Kenglik',
+            'lng' => 'Uzunlik',
+            'is_listed' => 'Katalogda ko\'rsatish',
+            'rating_avg' => 'O\'rtacha reyting',
+            'rating_count' => 'Sharhlar soni',
+            'featured_until' => 'Tavsiya muddati',
             'created_at' => 'Yaratilgan sana',
             'updated_at' => 'Yangilangan sana',
         ];

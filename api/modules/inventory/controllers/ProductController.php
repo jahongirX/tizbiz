@@ -12,10 +12,10 @@ use yii\web\NotFoundHttpException;
 /**
  * Inventory products + stock ledger.
  *
- * Reads (index/view/movements/summary) are available to any authenticated
- * tenant member; writes (create/update/delete/stock) require owner/admin. All
- * rows are tenant-scoped automatically by {@see Product} / {@see StockMovement}
- * via the active business JWT. Money is in tiyin; quantities are integers.
+ * Reads (index/view/movements/summary; they expose cost_tiyin) and writes
+ * (create/update/delete/stock) require owner/admin. All rows are tenant-scoped
+ * automatically by {@see Product} / {@see StockMovement} via the active
+ * business JWT. Money is in tiyin; quantities are integers.
  */
 class ProductController extends Controller
 {
@@ -30,6 +30,7 @@ class ProductController extends Controller
      */
     public function actionIndex(): array
     {
+        $this->requireRole('business_owner', 'business_admin');
         Yii::$app->tenant->require();
 
         $search = trim((string) Yii::$app->request->get('search', ''));
@@ -69,6 +70,7 @@ class ProductController extends Controller
      */
     public function actionView(int $id): Product
     {
+        $this->requireRole('business_owner', 'business_admin');
         return $this->findProduct($id);
     }
 
@@ -185,6 +187,7 @@ class ProductController extends Controller
      */
     public function actionMovements(int $id): array
     {
+        $this->requireRole('business_owner', 'business_admin');
         $product = $this->findProduct($id);
 
         $rows = StockMovement::find()
@@ -202,6 +205,7 @@ class ProductController extends Controller
      */
     public function actionSummary(): array
     {
+        $this->requireRole('business_owner', 'business_admin');
         Yii::$app->tenant->require();
 
         $total = (int) Product::find()->count();

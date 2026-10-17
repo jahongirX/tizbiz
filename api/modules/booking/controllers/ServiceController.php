@@ -9,18 +9,21 @@ use Yii;
 use yii\web\NotFoundHttpException;
 
 /**
- * CRUD for services. Reads: any authed member. Writes: owner/admin.
+ * CRUD for services. Reads and writes: owner/admin.
  * Money fields (price_tiyin, deposit_tiyin) are in tiyin.
  */
 class ServiceController extends Controller
 {
     public function actionIndex(): array
     {
+        $this->requireRole('business_owner', 'business_admin');
+        Yii::$app->tenant->require();
         return Service::find()->orderBy(['name' => SORT_ASC])->all();
     }
 
     public function actionView(int $id): Service
     {
+        $this->requireRole('business_owner', 'business_admin');
         return $this->findService($id);
     }
 
@@ -126,6 +129,7 @@ class ServiceController extends Controller
 
     private function findService(int $id): Service
     {
+        Yii::$app->tenant->require();
         $model = Service::findOne($id);
         if ($model === null) {
             throw new NotFoundHttpException('Xizmat topilmadi.');

@@ -13,6 +13,9 @@ use yii\db\ActiveQuery;
  * @property int $id
  * @property int $business_id
  * @property int|null $client_id
+ * @property int|null $consumer_id Bizcat consumer who booked (or was back-linked by phone)
+ * @property int|null $guests
+ * @property string|null $notes
  * @property int $staff_id
  * @property int $service_id
  * @property string $starts_at
@@ -36,6 +39,9 @@ class Appointment extends ActiveRecord
     public const SOURCE_ADMIN = 'admin';
     public const SOURCE_LINK = 'link';
     public const SOURCE_TELEGRAM = 'telegram';
+    public const SOURCE_APP = 'app';
+
+    public const SOURCES = [self::SOURCE_ADMIN, self::SOURCE_LINK, self::SOURCE_TELEGRAM, self::SOURCE_APP];
 
     /** All valid statuses. */
     public const STATUSES = [
@@ -74,11 +80,12 @@ class Appointment extends ActiveRecord
     {
         return [
             [['staff_id', 'service_id', 'starts_at', 'ends_at'], 'required'],
-            [['business_id', 'client_id', 'staff_id', 'service_id', 'deposit_tiyin'], 'integer'],
+            [['business_id', 'client_id', 'consumer_id', 'staff_id', 'service_id', 'deposit_tiyin', 'guests'], 'integer'],
+            [['guests'], 'integer', 'min' => 1],
             [['starts_at', 'ends_at'], 'string'],
             [['status'], 'in', 'range' => self::STATUSES],
             [['status'], 'default', 'value' => self::STATUS_PENDING],
-            [['source'], 'in', 'range' => [self::SOURCE_ADMIN, self::SOURCE_LINK, self::SOURCE_TELEGRAM]],
+            [['source'], 'in', 'range' => self::SOURCES],
             [['source'], 'default', 'value' => self::SOURCE_ADMIN],
             [['deposit_tiyin'], 'integer', 'min' => 0],
             [['paid'], 'boolean'],
@@ -93,6 +100,7 @@ class Appointment extends ActiveRecord
             'client_id' => 'Mijoz',
             'staff_id' => 'Xodim',
             'service_id' => 'Xizmat',
+            'guests' => 'Mehmonlar soni',
             'starts_at' => 'Boshlanish vaqti',
             'ends_at' => 'Tugash vaqti',
             'status' => 'Holat',
@@ -103,6 +111,32 @@ class Appointment extends ActiveRecord
             'created_at' => 'Yaratilgan sana',
             'updated_at' => 'Yangilangan sana',
         ];
+    }
+
+    /**
+     * Re-read one appointment with SELECT ... FOR UPDATE (call inside a
+     * transaction). Returns the latest committed row, locked until commit, so a
+     * read-check-write status change cannot overwrite a concurrent one.
+     */
+    public static function lockForUpdate(int $id): ?self
+    {
+        return static::findBySql('SELECT * FROM ' . static::tableName() . ' WHERE id = :id FOR UPDATE', [':id' => $id])->one();
+    }
+
+    /**
+     * When a booking is released (canceled / no_show), deposit transactions that
+     * no PSP holds yet (status created) are canceled, so Payme/Click reject them.
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+        if (!$insert && array_key_exists('status', $changedAttributes)
+            && in_array((string) $this->status, self::RELEASED_STATUSES, true)) {
+            Transaction::updateAll(
+                ['status' => Transaction::STATUS_CANCELED, 'updated_at' => time()],
+                ['appointment_id' => (int) $this->id, 'type' => Transaction::TYPE_DEPOSIT, 'status' => Transaction::STATUS_CREATED]
+            );
+        }
     }
 
     public function getStaff(): ActiveQuery
@@ -120,6 +154,16 @@ class Appointment extends ActiveRecord
         return $this->hasOne(Client::class, ['id' => 'client_id']);
     }
 
+    public function getConsumer(): ActiveQuery
+    {
+        return $this->hasOne(ConsumerUser::class, ['id' => 'consumer_id']);
+    }
+
+    public function getBusiness(): ActiveQuery
+    {
+        return $this->hasOne(Business::class, ['id' => 'business_id']);
+    }
+
     public function getItems(): ActiveQuery
     {
         return $this->hasMany(AppointmentItem::class, ['appointment_id' => 'id']);
@@ -132,7 +176,10 @@ class Appointment extends ActiveRecord
      */
     public function fields(): array
     {
-        $fields = parent::fields();
+        // Every column, not just the populated ones: a freshly inserted model
+        // would otherwise omit null columns (consumer_id, guests, notes).
+        $columns = $this->attributes();
+        $fields = array_combine($columns, $columns);
         $fields['client_name'] = fn (self $m) => $m->client?->name;
         $fields['client_phone'] = fn (self $m) => $m->client?->phone;
         $fields['service_name'] = fn (self $m) => $m->service?->name;

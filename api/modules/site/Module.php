@@ -16,6 +16,7 @@ class Module extends BaseModule implements BootstrapInterface
     public function bootstrap($app): void
     {
         $app->getUrlManager()->addRules([
+            'GET v1/site/<slug:[a-z0-9-]+>/booked-days' => 'site/site/booked-days',
             'GET v1/site/<slug:[a-z0-9-]+>' => 'site/site/view',
         ], false);
     }

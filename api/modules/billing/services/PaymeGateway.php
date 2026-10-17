@@ -110,7 +110,8 @@ class PaymeGateway
         if ($tx === null || $tx->type !== Transaction::TYPE_DEPOSIT) {
             return $this->error(self::ERR_ORDER_NOT_FOUND, 'Buyurtma topilmadi.', 'order_id');
         }
-        if (!in_array($tx->status, [Transaction::STATUS_CREATED, Transaction::STATUS_PENDING], true)) {
+        if (!in_array($tx->status, [Transaction::STATUS_CREATED, Transaction::STATUS_PENDING], true)
+            || $tx->appointmentClosed()) {
             return $this->error(self::ERR_CANNOT_PERFORM, 'Buyurtma to\'lov qilinadigan holatda emas.');
         }
         if ((int) $params['amount'] !== (int) $tx->amount_tiyin) {
@@ -140,8 +141,9 @@ class PaymeGateway
             ]];
         }
 
-        // A different transaction is already bound, or the order is finalized.
-        if ($tx->external_id !== null || $tx->status !== Transaction::STATUS_CREATED) {
+        // A different transaction is already bound, the order is finalized, or
+        // its booking was canceled / closed meanwhile.
+        if ($tx->external_id !== null || $tx->status !== Transaction::STATUS_CREATED || $tx->appointmentClosed()) {
             return $this->error(self::ERR_CANNOT_PERFORM, 'Buyurtmada allaqachon jarayondagi tranzaksiya mavjud.');
         }
 
@@ -169,7 +171,8 @@ class PaymeGateway
                 'state' => self::STATE_COMPLETED,
             ]];
         }
-        if ($tx->status !== Transaction::STATUS_PENDING) {
+        if ($tx->status !== Transaction::STATUS_PENDING || $tx->appointmentClosed()) {
+            // A closed booking is never charged; Payme then cancels its transaction.
             return $this->error(self::ERR_CANNOT_PERFORM, 'Tranzaksiyani amalga oshirib bo\'lmaydi.');
         }
         $tx->status = Transaction::STATUS_PAID;

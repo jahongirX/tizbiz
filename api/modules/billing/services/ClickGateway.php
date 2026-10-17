@@ -119,7 +119,8 @@ class ClickGateway
         if ($tx->status === Transaction::STATUS_PAID) {
             return $this->respond($request, self::ERR_ALREADY_PAID, 'Allaqachon to\'langan');
         }
-        if (in_array($tx->status, [Transaction::STATUS_CANCELED, Transaction::STATUS_REFUNDED], true)) {
+        if (in_array($tx->status, [Transaction::STATUS_CANCELED, Transaction::STATUS_REFUNDED], true)
+            || $tx->appointmentClosed()) {
             return $this->respond($request, self::ERR_CANCELED, 'Tranzaksiya bekor qilingan');
         }
         if (!$this->amountMatches($request, $tx)) {
@@ -153,8 +154,9 @@ class ClickGateway
             return $this->respond($request, self::ERR_CANCELED, 'Tranzaksiya bekor qilingan');
         }
 
-        // Click signals its own failure via a negative error field on complete.
-        if ((int) ($request['error'] ?? 0) < 0) {
+        // Click signals its own failure via a negative error field on complete;
+        // a booking canceled / closed since Prepare is never charged either.
+        if ((int) ($request['error'] ?? 0) < 0 || $tx->appointmentClosed()) {
             $tx->status = Transaction::STATUS_CANCELED;
             $tx->save(false);
             return $this->respond($request, self::ERR_CANCELED, 'Tranzaksiya bekor qilingan');

@@ -8,17 +8,20 @@ use Yii;
 use yii\web\NotFoundHttpException;
 
 /**
- * CRUD for service categories. Reads: any authed member. Writes: owner/admin.
+ * CRUD for service categories. Reads and writes: owner/admin.
  */
 class ServiceCategoryController extends Controller
 {
     public function actionIndex(): array
     {
+        $this->requireRole('business_owner', 'business_admin');
+        Yii::$app->tenant->require();
         return ServiceCategory::find()->orderBy(['sort' => SORT_ASC, 'id' => SORT_ASC])->all();
     }
 
     public function actionView(int $id): ServiceCategory
     {
+        $this->requireRole('business_owner', 'business_admin');
         return $this->findCategory($id);
     }
 
@@ -74,6 +77,7 @@ class ServiceCategoryController extends Controller
 
     private function findCategory(int $id): ServiceCategory
     {
+        Yii::$app->tenant->require();
         $model = ServiceCategory::findOne($id);
         if ($model === null) {
             throw new NotFoundHttpException('Xizmat kategoriyasi topilmadi.');

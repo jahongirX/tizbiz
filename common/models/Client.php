@@ -5,6 +5,7 @@ namespace common\models;
 use common\db\ActiveRecord;
 use yii\behaviors\TimestampBehavior;
 use yii\db\ActiveQuery;
+use yii\db\Query;
 
 /**
  * CRM contact, scoped to a business. Unique per (business, phone).
@@ -122,6 +123,46 @@ class Client extends ActiveRecord
         if (is_string($this->tags)) {
             $decoded = json_decode($this->tags, true);
             $this->tags = is_array($decoded) ? $decoded : [];
+        }
+        if (!$insert && array_key_exists('phone', $changedAttributes)
+            && (string) $changedAttributes['phone'] !== (string) $this->phone) {
+            self::relinkConsumers((int) $this->id, (string) $this->phone);
+        }
+    }
+
+    /**
+     * The business corrected this client's phone: bookings that were back-linked
+     * to a Bizcat consumer by the OLD phone (see ConsumerLinker::backLink) move to
+     * the consumer owning the NEW phone, or are unlinked when there is none.
+     * Bookings the consumer made in the app (source=app) stay theirs. Plain table
+     * updates, no tenant scope.
+     */
+    public static function relinkConsumers(int $clientId, string $newPhone): void
+    {
+        $db = static::getDb();
+        $owner = (new Query())
+            ->select('id')
+            ->from(ConsumerUser::tableName())
+            ->where(['phone' => $newPhone, 'deleted_at' => null])
+            ->scalar($db);
+        $ownerId = $owner !== false && $owner !== null ? (int) $owner : null;
+
+        $unlink = ['and',
+            ['client_id' => $clientId],
+            ['not', ['consumer_id' => null]],
+            ['<>', 'source', Appointment::SOURCE_APP],
+        ];
+        if ($ownerId !== null) {
+            $unlink[] = ['<>', 'consumer_id', $ownerId];
+        }
+        $db->createCommand()->update(Appointment::tableName(), ['consumer_id' => null], $unlink)->execute();
+
+        if ($ownerId !== null) {
+            $db->createCommand()->update(
+                Appointment::tableName(),
+                ['consumer_id' => $ownerId],
+                ['and', ['client_id' => $clientId], ['consumer_id' => null]]
+            )->execute();
         }
     }
 

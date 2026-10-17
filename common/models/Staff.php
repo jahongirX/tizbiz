@@ -3,6 +3,7 @@
 namespace common\models;
 
 use common\db\ActiveRecord;
+use Yii;
 use yii\behaviors\TimestampBehavior;
 use yii\db\ActiveQuery;
 
@@ -12,7 +13,7 @@ use yii\db\ActiveQuery;
  *
  * @property int $id
  * @property int $business_id
- * @property int|null $user_id
+ * @property int|null $user_id login account; must be a business_user of business_id, unique per business
  * @property string $name
  * @property string|null $specialization
  * @property bool $is_active
@@ -49,7 +50,47 @@ class Staff extends ActiveRecord
             [['commission_percent'], 'default', 'value' => 0],
             [['is_active'], 'boolean'],
             [['is_active'], 'default', 'value' => true],
+            [['user_id'], 'validateUserLink', 'skipOnEmpty' => true],
         ];
+    }
+
+    /**
+     * A linked login (user_id) must be a member of this staff row's business,
+     * and may be linked to at most one staff row of that business. A row that is
+     * already linked to one account is never re-pointed to another (unlink first).
+     */
+    public function validateUserLink(string $attribute): void
+    {
+        if ($this->hasErrors($attribute)) {
+            return;
+        }
+        $userId = (int) $this->$attribute;
+        $old = $this->getOldAttribute($attribute);
+        if (!$this->isNewRecord && $old !== null && $old !== '' && (int) $old !== $userId) {
+            $this->addError($attribute, 'Bu xodim boshqa hisobga bog\'langan.');
+            return;
+        }
+        $businessId = (int) ($this->business_id ?: (Yii::$app->has('tenant') ? Yii::$app->tenant->getId() : 0));
+        if ($userId <= 0 || $businessId <= 0) {
+            $this->addError($attribute, 'Bu foydalanuvchi ushbu biznes a\'zosi emas.');
+            return;
+        }
+
+        $isMember = BusinessUser::find()
+            ->where(['business_id' => $businessId, 'user_id' => $userId])
+            ->exists();
+        if (!$isMember) {
+            $this->addError($attribute, 'Bu foydalanuvchi ushbu biznes a\'zosi emas.');
+            return;
+        }
+
+        $taken = static::find()
+            ->andWhere([static::tableName() . '.business_id' => $businessId, static::tableName() . '.user_id' => $userId])
+            ->andFilterWhere(['<>', static::tableName() . '.id', $this->id])
+            ->exists();
+        if ($taken) {
+            $this->addError($attribute, 'Bu foydalanuvchi boshqa xodimga bog\'langan.');
+        }
     }
 
     public function attributeLabels(): array

@@ -9,8 +9,8 @@ use Yii;
 use yii\web\NotFoundHttpException;
 
 /**
- * CRUD for auto-category rules plus a manual "apply now" action. Reads are open
- * to any authed tenant user; writes and apply require owner/admin. All rows are
+ * CRUD for auto-category rules plus a manual "apply now" action. Reads, writes
+ * and apply require owner/admin (staff get 403). All rows are
  * tenant-scoped automatically via the active business JWT.
  */
 class AutoCategoryRuleController extends Controller
@@ -18,6 +18,8 @@ class AutoCategoryRuleController extends Controller
     /** GET /v1/loyalty/auto-category-rules — ordered by metric, then threshold. */
     public function actionIndex(): array
     {
+        $this->requireRole('business_owner', 'business_admin');
+        Yii::$app->tenant->require();
         return AutoCategoryRule::find()
             ->orderBy(['metric' => SORT_ASC, 'threshold' => SORT_ASC])
             ->all();
@@ -26,6 +28,7 @@ class AutoCategoryRuleController extends Controller
     /** GET /v1/loyalty/auto-category-rules/<id> */
     public function actionView(int $id): AutoCategoryRule
     {
+        $this->requireRole('business_owner', 'business_admin');
         return $this->findRule($id);
     }
 
@@ -85,6 +88,7 @@ class AutoCategoryRuleController extends Controller
     /** Load a rule scoped to the active business (auto tenant filter) or 404. */
     private function findRule(int $id): AutoCategoryRule
     {
+        Yii::$app->tenant->require();
         $rule = AutoCategoryRule::findOne(['id' => $id]);
         if ($rule === null) {
             throw new NotFoundHttpException('Avto-kategoriya qoidasi topilmadi.');

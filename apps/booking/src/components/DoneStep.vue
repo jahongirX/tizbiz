@@ -1,10 +1,12 @@
 <script setup>
 import { soms, prettyLocal } from '../format.js'
+import LocationCard from './LocationCard.vue'
 
 defineProps({
   service: { type: Object, required: true },
   staff: { type: Object, required: true },
   slot: { type: Object, required: true },
+  business: { type: Object, default: null },
   payLoading: { type: Boolean, default: false },
   payError: { type: String, default: '' },
 })
@@ -34,6 +36,8 @@ const emit = defineEmits(['pay', 'restart'])
         <span class="v">{{ staff.name }}</span>
       </div>
     </div>
+
+    <LocationCard :business="business" />
 
     <template v-if="service.deposit_tiyin > 0">
       <div class="deposit-callout">

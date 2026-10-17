@@ -258,6 +258,7 @@ function restart() {
           :service="sel.service"
           :staff="sel.staff"
           :slot="sel.slot"
+          :business="business"
           :pay-loading="payLoading"
           :pay-error="payError"
           @pay="payDeposit"

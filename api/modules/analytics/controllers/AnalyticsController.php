@@ -33,6 +33,7 @@ class AnalyticsController extends Controller
      */
     public function actionOverview(): array
     {
+        $this->requireRole('business_owner', 'business_admin');
         $businessId = Yii::$app->tenant->require();
 
         [$from, $to] = $this->range();

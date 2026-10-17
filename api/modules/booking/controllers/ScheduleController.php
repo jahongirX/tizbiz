@@ -11,8 +11,9 @@ use yii\web\NotFoundHttpException;
 
 /**
  * Staff schedule management: weekly working hours and one-off time off.
- * Reads: any authed member. Writes: owner/admin. Staff is always resolved
- * through the active tenant so cross-tenant access is impossible.
+ * Reads and writes: owner/admin (staff read their own hours via GET
+ * /v1/me/schedule). Staff is always resolved through the active tenant so
+ * cross-tenant access is impossible.
  */
 class ScheduleController extends Controller
 {
@@ -20,6 +21,7 @@ class ScheduleController extends Controller
 
     public function actionWorkingHours(int $id): array
     {
+        $this->requireRole('business_owner', 'business_admin');
         $staff = $this->findStaff($id);
         return WorkingHours::find()
             ->andWhere(['staff_id' => $staff->id])
@@ -82,6 +84,7 @@ class ScheduleController extends Controller
 
     public function actionTimeOff(int $id): array
     {
+        $this->requireRole('business_owner', 'business_admin');
         $staff = $this->findStaff($id);
         return TimeOff::find()
             ->andWhere(['staff_id' => $staff->id])
@@ -138,6 +141,7 @@ class ScheduleController extends Controller
     /** Resolve staff within the active tenant (404 otherwise). */
     private function findStaff(int $id): Staff
     {
+        Yii::$app->tenant->require();
         $model = Staff::findOne($id);
         if ($model === null) {
             throw new NotFoundHttpException('Xodim topilmadi.');

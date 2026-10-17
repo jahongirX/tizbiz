@@ -9,7 +9,7 @@ const VERTICALS = [
   { key: 'barber', engine: 'slot', category: 'barber', title: 'Barber / Go‘zallik saloni', hint: 'Sartaroshxona, go‘zallik, styling', emoji: '✂️', accent: '#3b82f6' },
   { key: 'cafe', engine: 'catalog', category: 'cafe', title: 'Kafe / Restoran / Tortlar', hint: 'Kafe, restoran, shirinliklar, tortlar', emoji: '🍰', accent: '#f97316' },
   { key: 'clinic', engine: 'medical', category: 'clinic', title: 'Klinika / UZI / Stomatologiya', hint: 'Klinika, diagnostika, stomatologiya', emoji: '🩺', accent: '#10b981' },
-  { key: 'rental', engine: 'slot', category: 'rental', title: 'To‘yxona / Ijara', hint: 'To‘yxona, kelin libosi, ijara', emoji: '💍', accent: '#8b5cf6' },
+  { key: 'rental', engine: 'rental', category: 'rental', title: 'To‘yxona / Ijara', hint: 'To‘yxona, kelin libosi, ijara', emoji: '💍', accent: '#8b5cf6' },
 ]
 
 const ADMIN_URL = `https://admin.${config.rootDomain || 'tizbiz.uz'}/app/`

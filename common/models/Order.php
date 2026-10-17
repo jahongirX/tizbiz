@@ -13,6 +13,8 @@ use yii\db\ActiveQuery;
  * @property int $id
  * @property int $business_id
  * @property int|null $client_id
+ * @property int|null $consumer_id Bizcat consumer who ordered (or was back-linked by phone)
+ * @property int|null $tg_user_id
  * @property string|null $customer_name
  * @property string|null $customer_phone
  * @property string $status
@@ -35,7 +37,7 @@ class Order extends ActiveRecord
         self::STATUS_NEW, self::STATUS_CONFIRMED, self::STATUS_PREPARING,
         self::STATUS_READY, self::STATUS_DELIVERED, self::STATUS_CANCELLED,
     ];
-    public const SOURCES = ['site', 'bot', 'admin'];
+    public const SOURCES = ['site', 'bot', 'admin', 'app'];
 
     public static function tableName(): string
     {
@@ -63,7 +65,7 @@ class Order extends ActiveRecord
             [['note'], 'string', 'max' => 500],
             [['source'], 'in', 'range' => self::SOURCES],
             [['source'], 'default', 'value' => 'site'],
-            [['client_id', 'tg_user_id'], 'integer'],
+            [['client_id', 'consumer_id', 'tg_user_id'], 'integer'],
         ];
     }
 
@@ -75,6 +77,20 @@ class Order extends ActiveRecord
     public function getClient(): ActiveQuery
     {
         return $this->hasOne(Client::class, ['id' => 'client_id']);
+    }
+
+    /**
+     * Re-read one order with SELECT ... FOR UPDATE (call inside a transaction):
+     * the latest committed row, locked until commit.
+     */
+    public static function lockForUpdate(int $id): ?self
+    {
+        return static::findBySql('SELECT * FROM ' . static::tableName() . ' WHERE id = :id FOR UPDATE', [':id' => $id])->one();
+    }
+
+    public function getBusiness(): ActiveQuery
+    {
+        return $this->hasOne(Business::class, ['id' => 'business_id']);
     }
 
     public function fields(): array

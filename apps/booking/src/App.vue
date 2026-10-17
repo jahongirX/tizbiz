@@ -13,6 +13,8 @@ const ENGINES = {
   // Medical shares the web-catalog storefront (blue-themed), like food.
   medical: defineAsyncComponent(() => import('./engines/catalog/CatalogEngineApp.vue')),
   catalog: defineAsyncComponent(() => import('./engines/catalog/CatalogEngineApp.vue')),
+  // Rental (wedding halls): per-guest menu + guest count + big date calendar.
+  rental: defineAsyncComponent(() => import('./engines/rental/RentalEngineApp.vue')),
 }
 
 // Per-engine brand palette layered on the shared TizBiz theme. Medical = blue,

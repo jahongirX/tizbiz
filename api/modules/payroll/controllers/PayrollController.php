@@ -11,7 +11,7 @@ use yii\db\Query;
 
 /**
  * Payroll: per active staff member, earnings computed from completed
- * appointments in a date range. Readable by any authed member of the tenant.
+ * appointments in a date range. Readable by owner/admin only.
  *
  * earnings_tiyin = intval(revenue_tiyin * commission_percent / 100), where
  * revenue_tiyin is the SUM of the appointments' service price_tiyin.
@@ -20,6 +20,7 @@ class PayrollController extends Controller
 {
     public function actionIndex(): array
     {
+        $this->requireRole('business_owner', 'business_admin');
         $business = Yii::$app->tenant->require();
         [$from, $to] = $this->range();
 

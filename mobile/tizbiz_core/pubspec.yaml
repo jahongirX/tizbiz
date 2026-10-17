@@ -1,0 +1,17 @@
+name: tizbiz_core
+description: Shared pure-Dart core for the TizBiz mobile apps (API client, models, formatting).
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.9.0          # local toolchain is Dart 3.13.5 (Flutter 3.47.7); no language feature newer than 3.9 is used
+
+dependencies:
+  dio: ^5.9.0          # 5.11.1 is in the local pub cache
+  intl: '>=0.19.0 <0.21.0'   # Flutter's flutter_localizations pins ^0.20.3; keep the range wide
+  meta: ^1.18.0        # Flutter pins ^1.18.3
+  collection: ^1.19.0  # Flutter pins ^1.19.1
+
+dev_dependencies:
+  test: ^1.29.0
+  lints: ^6.0.0

@@ -8,8 +8,8 @@ use Yii;
 use yii\web\NotFoundHttpException;
 
 /**
- * CRUD for tiered discount rules. Reads are open to any authed tenant user;
- * writes require owner/admin. All rows are tenant-scoped automatically via the
+ * CRUD for tiered discount rules. Reads and writes
+ * require owner/admin (staff get 403). All rows are tenant-scoped automatically via the
  * active business JWT.
  */
 class DiscountRuleController extends Controller
@@ -17,6 +17,8 @@ class DiscountRuleController extends Controller
     /** GET /v1/loyalty/discount-rules — ordered by metric, then threshold. */
     public function actionIndex(): array
     {
+        $this->requireRole('business_owner', 'business_admin');
+        Yii::$app->tenant->require();
         return DiscountRule::find()
             ->orderBy(['metric' => SORT_ASC, 'threshold' => SORT_ASC])
             ->all();
@@ -25,6 +27,7 @@ class DiscountRuleController extends Controller
     /** GET /v1/loyalty/discount-rules/<id> */
     public function actionView(int $id): DiscountRule
     {
+        $this->requireRole('business_owner', 'business_admin');
         return $this->findRule($id);
     }
 
@@ -70,6 +73,7 @@ class DiscountRuleController extends Controller
     /** Load a rule scoped to the active business (auto tenant filter) or 404. */
     private function findRule(int $id): DiscountRule
     {
+        Yii::$app->tenant->require();
         $rule = DiscountRule::findOne(['id' => $id]);
         if ($rule === null) {
             throw new NotFoundHttpException('Chegirma qoidasi topilmadi.');

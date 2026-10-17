@@ -101,6 +101,23 @@ class Transaction extends ActiveRecord
     }
 
     /**
+     * True when this deposit's booking can no longer be paid for (canceled,
+     * no_show or completed). The PSP gateways refuse such transactions.
+     */
+    public function appointmentClosed(): bool
+    {
+        if ($this->type !== self::TYPE_DEPOSIT || empty($this->appointment_id)) {
+            return false;
+        }
+        $appointment = $this->appointment;
+        return $appointment !== null && in_array((string) $appointment->status, [
+            Appointment::STATUS_CANCELED,
+            Appointment::STATUS_NO_SHOW,
+            Appointment::STATUS_COMPLETED,
+        ], true);
+    }
+
+    /**
      * A paid deposit confirms its booking: mark the linked appointment paid and,
      * if still pending, confirmed. Called from the PSP gateways on a paid transition.
      */
@@ -111,6 +128,11 @@ class Transaction extends ActiveRecord
         }
         $appointment = $this->appointment;
         if ($appointment === null) {
+            return;
+        }
+        if (in_array((string) $appointment->status, Appointment::RELEASED_STATUSES, true)) {
+            // Never resurrect a released booking; the money needs a manual refund.
+            \Yii::warning("Deposit tx #{$this->id} paid for released appointment #{$appointment->id}: refund needed", 'billing');
             return;
         }
         $changed = false;

@@ -12,8 +12,8 @@ use yii\web\NotFoundHttpException;
 use yii\web\UnprocessableEntityHttpException;
 
 /**
- * Loyalty balances and manual earn/redeem. All actions require auth; earn and
- * redeem additionally require an owner/admin role.
+ * Loyalty balances and manual earn/redeem. All actions require an
+ * owner/admin role (staff get 403).
  */
 class LoyaltyController extends Controller
 {
@@ -22,6 +22,7 @@ class LoyaltyController extends Controller
     /** GET /v1/loyalty/<clientId> — account balance plus recent ledger rows. */
     public function actionView(int $clientId): array
     {
+        $this->requireRole('business_owner', 'business_admin');
         $businessId = Yii::$app->tenant->require();
         $this->requireClient($businessId, $clientId);
 

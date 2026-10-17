@@ -5,9 +5,12 @@ namespace api\modules\auth\controllers;
 use common\components\Jwt;
 use common\models\Business;
 use common\models\BusinessUser;
+use common\models\Staff;
 use common\models\User;
+use common\rbac\Permissions;
 use common\rest\Controller;
 use Yii;
+use yii\db\Query;
 use yii\web\ConflictHttpException;
 use yii\web\ForbiddenHttpException;
 use yii\web\ServerErrorHttpException;
@@ -79,16 +82,14 @@ class AuthController extends Controller
         $activeBusinessId = $active !== null ? (int) $active->business_id : null;
         $activeRole = $active !== null ? (string) $active->role : null;
 
-        $token = Jwt::issue($user->id, $activeBusinessId, $activeRole);
+        $token = Jwt::issue($user->id, $activeBusinessId, $activeRole, Jwt::TYP_BIZ);
 
         return [
             'token' => $token,
+            'expires_at' => Jwt::expiresAt(),
             'user' => $user,
             'businesses' => $this->serializeMemberships($memberships),
-            'active' => [
-                'business_id' => $activeBusinessId,
-                'role' => $activeRole,
-            ],
+            'active' => $this->activePayload((int) $user->id, $activeBusinessId, $activeRole),
         ];
     }
 
@@ -137,6 +138,10 @@ class AuthController extends Controller
             if (!empty($businessInput['engine'])) {
                 $business->engine = (string) $businessInput['engine'];
             }
+            // Venue rental always runs the rental engine, whatever the client sent.
+            if (($businessInput['category'] ?? null) === 'rental') {
+                $business->engine = 'rental';
+            }
             if (isset($businessInput['staff_count']) && $businessInput['staff_count'] !== '') {
                 $business->staff_count = (int) $businessInput['staff_count'];
             }
@@ -166,7 +171,7 @@ class AuthController extends Controller
             throw new ServerErrorHttpException('Ro\'yxatdan o\'tishda xatolik yuz berdi.');
         }
 
-        $token = Jwt::issue($user->id, (int) $business->id, Business::ROLE_OWNER);
+        $token = Jwt::issue($user->id, (int) $business->id, Business::ROLE_OWNER, Jwt::TYP_BIZ);
 
         return $this->created([
             'token' => $token,
@@ -187,10 +192,7 @@ class AuthController extends Controller
 
         return [
             'user' => $user,
-            'active' => [
-                'business_id' => $user->activeTenantId,
-                'role' => $user->activeRole,
-            ],
+            'active' => $this->activePayload((int) $user->id, $user->activeTenantId, $user->activeRole),
             'businesses' => $this->serializeMemberships($this->memberships($user->id)),
         ];
     }
@@ -215,15 +217,46 @@ class AuthController extends Controller
             throw new ForbiddenHttpException('Bu biznes faol emas.');
         }
 
-        $token = Jwt::issue($user->id, (int) $membership->business_id, (string) $membership->role);
+        $token = Jwt::issue($user->id, (int) $membership->business_id, (string) $membership->role, Jwt::TYP_BIZ);
 
         return [
             'token' => $token,
-            'active' => [
-                'business_id' => (int) $membership->business_id,
-                'role' => (string) $membership->role,
-            ],
+            'expires_at' => Jwt::expiresAt(),
+            'active' => $this->activePayload((int) $user->id, (int) $membership->business_id, (string) $membership->role),
         ];
+    }
+
+    /**
+     * The `active` block of login/me/switch:
+     * {business_id, role, staff_id, permissions}.
+     *
+     * @return array{business_id:int|null, role:string|null, staff_id:int|null, permissions:string[]}
+     */
+    private function activePayload(int $userId, ?int $businessId, ?string $role): array
+    {
+        return [
+            'business_id' => $businessId,
+            'role' => $role,
+            'staff_id' => $businessId !== null ? $this->linkedStaffId($userId, $businessId) : null,
+            'permissions' => $businessId !== null ? Permissions::forRole($role) : [],
+        ];
+    }
+
+    /**
+     * Id of the active Staff row of $businessId linked to $userId, or null.
+     * Plain query on purpose: during switch the tenant scope still points at the
+     * previous business, so the tenant-scoped Staff::find() must not be used.
+     */
+    private function linkedStaffId(int $userId, int $businessId): ?int
+    {
+        $id = (new Query())
+            ->select(['id'])
+            ->from(Staff::tableName())
+            ->where(['business_id' => $businessId, 'user_id' => $userId, 'is_active' => 1])
+            ->orderBy(['id' => SORT_ASC])
+            ->limit(1)
+            ->scalar();
+        return $id !== false && $id !== null ? (int) $id : null;
     }
 
     /**

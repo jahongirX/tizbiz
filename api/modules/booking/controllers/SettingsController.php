@@ -10,12 +10,13 @@ use yii\web\NotFoundHttpException;
 
 /**
  * Online-booking settings for the active business.
- * Read: any authed member. Write: owner/admin.
+ * Read and write: owner/admin (staff get 403).
  */
 class SettingsController extends Controller
 {
     public function actionView(): array
     {
+        $this->requireRole(Business::ROLE_OWNER, Business::ROLE_ADMIN);
         return $this->payload($this->business());
     }
 
@@ -58,6 +59,23 @@ class SettingsController extends Controller
                 $v = $this->body($attr);
                 $model->$attr = ($v === null || trim((string) $v) === '') ? null : trim((string) $v);
             }
+        }
+        // Location + directory (Bizcat) profile. null or "" clears a nullable field.
+        foreach (['address', 'map_url', 'city', 'district', 'description'] as $attr) {
+            if (array_key_exists($attr, $this->body())) {
+                $v = $this->body($attr);
+                $model->$attr = ($v === null || trim((string) $v) === '') ? null : trim((string) $v);
+            }
+        }
+        foreach (['lat', 'lng'] as $attr) {
+            if (array_key_exists($attr, $this->body())) {
+                $v = $this->body($attr);
+                // Keep non-empty input as-is so the `number` rule can reject junk (422).
+                $model->$attr = ($v === null || (is_string($v) && trim($v) === '')) ? null : (is_string($v) ? trim($v) : $v);
+            }
+        }
+        if (array_key_exists('is_listed', $this->body()) && $this->body('is_listed') !== null) {
+            $model->is_listed = (bool) $this->body('is_listed');
         }
         // Telegram bot connect / disconnect.
         //  - empty token -> disconnect: drop the webhook on Telegram, clear creds
@@ -125,6 +143,17 @@ class SettingsController extends Controller
             // Never echo the raw token back to the client — expose only status.
             'telegram_connected' => $b->telegram_bot_token !== null && $b->telegram_bot_token !== '',
             'telegram_bot_username' => $b->telegram_bot_username,
+            // Location + directory profile.
+            'address' => $b->address,
+            'map_url' => $b->map_url,
+            'city' => $b->city,
+            'district' => $b->district,
+            'lat' => $b->lat !== null && $b->lat !== '' ? (float) $b->lat : null,
+            'lng' => $b->lng !== null && $b->lng !== '' ? (float) $b->lng : null,
+            'description' => $b->description,
+            'is_listed' => (bool) $b->is_listed,
+            'rating_avg' => round((float) $b->rating_avg, 2),
+            'rating_count' => (int) $b->rating_count,
         ];
         // Present only right after a (re)connect: did webhook registration stick?
         if ($webhook !== null) {
