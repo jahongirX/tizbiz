@@ -19,6 +19,7 @@ import 'package:bizcat/features/directory/directory_screen.dart';
 import 'package:bizcat/features/favorites/favorites_screen.dart';
 import 'package:bizcat/features/home/home_screen.dart';
 import 'package:bizcat/features/loyalty/loyalty_wallet_screen.dart';
+import 'package:bizcat/features/map/map_screen.dart';
 import 'package:bizcat/features/onboarding/city_picker_screen.dart';
 import 'package:bizcat/features/onboarding/onboarding_screen.dart';
 import 'package:bizcat/features/onboarding/splash_screen.dart';
@@ -54,11 +55,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     navigatorKey: rootNavigatorKey,
     initialLocation: ref.read(initialLocationProvider),
     refreshListenable: refresh,
-    redirect: (context, state) => appRedirect(
-      state.uri,
-      session: ref.read(sessionProvider),
-      onboarded: ref.read(appPrefsProvider).onboarded,
-    ),
+    redirect: (context, state) =>
+        appRedirect(state.uri, session: ref.read(sessionProvider), onboarded: ref.read(appPrefsProvider).onboarded),
     errorBuilder: (_, _) => const NotFoundScreen(),
     routes: buildAppRoutes(),
   );
@@ -113,167 +111,170 @@ String? _str(String? s) => (s == null || s.trim().isEmpty) ? null : s;
 
 /// The route tree (top-level routes on the root navigator plus the shell branches).
 List<RouteBase> buildAppRoutes() => [
-      GoRoute(path: '/', redirect: (_, _) => AppRoutes.home),
-      GoRoute(path: AppRoutes.splash, name: 'splash', builder: (_, _) => const SplashScreen()),
+  GoRoute(path: '/', redirect: (_, _) => AppRoutes.home),
+  GoRoute(path: AppRoutes.splash, name: 'splash', builder: (_, _) => const SplashScreen()),
+  GoRoute(
+    path: AppRoutes.onboarding,
+    name: 'onboarding',
+    builder: (_, s) => OnboardingScreen(from: _str(s.uri.queryParameters['from'])),
+  ),
+  GoRoute(path: AppRoutes.city, name: 'city', builder: (_, _) => const CityPickerScreen()),
+  GoRoute(
+    path: AppRoutes.map,
+    name: 'map',
+    builder: (_, s) =>
+        MapScreen(q: _str(s.uri.queryParameters['q']), category: _str(s.uri.queryParameters['category'])),
+  ),
+  GoRoute(
+    path: AppRoutes.login,
+    name: 'login',
+    builder: (_, s) =>
+        LoginPhoneScreen(from: _str(s.uri.queryParameters['from']), expired: s.uri.queryParameters['expired'] == '1'),
+    routes: [
       GoRoute(
-        path: AppRoutes.onboarding,
-        name: 'onboarding',
-        builder: (_, s) => OnboardingScreen(from: _str(s.uri.queryParameters['from'])),
+        path: 'code',
+        name: 'loginCode',
+        builder: (_, s) =>
+            OtpCodeScreen(phone: s.uri.queryParameters['phone'] ?? '', from: _str(s.uri.queryParameters['from'])),
       ),
-      GoRoute(path: AppRoutes.city, name: 'city', builder: (_, _) => const CityPickerScreen()),
       GoRoute(
-        path: AppRoutes.login,
-        name: 'login',
-        builder: (_, s) => LoginPhoneScreen(
-          from: _str(s.uri.queryParameters['from']),
-          expired: s.uri.queryParameters['expired'] == '1',
-        ),
+        path: 'name',
+        name: 'loginName',
+        builder: (_, s) => LoginNameScreen(from: _str(s.uri.queryParameters['from'])),
+      ),
+    ],
+  ),
+  StatefulShellRoute.indexedStack(
+    builder: (_, _, shell) => MainShell(navigationShell: shell),
+    branches: [
+      StatefulShellBranch(
+        routes: [GoRoute(path: AppRoutes.home, name: 'home', builder: (_, _) => const HomeScreen())],
+      ),
+      StatefulShellBranch(
         routes: [
           GoRoute(
-            path: 'code',
-            name: 'loginCode',
-            builder: (_, s) => OtpCodeScreen(
-              phone: s.uri.queryParameters['phone'] ?? '',
-              from: _str(s.uri.queryParameters['from']),
-            ),
-          ),
-          GoRoute(
-            path: 'name',
-            name: 'loginName',
-            builder: (_, s) => LoginNameScreen(from: _str(s.uri.queryParameters['from'])),
+            path: AppRoutes.explore,
+            name: 'explore',
+            builder: (_, s) {
+              final q = s.uri.queryParameters;
+              return DirectoryScreen(
+                q: _str(q['q']),
+                category: _str(q['category']),
+                sort: _str(q['sort']),
+                focus: q['focus'] == '1',
+              );
+            },
           ),
         ],
       ),
-      StatefulShellRoute.indexedStack(
-        builder: (_, _, shell) => MainShell(navigationShell: shell),
-        branches: [
-          StatefulShellBranch(routes: [
-            GoRoute(path: AppRoutes.home, name: 'home', builder: (_, _) => const HomeScreen()),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: AppRoutes.explore,
-              name: 'explore',
-              builder: (_, s) {
-                final q = s.uri.queryParameters;
-                return DirectoryScreen(
-                  q: _str(q['q']),
-                  category: _str(q['category']),
-                  sort: _str(q['sort']),
-                  focus: q['focus'] == '1',
-                );
-              },
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: AppRoutes.bookings,
-              name: 'bookings',
-              builder: (_, s) => MyBookingsScreen(tab: _str(s.uri.queryParameters['tab'])),
-              routes: [
-                GoRoute(
-                  path: 'a/:id',
-                  name: 'appointment',
-                  builder: (_, s) {
-                    final id = _int(s.pathParameters['id']);
-                    if (id == null) return const NotFoundScreen();
-                    return AppointmentDetailScreen(id: id, justCreated: s.uri.queryParameters['new'] == '1');
-                  },
-                ),
-                GoRoute(
-                  path: 'o/:id',
-                  name: 'order',
-                  builder: (_, s) {
-                    final id = _int(s.pathParameters['id']);
-                    if (id == null) return const NotFoundScreen();
-                    return OrderDetailScreen(id: id, justCreated: s.uri.queryParameters['new'] == '1');
-                  },
-                ),
-              ],
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(path: AppRoutes.favorites, name: 'favorites', builder: (_, _) => const FavoritesScreen()),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: AppRoutes.profile,
-              name: 'profile',
-              builder: (_, _) => const ProfileScreen(),
-              routes: [
-                GoRoute(path: 'edit', name: 'profileEdit', builder: (_, _) => const ProfileEditScreen()),
-                GoRoute(path: 'wallet', name: 'wallet', builder: (_, _) => const LoyaltyWalletScreen()),
-                GoRoute(path: 'reviews', name: 'myReviews', builder: (_, _) => const MyReviewsScreen()),
-              ],
-            ),
-          ]),
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: AppRoutes.bookings,
+            name: 'bookings',
+            builder: (_, s) => MyBookingsScreen(tab: _str(s.uri.queryParameters['tab'])),
+            routes: [
+              GoRoute(
+                path: 'a/:id',
+                name: 'appointment',
+                builder: (_, s) {
+                  final id = _int(s.pathParameters['id']);
+                  if (id == null) return const NotFoundScreen();
+                  return AppointmentDetailScreen(id: id, justCreated: s.uri.queryParameters['new'] == '1');
+                },
+              ),
+              GoRoute(
+                path: 'o/:id',
+                name: 'order',
+                builder: (_, s) {
+                  final id = _int(s.pathParameters['id']);
+                  if (id == null) return const NotFoundScreen();
+                  return OrderDetailScreen(id: id, justCreated: s.uri.queryParameters['new'] == '1');
+                },
+              ),
+            ],
+          ),
         ],
+      ),
+      StatefulShellBranch(
+        routes: [GoRoute(path: AppRoutes.favorites, name: 'favorites', builder: (_, _) => const FavoritesScreen())],
+      ),
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: AppRoutes.profile,
+            name: 'profile',
+            builder: (_, _) => const ProfileScreen(),
+            routes: [
+              GoRoute(path: 'edit', name: 'profileEdit', builder: (_, _) => const ProfileEditScreen()),
+              GoRoute(path: 'wallet', name: 'wallet', builder: (_, _) => const LoyaltyWalletScreen()),
+              GoRoute(path: 'reviews', name: 'myReviews', builder: (_, _) => const MyReviewsScreen()),
+            ],
+          ),
+        ],
+      ),
+    ],
+  ),
+  GoRoute(
+    path: '/b/:slug',
+    name: 'business',
+    builder: (_, s) => BusinessScreen(slug: s.pathParameters['slug']!, tab: _str(s.uri.queryParameters['tab'])),
+    routes: [
+      GoRoute(
+        path: 'reviews',
+        name: 'businessReviews',
+        builder: (_, s) => BusinessReviewsScreen(slug: s.pathParameters['slug']!),
       ),
       GoRoute(
-        path: '/b/:slug',
-        name: 'business',
-        builder: (_, s) => BusinessScreen(
+        path: 'book',
+        name: 'bookSlot',
+        builder: (_, s) => SlotBookingScreen(
           slug: s.pathParameters['slug']!,
-          tab: _str(s.uri.queryParameters['tab']),
+          serviceId: _int(s.uri.queryParameters['service']),
+          staffId: _int(s.uri.queryParameters['staff']),
         ),
-        routes: [
-          GoRoute(
-            path: 'reviews',
-            name: 'businessReviews',
-            builder: (_, s) => BusinessReviewsScreen(slug: s.pathParameters['slug']!),
-          ),
-          GoRoute(
-            path: 'book',
-            name: 'bookSlot',
-            builder: (_, s) => SlotBookingScreen(
-              slug: s.pathParameters['slug']!,
-              serviceId: _int(s.uri.queryParameters['service']),
-              staffId: _int(s.uri.queryParameters['staff']),
-            ),
-          ),
-          GoRoute(
-            path: 'rent',
-            name: 'bookRental',
-            builder: (_, s) => RentalBookingScreen(slug: s.pathParameters['slug']!),
-          ),
-          GoRoute(
-            path: 'menu',
-            name: 'menu',
-            builder: (_, s) => MenuScreen(
-              slug: s.pathParameters['slug']!,
-              reorderOrderId: _int(s.uri.queryParameters['reorder']),
-            ),
-          ),
-          GoRoute(path: 'cart', name: 'cart', builder: (_, s) => CartScreen(slug: s.pathParameters['slug']!)),
-          GoRoute(
-            path: 'checkout',
-            name: 'checkout',
-            builder: (_, s) => CheckoutScreen(slug: s.pathParameters['slug']!),
-          ),
-        ],
       ),
       GoRoute(
-        path: AppRoutes.reviewNewPath,
-        name: 'reviewNew',
-        builder: (_, s) {
-          final q = s.uri.queryParameters;
-          final appointmentId = _int(q['appointment']);
-          final orderId = _int(q['order']);
-          if ((appointmentId == null) == (orderId == null)) return const NotFoundScreen();
-          return ReviewComposeScreen(
-            appointmentId: appointmentId,
-            orderId: orderId,
-            businessName: _str(q['bname']),
-          );
-        },
+        path: 'rent',
+        name: 'bookRental',
+        builder: (_, s) => RentalBookingScreen(slug: s.pathParameters['slug']!),
       ),
       GoRoute(
-        path: '/review/:id/edit',
-        name: 'reviewEdit',
-        builder: (_, s) {
-          final id = _int(s.pathParameters['id']);
-          if (id == null) return const NotFoundScreen();
-          return ReviewComposeScreen(reviewId: id);
-        },
+        path: 'menu',
+        name: 'menu',
+        builder: (_, s) =>
+            MenuScreen(slug: s.pathParameters['slug']!, reorderOrderId: _int(s.uri.queryParameters['reorder'])),
       ),
-    ];
+      GoRoute(
+        path: 'cart',
+        name: 'cart',
+        builder: (_, s) => CartScreen(slug: s.pathParameters['slug']!),
+      ),
+      GoRoute(
+        path: 'checkout',
+        name: 'checkout',
+        builder: (_, s) => CheckoutScreen(slug: s.pathParameters['slug']!),
+      ),
+    ],
+  ),
+  GoRoute(
+    path: AppRoutes.reviewNewPath,
+    name: 'reviewNew',
+    builder: (_, s) {
+      final q = s.uri.queryParameters;
+      final appointmentId = _int(q['appointment']);
+      final orderId = _int(q['order']);
+      if ((appointmentId == null) == (orderId == null)) return const NotFoundScreen();
+      return ReviewComposeScreen(appointmentId: appointmentId, orderId: orderId, businessName: _str(q['bname']));
+    },
+  ),
+  GoRoute(
+    path: '/review/:id/edit',
+    name: 'reviewEdit',
+    builder: (_, s) {
+      final id = _int(s.pathParameters['id']);
+      if (id == null) return const NotFoundScreen();
+      return ReviewComposeScreen(reviewId: id);
+    },
+  ),
+];

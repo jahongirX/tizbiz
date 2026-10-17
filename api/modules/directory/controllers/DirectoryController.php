@@ -24,14 +24,18 @@ use yii\web\NotFoundHttpException;
  * GET /v1/directory/businesses?q=&category=&engine=&city=&sort=&page=&per_page=
  * GET /v1/directory/businesses/<slug>
  * GET /v1/directory/businesses/<slug>/reviews?rating=&page=&per_page=
+ * GET /v1/directory/map?q=&category=&engine=&city=&bbox=minLng,minLat,maxLng,maxLat
  */
 class DirectoryController extends ConsumerController
 {
     private const SORTS = ['featured', 'rating', 'new', 'name'];
 
+    /** Most pins one map request returns (the app asks again when the viewport moves). */
+    private const MAP_LIMIT = 300;
+
     protected function authOptional(): array
     {
-        return ['categories', 'index', 'view', 'reviews'];
+        return ['categories', 'index', 'view', 'reviews', 'map'];
     }
 
     public function actionCategories(): array
@@ -80,33 +84,7 @@ class DirectoryController extends ConsumerController
             throw new BadRequestHttpException('Noto\'g\'ri saralash.');
         }
 
-        $query = Business::find()
-            ->andWhere(['status' => Business::STATUS_ACTIVE, 'is_listed' => 1]);
-
-        $q = self::strParam('q');
-        if ($q !== '') {
-            $query->andWhere(['or',
-                ['like', 'name', $q],
-                ['like', 'tagline', $q],
-                ['like', 'description', $q],
-                ['like', 'address', $q],
-            ]);
-        }
-        $category = self::strParam('category');
-        if ($category !== '') {
-            $query->andWhere(['category' => $category]);
-        }
-        $engine = self::strParam('engine');
-        if ($engine !== '') {
-            $query->andWhere($engine === 'slot'
-                ? ['or', ['engine' => 'slot'], ['engine' => null]]
-                : ['engine' => $engine]);
-        }
-        $city = self::strParam('city');
-        if ($city !== '') {
-            $query->andWhere(new Expression('LOWER(city) = :city', [':city' => mb_strtolower($city)]));
-        }
-
+        $query = self::filteredQuery();
         $this->applySort($query, $sort);
 
         $consumer = $this->consumerOrNull();
@@ -118,6 +96,50 @@ class DirectoryController extends ConsumerController
                 'is_favorite' => isset($favs[(int) $b->id]),
             ]), $businesses);
         });
+    }
+
+    /**
+     * Map pins: businesses with coordinates, optionally inside a viewport
+     * (bbox=minLng,minLat,maxLng,maxLat), best rated first, at most MAP_LIMIT.
+     * meta.truncated tells the app that more pins exist (zoom in).
+     */
+    public function actionMap(): array
+    {
+        $query = self::filteredQuery()
+            ->andWhere(['not', ['lat' => null]])
+            ->andWhere(['not', ['lng' => null]]);
+
+        $bbox = self::strParam('bbox');
+        if ($bbox !== '') {
+            $parts = explode(',', $bbox);
+            if (count($parts) !== 4 || array_filter($parts, static fn ($p) => !is_numeric(trim($p))) !== []) {
+                throw new BadRequestHttpException('bbox noto\'g\'ri.');
+            }
+            [$minLng, $minLat, $maxLng, $maxLat] = array_map(static fn ($p) => (float) trim($p), $parts);
+            if ($minLat > $maxLat || $minLat < -90 || $maxLat > 90 || $minLng < -180 || $maxLng > 180) {
+                throw new BadRequestHttpException('bbox noto\'g\'ri.');
+            }
+            $query->andWhere(['between', 'lat', $minLat, $maxLat]);
+            // A viewport across the antimeridian has minLng > maxLng.
+            $query->andWhere($minLng <= $maxLng
+                ? ['between', 'lng', $minLng, $maxLng]
+                : ['or', ['>=', 'lng', $minLng], ['<=', 'lng', $maxLng]]);
+        }
+
+        $total = (int) (clone $query)->orderBy(null)->count();
+        $this->applySort($query, 'rating');
+        $businesses = $query->limit(self::MAP_LIMIT)->all();
+
+        $consumer = $this->consumerOrNull();
+        $prices = BusinessPresenter::priceFromMap($businesses);
+        $favs = self::favoriteIds($consumer !== null ? (int) $consumer->id : null, $businesses);
+        return [
+            'data' => array_map(static fn (Business $b) => BusinessPresenter::card($b, [
+                'price_from_tiyin' => $prices[(int) $b->id] ?? null,
+                'is_favorite' => isset($favs[(int) $b->id]),
+            ]), $businesses),
+            'meta' => ['total' => $total, 'truncated' => $total > count($businesses)],
+        ];
     }
 
     public function actionView(string $slug): array
@@ -170,6 +192,38 @@ class DirectoryController extends ConsumerController
             throw new NotFoundHttpException('Biznes topilmadi.');
         }
         return $business;
+    }
+
+    /** Listed active businesses narrowed by the shared q/category/engine/city filters. */
+    private static function filteredQuery(): ActiveQuery
+    {
+        $query = Business::find()
+            ->andWhere(['status' => Business::STATUS_ACTIVE, 'is_listed' => 1]);
+
+        $q = self::strParam('q');
+        if ($q !== '') {
+            $query->andWhere(['or',
+                ['like', 'name', $q],
+                ['like', 'tagline', $q],
+                ['like', 'description', $q],
+                ['like', 'address', $q],
+            ]);
+        }
+        $category = self::strParam('category');
+        if ($category !== '') {
+            $query->andWhere(['category' => $category]);
+        }
+        $engine = self::strParam('engine');
+        if ($engine !== '') {
+            $query->andWhere($engine === 'slot'
+                ? ['or', ['engine' => 'slot'], ['engine' => null]]
+                : ['engine' => $engine]);
+        }
+        $city = self::strParam('city');
+        if ($city !== '') {
+            $query->andWhere(new Expression('LOWER(city) = :city', [':city' => mb_strtolower($city)]));
+        }
+        return $query;
     }
 
     private function applySort(ActiveQuery $query, string $sort): void

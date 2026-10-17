@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bizcat/app/routes.dart';
 import 'package:bizcat/core/city.dart';
 import 'package:bizcat/core/errors.dart';
 import 'package:bizcat/core/prefs.dart';
@@ -9,6 +10,7 @@ import 'package:bizcat/shared/widgets/business_cards.dart';
 import 'package:bizcat/shared/widgets/states.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The Katalog tab: search, filters and the paged business list (BIZCAT-SPEC §9.4).
@@ -167,6 +169,18 @@ class _DirectoryScreenState extends ConsumerState<DirectoryScreen> {
           onSubmitted: _onSubmitted,
           onClear: _clearSearch,
         ),
+        actions: [
+          IconButton(
+            key: const Key('directory-map'),
+            tooltip: 'Xaritada',
+            icon: const Icon(Icons.map_outlined),
+            onPressed: () {
+              final f = ref.read(directoryFilterProvider);
+              unawaited(context.push(AppRoutes.mapWith(q: f.q, category: f.category)));
+            },
+          ),
+          const SizedBox(width: BzSpace.xs),
+        ],
       ),
       body: Column(
         children: [

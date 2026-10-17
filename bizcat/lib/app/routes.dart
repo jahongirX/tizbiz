@@ -2,9 +2,14 @@
 abstract final class AppRoutes {
   static const splash = '/splash', onboarding = '/onboarding', city = '/city';
   static const login = '/login', loginCode = '/login/code', loginName = '/login/name';
-  static const home = '/home', explore = '/explore', bookings = '/bookings', favorites = '/favorites', profile = '/profile';
+  static const home = '/home',
+      explore = '/explore',
+      bookings = '/bookings',
+      favorites = '/favorites',
+      profile = '/profile';
   static const profileEdit = '/profile/edit', wallet = '/profile/wallet', myReviews = '/profile/reviews';
   static const reviewNewPath = '/review/new';
+  static const map = '/map';
 
   /// '/login?from=%2Fb%2Fx%2Fbook&expired=1'.
   static String loginWith({String? from, bool expired = false}) =>
@@ -21,6 +26,9 @@ abstract final class AppRoutes {
   static String exploreWith({String? q, String? category, String? sort, bool focus = false}) =>
       _build(explore, {'q': q, 'category': category, 'sort': sort, 'focus': focus ? '1' : null});
 
+  /// '/map?q=..&category=..'.
+  static String mapWith({String? q, String? category}) => _build(map, {'q': q, 'category': category});
+
   /// 'orders' for the orders tab.
   static String bookingsWith({String tab = 'appointments'}) =>
       _build(bookings, {'tab': tab == 'appointments' ? null : tab});
@@ -35,16 +43,15 @@ abstract final class AppRoutes {
   static String checkout(String slug) => '/b/${_seg(slug)}/checkout';
 
   /// '/bookings/a/5012?new=1'.
-  static String appointment(int id, {bool created = false}) =>
-      _build('/bookings/a/$id', {'new': created ? '1' : null});
+  static String appointment(int id, {bool created = false}) => _build('/bookings/a/$id', {'new': created ? '1' : null});
   static String order(int id, {bool created = false}) => _build('/bookings/o/$id', {'new': created ? '1' : null});
 
   /// '/review/new?appointment=4990&bname=Shox+Barber'.
   static String reviewNew({int? appointmentId, int? orderId, String? businessName}) => _build(reviewNewPath, {
-        'appointment': appointmentId?.toString(),
-        'order': orderId?.toString(),
-        'bname': businessName,
-      });
+    'appointment': appointmentId?.toString(),
+    'order': orderId?.toString(),
+    'bname': businessName,
+  });
   static String reviewEdit(int id) => '/review/$id/edit';
 
   static String _seg(String s) => Uri.encodeComponent(s);

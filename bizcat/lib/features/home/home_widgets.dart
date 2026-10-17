@@ -113,36 +113,57 @@ class HomeSearchBar extends StatelessWidget {
     final scheme = theme.colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: BzSpace.gutter),
-      child: Semantics(
-        button: true,
-        label: hint,
-        excludeSemantics: true,
-        child: Material(
-          color: scheme.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(BzRadius.pill),
-            side: BorderSide(color: scheme.outline),
+      child: Row(
+        children: [
+          Expanded(child: _field(context, theme, scheme)),
+          const SizedBox(width: BzSpace.s),
+          Material(
+            color: scheme.primary,
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: IconButton(
+              key: const Key('home-map'),
+              tooltip: 'Xaritadan qidirish',
+              padding: const EdgeInsets.all(14),
+              icon: Icon(Icons.map_outlined, color: scheme.onPrimary),
+              onPressed: () => unawaited(context.push(AppRoutes.map)),
+            ),
           ),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            key: const Key('home-search'),
-            onTap: () => context.go(AppRoutes.exploreWith(focus: true)),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: BzSpace.l, vertical: 14),
-              child: Row(
-                children: [
-                  Icon(Icons.search, color: scheme.onSurfaceVariant),
-                  const SizedBox(width: BzSpace.m),
-                  Expanded(
-                    child: Text(
-                      hint,
-                      style: theme.textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+        ],
+      ),
+    );
+  }
+
+  Widget _field(BuildContext context, ThemeData theme, ColorScheme scheme) {
+    return Semantics(
+      button: true,
+      label: hint,
+      excludeSemantics: true,
+      child: Material(
+        color: scheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(BzRadius.pill),
+          side: BorderSide(color: scheme.outline),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          key: const Key('home-search'),
+          onTap: () => context.go(AppRoutes.exploreWith(focus: true)),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: BzSpace.l, vertical: 14),
+            child: Row(
+              children: [
+                Icon(Icons.search, color: scheme.onSurfaceVariant),
+                const SizedBox(width: BzSpace.m),
+                Expanded(
+                  child: Text(
+                    hint,
+                    style: theme.textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -233,7 +254,10 @@ class HomeCategoryGrid extends StatelessWidget {
 
   /// Hides empty categories, but only when at least 3 non-empty ones remain.
   static List<Category> visible(List<Category> all) {
-    final nonEmpty = [for (final c in all) if (c.count > 0) c];
+    final nonEmpty = [
+      for (final c in all)
+        if (c.count > 0) c,
+    ];
     return nonEmpty.length >= 3 ? nonEmpty : all;
   }
 
@@ -243,24 +267,26 @@ class HomeCategoryGrid extends StatelessWidget {
     final rows = <Widget>[];
     for (var i = 0; i < categories.length; i += columns) {
       final slice = categories.sublist(i, i + columns > categories.length ? categories.length : i + columns);
-      rows.add(Padding(
-        padding: EdgeInsets.only(top: i == 0 ? 0 : BzSpace.m),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (var j = 0; j < columns; j++) ...[
-                if (j > 0) const SizedBox(width: BzSpace.m),
-                Expanded(
-                  child: j < slice.length
-                      ? CategoryTile(category: slice[j], onTap: () => onTap(slice[j]))
-                      : const SizedBox.shrink(),
-                ),
+      rows.add(
+        Padding(
+          padding: EdgeInsets.only(top: i == 0 ? 0 : BzSpace.m),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var j = 0; j < columns; j++) ...[
+                  if (j > 0) const SizedBox(width: BzSpace.m),
+                  Expanded(
+                    child: j < slice.length
+                        ? CategoryTile(category: slice[j], onTap: () => onTap(slice[j]))
+                        : const SizedBox.shrink(),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
-      ));
+      );
     }
     return Column(children: rows);
   }
@@ -301,9 +327,19 @@ class RevisitCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(b.name, style: theme.textTheme.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text(
+                            b.name,
+                            style: theme.textTheme.titleMedium,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           if (subtitle != null)
-                            Text(subtitle, style: theme.textTheme.bodySmall, maxLines: 2, overflow: TextOverflow.ellipsis),
+                            Text(
+                              subtitle,
+                              style: theme.textTheme.bodySmall,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                         ],
                       ),
                     ),
@@ -366,10 +402,7 @@ class HomeCarousel extends StatelessWidget {
     final row = Row(
       crossAxisAlignment: equalHeight ? CrossAxisAlignment.stretch : CrossAxisAlignment.start,
       children: [
-        for (var i = 0; i < children.length; i++) ...[
-          if (i > 0) const SizedBox(width: BzSpace.m),
-          children[i],
-        ],
+        for (var i = 0; i < children.length; i++) ...[if (i > 0) const SizedBox(width: BzSpace.m), children[i]],
       ],
     );
     return SingleChildScrollView(
@@ -437,9 +470,7 @@ class HomeLoginCard extends StatelessWidget {
                   child: Icon(Icons.event_note_outlined, color: scheme.primary),
                 ),
                 const SizedBox(width: BzSpace.m),
-                Expanded(
-                  child: Text('Bronlaringizni kuzatish uchun kiring', style: theme.textTheme.titleMedium),
-                ),
+                Expanded(child: Text('Bronlaringizni kuzatish uchun kiring', style: theme.textTheme.titleMedium)),
               ],
             ),
             const SizedBox(height: BzSpace.s),

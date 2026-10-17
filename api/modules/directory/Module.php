@@ -23,6 +23,7 @@ class Module extends BaseModule implements BootstrapInterface
         $app->getUrlManager()->addRules([
             'GET v1/directory/categories' => 'directory/directory/categories',
             'GET v1/directory/businesses' => 'directory/directory/index',
+            'GET v1/directory/map' => 'directory/directory/map',
             'GET v1/directory/businesses/<slug:[a-z0-9-]+>/reviews' => 'directory/directory/reviews',
             'GET v1/directory/businesses/<slug:[a-z0-9-]+>' => 'directory/directory/view',
         ], false);

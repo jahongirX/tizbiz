@@ -57,6 +57,7 @@ abstract final class Endpoints {
   // directory (optional consumer token)
   static const directoryCategories = '/v1/directory/categories';
   static const directoryBusinesses = '/v1/directory/businesses';
+  static const directoryMap = '/v1/directory/map';
   static String directoryBusiness(String slug) => '/v1/directory/businesses/${Uri.encodeComponent(slug)}';
   static String directoryReviews(String slug) =>
       '/v1/directory/businesses/${Uri.encodeComponent(slug)}/reviews';
