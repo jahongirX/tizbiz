@@ -118,8 +118,8 @@ class FavoritesController extends Notifier<FavoritesState> {
       ids: next ? {...before.ids, id} : ({...before.ids}..remove(id)),
       cards: next
           ? (card == null || before.cards.any((c) => c.id == id)
-              ? before.cards
-              : List.unmodifiable([card.copyWith(isFavorite: true), ...before.cards]))
+                ? before.cards
+                : List.unmodifiable([card.copyWith(isFavorite: true), ...before.cards]))
           : List.unmodifiable(before.cards.where((c) => c.id != id)),
     );
     try {
@@ -141,10 +141,10 @@ class FavoritesController extends Notifier<FavoritesState> {
           ids: current ? {...now.ids, id} : ({...now.ids}..remove(id)),
           cards: current
               ? (now.cards.any((c) => c.id == id)
-                  ? now.cards
-                  : before.cards.where((c) => c.id == id).isEmpty
-                      ? now.cards
-                      : List.unmodifiable([...before.cards.where((c) => c.id == id), ...now.cards]))
+                    ? now.cards
+                    : before.cards.where((c) => c.id == id).isEmpty
+                    ? now.cards
+                    : List.unmodifiable([...before.cards.where((c) => c.id == id), ...now.cards]))
               : List.unmodifiable(now.cards.where((c) => c.id != id)),
         );
       }

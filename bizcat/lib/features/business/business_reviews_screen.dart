@@ -7,6 +7,7 @@ import 'package:bizcat/shared/widgets/nav.dart';
 import 'package:bizcat/shared/widgets/rating.dart';
 import 'package:bizcat/shared/widgets/review_tile.dart';
 import 'package:bizcat/shared/widgets/states.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
@@ -90,7 +91,7 @@ class _BusinessReviewsScreenState extends ConsumerState<BusinessReviewsScreen> {
                         Padding(
                           padding: const EdgeInsets.only(top: BzSpace.xxl),
                           child: EmptyState(
-                            icon: Icons.rate_review_outlined,
+                            icon: BzIcons.review,
                             title: _rating == null ? "Hali sharhlar yo'q" : "Bu baho bilan sharhlar yo'q.",
                           ),
                         ),

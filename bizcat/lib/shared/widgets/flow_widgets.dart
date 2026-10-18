@@ -106,18 +106,17 @@ class SummaryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: Text(
-                        r.label,
-                        style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
-                      ),
+                      child: Text(r.label, style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
                     ),
                     const SizedBox(width: BzSpace.m),
                     Flexible(
                       child: Text(
                         r.value,
                         textAlign: TextAlign.end,
-                        style: (r.emphasize ? theme.textTheme.titleMedium : theme.textTheme.bodyMedium)
-                            ?.copyWith(color: scheme.primary, fontWeight: FontWeight.w700),
+                        style: (r.emphasize ? theme.textTheme.titleMedium : theme.textTheme.bodyMedium)?.copyWith(
+                          color: scheme.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ],

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bizcat/core/launcher.dart';
 import 'package:bizcat/shared/widgets/buttons.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
@@ -41,7 +42,7 @@ class LocationCard extends ConsumerWidget {
                   width: 40,
                   height: 40,
                   decoration: const BoxDecoration(color: BzColors.indigo50, shape: BoxShape.circle),
-                  child: const Icon(Icons.place, color: BzColors.apricot, size: 22),
+                  child: const Icon(BzIcons.locationBold, color: BzColors.apricot, size: 22),
                 ),
                 const SizedBox(width: BzSpace.m),
                 Expanded(
@@ -73,10 +74,9 @@ class LocationCard extends ConsumerWidget {
               const SizedBox(height: BzSpace.m),
               SecondaryButton(
                 label: 'Xaritada ochish',
-                icon: Icons.map_outlined,
-                onPressed: () => unawaited(
-                  openMap(ref, mapUrl: mapUrl, lat: lat, lng: lng, name: name, address: address),
-                ),
+                icon: BzIcons.map,
+                onPressed: () =>
+                    unawaited(openMap(ref, mapUrl: mapUrl, lat: lat, lng: lng, name: name, address: address)),
               ),
             ],
           ],

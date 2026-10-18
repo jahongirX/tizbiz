@@ -6,6 +6,7 @@ import 'package:bizcat/data/directory_providers.dart';
 import 'package:bizcat/data/directory_query.dart';
 import 'package:bizcat/features/directory/providers.dart';
 import 'package:bizcat/shared/widgets/category_icon.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -32,14 +33,14 @@ class DirectoryFilterRow extends ConsumerWidget {
           children: [
             ActionChip(
               key: const ValueKey('dir-city'),
-              avatar: Icon(Icons.place_outlined, size: 18, color: scheme.primary),
+              avatar: Icon(BzIcons.location, size: 18, color: scheme.primary),
               label: Text(cityLabel(filter.city)),
               onPressed: () => unawaited(context.push(AppRoutes.city)),
             ),
             const SizedBox(width: BzSpace.s),
             ActionChip(
               key: const ValueKey('dir-sort'),
-              avatar: Icon(Icons.sort_rounded, size: 18, color: scheme.primary),
+              avatar: Icon(BzIcons.sort, size: 18, color: scheme.primary),
               label: Text(directorySortLabel(filter.sort)),
               onPressed: () => unawaited(_pickSort(context, ref, filter.sort)),
             ),
@@ -125,7 +126,7 @@ class RecentSearches extends StatelessWidget {
             runSpacing: BzSpace.s,
             children: [
               for (final s in items)
-                ActionChip(avatar: const Icon(Icons.history, size: 18), label: Text(s), onPressed: () => onPick(s)),
+                ActionChip(avatar: const Icon(BzIcons.history, size: 18), label: Text(s), onPressed: () => onPick(s)),
             ],
           ),
         ],

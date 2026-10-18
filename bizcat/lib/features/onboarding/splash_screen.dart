@@ -59,10 +59,7 @@ class _SplashScreenState extends State<SplashScreen> {
             AnimatedOpacity(
               opacity: _slow ? 1 : 0,
               duration: const Duration(milliseconds: 300),
-              child: Text(
-                'Ulanish sekin...',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: muted),
-              ),
+              child: Text('Ulanish sekin...', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: muted)),
             ),
           ],
         ),

@@ -7,6 +7,7 @@ import 'package:bizcat/features/auth/widgets/auth_widgets.dart';
 import 'package:bizcat/shared/widgets/buttons.dart';
 import 'package:bizcat/shared/widgets/states.dart';
 import 'package:bizcat/theme/app_theme.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -97,7 +98,7 @@ class _OtpCodeScreenState extends ConsumerState<OtpCodeScreen> {
         children: [
           const SizedBox(height: BzSpace.xxxl),
           EmptyState(
-            icon: Icons.phone_disabled_outlined,
+            icon: BzIcons.callOff,
             title: AuthCopy.invalidPhone,
             message: 'Raqamni qaytadan kiriting.',
             actionLabel: 'Orqaga',
@@ -126,10 +127,7 @@ class _OtpCodeScreenState extends ConsumerState<OtpCodeScreen> {
               '${Phone.format(phone)} raqamiga SMS yuborildi.',
               style: theme.textTheme.bodyMedium?.copyWith(color: muted),
             ),
-            TextButton(
-              onPressed: state.verifying ? null : _back,
-              child: const Text("O'zgartirish"),
-            ),
+            TextButton(onPressed: state.verifying ? null : _back, child: const Text("O'zgartirish")),
           ],
         ),
         const SizedBox(height: BzSpace.xl),

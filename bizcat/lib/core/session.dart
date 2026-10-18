@@ -94,10 +94,7 @@ class SessionController extends Notifier<SessionState> {
           return;
         }
         final claims = JwtClaims.tryParse(token);
-        state = SessionSignedIn(
-          _prefs.cachedProfile ?? ConsumerUser(id: claims?.sub ?? 0, phone: ''),
-          stale: true,
-        );
+        state = SessionSignedIn(_prefs.cachedProfile ?? ConsumerUser(id: claims?.sub ?? 0, phone: ''), stale: true);
       }
     } on Object catch (e) {
       debugPrint('session: restore failed: $e');

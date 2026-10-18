@@ -31,11 +31,7 @@ class CityPickerScreen extends ConsumerWidget {
         child: ListView(
           children: [
             for (final c in kCityOptions)
-              CityOptionTile(
-                city: c,
-                selected: c == current,
-                onTap: () => unawaited(_pick(context, ref, c)),
-              ),
+              CityOptionTile(city: c, selected: c == current, onTap: () => unawaited(_pick(context, ref, c))),
           ],
         ),
       ),

@@ -15,6 +15,7 @@ import 'package:bizcat/shared/widgets/buttons.dart';
 import 'package:bizcat/shared/widgets/flow_widgets.dart';
 import 'package:bizcat/shared/widgets/nav.dart';
 import 'package:bizcat/shared/widgets/states.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -55,7 +56,7 @@ class _RentalBookingScreenState extends ConsumerState<RentalBookingScreen> {
       if (rentalHall(data) == null || rentalHallService(data) == null) {
         return _PlainScaffold(
           body: EmptyState(
-            icon: Icons.event_busy,
+            icon: BzIcons.calendarRemove,
             title: rentalNoHallMessage,
             actionLabel: data.business.phone == null ? null : "Qo'ng'iroq qilish",
             onAction: data.business.phone == null ? null : () => unawaited(callPhone(ref, data.business.phone)),
@@ -82,7 +83,10 @@ class _PlainScaffold extends StatelessWidget {
   final Widget body;
 
   @override
-  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text(_title)), body: body);
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text(_title)),
+    body: body,
+  );
 }
 
 class _RentalFlowView extends ConsumerStatefulWidget {
@@ -160,36 +164,33 @@ class _RentalFlowViewState extends ConsumerState<_RentalFlowView> {
     final step = state.step;
 
     final Widget content = switch (step) {
-      RentalStep.session => _SessionStep(
-          selected: state.session,
-          onPick: _flow.pickSession,
-        ),
+      RentalStep.session => _SessionStep(selected: state.session, onPick: _flow.pickSession),
       RentalStep.guests => _GuestsStep(
-          state: state,
-          controller: _guests,
-          focusNode: _guestsFocus,
-          onStep: _flow.stepGuests,
-          onChanged: (t) => _flow.setGuests(int.tryParse(t) ?? 0),
-          onSubmitted: _continueGuests,
-        ),
+        state: state,
+        controller: _guests,
+        focusNode: _guestsFocus,
+        onStep: _flow.stepGuests,
+        onChanged: (t) => _flow.setGuests(int.tryParse(t) ?? 0),
+        onSubmitted: _continueGuests,
+      ),
       RentalStep.date => _DateStep(slug: widget.slug, timezone: business.timezone, state: state),
       RentalStep.confirm => _ConfirmStep(
-          slug: widget.slug,
-          store: widget.store,
-          state: state,
-          notes: _notes,
-          onNotes: _flow.setNotes,
-          onRetry: _submit,
-        ),
+        slug: widget.slug,
+        store: widget.store,
+        state: state,
+        notes: _notes,
+        onNotes: _flow.setNotes,
+        onRetry: _submit,
+      ),
     };
 
     final Widget? bottom = switch (step) {
       RentalStep.guests => BottomActionBar(
-          child: PrimaryButton(label: 'Davom etish', onPressed: _continueGuests),
-        ),
+        child: PrimaryButton(label: 'Davom etish', onPressed: _continueGuests),
+      ),
       RentalStep.confirm => BottomActionBar(
-          child: CtaButton(label: 'Bron qilish', loading: state.submitting, onPressed: _submit),
-        ),
+        child: CtaButton(label: 'Bron qilish', loading: state.submitting, onPressed: _submit),
+      ),
       _ => null,
     };
 
@@ -239,16 +240,16 @@ class _SessionStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const RentalStepLabel("To'y vaqtini tanlang", hint: 'Narxlar bir mehmon uchun taxminiy hisoblangan.'),
-          const SizedBox(height: BzSpace.l),
-          for (final s in RentalSession.values) ...[
-            RentalSessionCard(session: s, selected: selected == s, onTap: () => onPick(s)),
-            const SizedBox(height: BzSpace.m),
-          ],
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      const RentalStepLabel("To'y vaqtini tanlang", hint: 'Narxlar bir mehmon uchun taxminiy hisoblangan.'),
+      const SizedBox(height: BzSpace.l),
+      for (final s in RentalSession.values) ...[
+        RentalSessionCard(session: s, selected: selected == s, onTap: () => onPick(s)),
+        const SizedBox(height: BzSpace.m),
+      ],
+    ],
+  );
 }
 
 // ---------------------------------------------------------------- guests
@@ -321,7 +322,8 @@ class _DateStep extends ConsumerWidget {
       children: [
         RentalStepLabel(
           "To'y sanasini tanlang",
-          hint: '${RentalPricing.title(session)} · ${RentalPricing.hours(session)} · '
+          hint:
+              '${RentalPricing.title(session)} · ${RentalPricing.hours(session)} · '
               '${state.clampedGuests} kishi',
         ),
         const SizedBox(height: BzSpace.l),
@@ -438,16 +440,13 @@ class _SubmitAlert extends StatelessWidget {
     if (e is ApiException && (e.isForbidden || e.isNotFound)) {
       return RentalAlert(
         message: e.message,
-        action: PrimaryButton(
-          label: 'Biznes sahifasiga',
-          onPressed: () => popOrGo(context, AppRoutes.business(slug)),
-        ),
+        action: PrimaryButton(label: 'Biznes sahifasiga', onPressed: () => popOrGo(context, AppRoutes.business(slug))),
       );
     }
     if (isOffline(e)) {
       return RentalAlert(
         message: errorText(e),
-        action: SecondaryButton(label: 'Qayta urinish', icon: Icons.refresh, onPressed: onRetry),
+        action: SecondaryButton(label: 'Qayta urinish', icon: BzIcons.refresh, onPressed: onRetry),
       );
     }
     return RentalAlert(message: errorText(e));
@@ -461,7 +460,7 @@ class _DetailLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const SingleChildScrollView(
-        physics: NeverScrollableScrollPhysics(),
-        child: LoadingView(kind: LoadingKind.detail),
-      );
+    physics: NeverScrollableScrollPhysics(),
+    child: LoadingView(kind: LoadingKind.detail),
+  );
 }

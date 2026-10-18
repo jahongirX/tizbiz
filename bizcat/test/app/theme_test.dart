@@ -16,7 +16,7 @@ Future<void> _pump(WidgetTester t, Widget child, {ThemeData? theme}) => t.pumpWi
     ));
 
 void main() {
-  test('light scheme: indigo primary, apricot secondary, cream scaffold', () {
+  test('light scheme: indigo primary, apricot secondary, cool lavender scaffold', () {
     final theme = AppTheme.light(googleFonts: false);
     expect(theme.colorScheme.primary, BzColors.indigo);
     expect(theme.colorScheme.onPrimary, BzColors.white);
@@ -25,7 +25,7 @@ void main() {
     expect(theme.colorScheme.surface, BzColors.white);
     expect(theme.colorScheme.onSurface, BzColors.indigo);
     expect(theme.colorScheme.error, BzColors.danger);
-    expect(theme.scaffoldBackgroundColor, BzColors.cream);
+    expect(theme.scaffoldBackgroundColor, BzColors.bg);
     expect(theme.useMaterial3, isTrue);
     expect(theme.textTheme.displaySmall?.fontSize, 28);
     expect(theme.textTheme.labelLarge?.fontWeight, FontWeight.w700);

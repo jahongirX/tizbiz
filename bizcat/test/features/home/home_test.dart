@@ -20,7 +20,8 @@ void main() {
     final h = await pumpBizcat(t);
     expect(find.text('Xush kelibsiz!'), findsOneWidget);
     expect(find.text('Kategoriyalar'), findsOneWidget);
-    expect(find.byType(CategoryTile), findsNWidgets(5));
+    // A horizontal row: the first cards are on screen, the rest scroll in.
+    expect(find.byType(CategoryTile), findsWidgets);
     expect(find.text('Tavsiya etilgan'), findsOneWidget);
     expect(find.text('Shox Barber'), findsWidgets);
     expect(find.text('Siz borgan joylar'), findsNothing);

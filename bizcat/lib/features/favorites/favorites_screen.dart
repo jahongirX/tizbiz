@@ -8,6 +8,8 @@ import 'package:bizcat/core/session.dart';
 import 'package:bizcat/shared/widgets/business_cards.dart';
 import 'package:bizcat/shared/widgets/login_prompt.dart';
 import 'package:bizcat/shared/widgets/states.dart';
+import 'package:bizcat/shared/widgets/ui.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,13 +24,14 @@ class FavoritesScreen extends ConsumerWidget {
     final signedIn = ref.watch(isSignedInProvider);
     if (!signedIn) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Sevimlilar')),
+        backgroundColor: Colors.transparent,
+        appBar: bzLargeAppBar(context, 'Sevimlilar'),
         body: const Center(
           child: LoginPromptView(
             title: 'Sevimli joylaringiz',
             message: 'Yoqqan bizneslarni yurakcha bilan saqlang.',
             from: AppRoutes.favorites,
-            icon: Icons.favorite_border,
+            icon: BzIcons.heart,
           ),
         ),
       );
@@ -68,7 +71,7 @@ class FavoritesScreen extends ConsumerWidget {
                 padding: const EdgeInsets.only(top: BzSpace.xxxl),
                 children: [
                   EmptyState(
-                    icon: Icons.favorite_border,
+                    icon: BzIcons.heart,
                     title: "Sevimlilar ro'yxati bo'sh",
                     message: 'Biznes sahifasidagi yurakchani bosing.',
                     actionLabel: 'Katalogni ochish',
@@ -86,9 +89,6 @@ class FavoritesScreen extends ConsumerWidget {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Sevimlilar')),
-      body: body,
-    );
+    return Scaffold(backgroundColor: Colors.transparent, appBar: bzLargeAppBar(context, 'Sevimlilar'), body: body);
   }
 }

@@ -56,15 +56,9 @@ class _NoBusinessScreenState extends ConsumerState<NoBusinessScreen> {
                 label: const Text('Qayta tekshirish'),
               ),
               const SizedBox(height: 8),
-              OutlinedButton(
-                onPressed: () => unawaited(openRegister()),
-                child: const Text("Ro'yxatdan o'tish"),
-              ),
+              OutlinedButton(onPressed: () => unawaited(openRegister()), child: const Text("Ro'yxatdan o'tish")),
               const SizedBox(height: 8),
-              TextButton(
-                onPressed: () => ref.read(sessionProvider.notifier).logout(),
-                child: const Text('Chiqish'),
-              ),
+              TextButton(onPressed: () => ref.read(sessionProvider.notifier).logout(), child: const Text('Chiqish')),
             ],
           ),
         ),

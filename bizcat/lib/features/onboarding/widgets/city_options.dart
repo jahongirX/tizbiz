@@ -1,4 +1,5 @@
 import 'package:bizcat/core/city.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The city choices in display order: null (`Barcha shaharlar`) first, then [kCities].
@@ -35,9 +36,9 @@ class CityOptionTile extends StatelessWidget {
                 selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
                 color: selected ? scheme.primary : scheme.onSurfaceVariant,
               )
-            : Icon(city == null ? Icons.public : Icons.place_outlined, color: scheme.onSurfaceVariant),
+            : Icon(city == null ? BzIcons.globe : BzIcons.location, color: scheme.onSurfaceVariant),
         title: Text(label, style: selected ? const TextStyle(fontWeight: FontWeight.w600) : null),
-        trailing: !radio && selected ? Icon(Icons.check, color: scheme.primary) : null,
+        trailing: !radio && selected ? Icon(BzIcons.check, color: scheme.primary) : null,
       ),
     );
   }

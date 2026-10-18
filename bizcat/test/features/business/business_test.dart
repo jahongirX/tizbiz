@@ -123,7 +123,10 @@ void main() {
   });
 
   testWidgets('rating badge switches to the reviews tab', (t) async {
-    _tallPhone(t);
+    // The larger type pushes the first review below a phone-height fold.
+    t.view.physicalSize = const Size(1080, 3400);
+    t.view.devicePixelRatio = 2.5;
+    addTearDown(t.view.reset);
     await pumpBizcat(t, location: AppRoutes.business('shox-barber'), setup: _shox);
 
     await t.tap(find.bySemanticsLabel('★ 4,7 (15)').first);

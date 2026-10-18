@@ -8,7 +8,9 @@ import 'package:bizcat/core/session.dart';
 import 'package:bizcat/features/profile/providers.dart';
 import 'package:bizcat/shared/widgets/buttons.dart';
 import 'package:bizcat/shared/widgets/dialogs.dart';
-import 'package:bizcat/shared/widgets/login_prompt.dart';
+import 'package:bizcat/shared/widgets/ui.dart';
+import 'package:bizcat/theme/app_theme.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -69,18 +71,37 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final consumer = ref.watch(currentConsumerProvider);
     if (consumer == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Profil')),
+        backgroundColor: Colors.transparent,
         body: ListView(
-          padding: const EdgeInsets.only(top: BzSpace.xxl, bottom: BzSpace.xxxl),
-          children: const [
-            LoginPromptView(
-              title: 'Profil',
-              message: 'Bronlar, sevimlilar va bonuslar uchun kiring.',
-              from: AppRoutes.profile,
-              icon: Icons.person_outline,
+          padding: const EdgeInsets.only(bottom: BzSpace.xxxl),
+          children: [
+            _GradientHeader(
+              child: Column(
+                children: [
+                  const _Avatar(initials: null),
+                  const SizedBox(height: BzSpace.m),
+                  Text('Profil', style: BzText.sora(context, 22, color: BzColors.white)),
+                  const SizedBox(height: BzSpace.xs),
+                  Text(
+                    'Bronlar, sevimlilar va bonuslar uchun kiring.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: BzColors.white.withValues(alpha: 0.8)),
+                  ),
+                  const SizedBox(height: BzSpace.l),
+                  _WhiteCard(
+                    key: const Key('profile-login'),
+                    title: 'Kirish',
+                    subtitle: 'Telefon raqam orqali, parolsiz',
+                    icon: BzIcons.user,
+                    onTap: () => unawaited(context.push(AppRoutes.loginWith(from: AppRoutes.profile))),
+                  ),
+                ],
+              ),
             ),
-            SizedBox(height: BzSpace.xl),
-            _AppSection(),
+            const SizedBox(height: BzSpace.l),
+            const _AppSection(),
           ],
         ),
       );
@@ -91,47 +112,204 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final stats = user.stats;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profil')),
+      backgroundColor: Colors.transparent,
       body: RefreshIndicator(
         onRefresh: _refresh,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.only(bottom: BzSpace.xxxl),
           children: [
-            _Header(user: user),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: BzSpace.gutter),
-              child: _StatsRow(stats: stats, loading: profile.isLoading && stats == null),
+            _GradientHeader(
+              child: Column(
+                children: [
+                  _Header(user: user),
+                  const SizedBox(height: BzSpace.l),
+                  _StatsRow(stats: stats, loading: profile.isLoading && stats == null),
+                ],
+              ),
             ),
             const SizedBox(height: BzSpace.l),
-            ListTile(
-              leading: const Icon(Icons.account_balance_wallet_outlined),
-              title: const Text('Hamyon'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => unawaited(context.push(AppRoutes.wallet)),
+            BzGroup(
+              children: [
+                BzRow(
+                  icon: BzIcons.bookings,
+                  tileIcon: false,
+                  title: 'Bronlarim',
+                  onTap: () => context.go(AppRoutes.bookings),
+                ),
+                BzRow(
+                  icon: BzIcons.heart,
+                  tileIcon: false,
+                  title: 'Sevimlilar',
+                  onTap: () => context.go(AppRoutes.favorites),
+                ),
+                BzRow(
+                  icon: BzIcons.wallet,
+                  tileIcon: false,
+                  title: 'Hamyon',
+                  onTap: () => unawaited(context.push(AppRoutes.wallet)),
+                ),
+                BzRow(
+                  icon: BzIcons.review,
+                  tileIcon: false,
+                  title: 'Sharhlarim',
+                  onTap: () => unawaited(context.push(AppRoutes.myReviews)),
+                ),
+                BzRow(
+                  icon: BzIcons.map,
+                  tileIcon: false,
+                  title: 'Xaritadan qidirish',
+                  onTap: () => unawaited(context.push(AppRoutes.map)),
+                ),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.rate_review_outlined),
-              title: const Text('Sharhlarim'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => unawaited(context.push(AppRoutes.myReviews)),
-            ),
+            const SizedBox(height: BzSpace.l),
             const _AppSection(),
-            const SizedBox(height: BzSpace.xl),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: BzSpace.gutter),
-              child: SecondaryButton(
-                label: 'Chiqish',
-                icon: Icons.logout,
-                loading: _busy,
-                onPressed: _busy ? null : () => unawaited(_signOut()),
-              ),
+            const SizedBox(height: BzSpace.l),
+            BzGroup(
+              children: [
+                BzRow(
+                  key: const Key('profile-logout'),
+                  icon: BzIcons.logout,
+                  tileIcon: false,
+                  title: 'Chiqish',
+                  danger: true,
+                  showChevron: false,
+                  trailing: _busy
+                      ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      : null,
+                  onTap: _busy ? null : () => unawaited(_signOut()),
+                ),
+              ],
             ),
             const SizedBox(height: BzSpace.s),
             Center(
               child: DangerTextButton(label: "Hisobni o'chirish", onPressed: _busy ? null : () => unawaited(_delete())),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The indigo gradient block at the top with rounded bottom corners.
+class _GradientHeader extends StatelessWidget {
+  const _GradientHeader({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final top = MediaQuery.paddingOf(context).top;
+    return Container(
+      decoration: const BoxDecoration(
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF4B44A8), BzColors.indigo700, BzColors.indigo],
+        ),
+      ),
+      padding: EdgeInsets.fromLTRB(BzSpace.gutter, top + BzSpace.m, BzSpace.gutter, BzSpace.xl),
+      child: Column(
+        children: [
+          Text(
+            'Profil',
+            style: BzText.sora(context, 20, weight: FontWeight.w600, color: BzColors.white),
+          ),
+          const SizedBox(height: BzSpace.l),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _Avatar extends StatelessWidget {
+  const _Avatar({required this.initials, this.onEdit});
+
+  final String? initials;
+  final VoidCallback? onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SizedBox(
+      width: 88,
+      height: 88,
+      child: Material(
+        color: BzColors.white,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onEdit,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              if (initials == null)
+                const Icon(BzIcons.profileBold, size: 44, color: BzColors.indigo700)
+              else
+                Text(initials!, style: BzText.sora(context, 30, color: BzColors.indigo)),
+              if (onEdit != null)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    color: BzColors.indigo.withValues(alpha: 0.85),
+                    padding: const EdgeInsets.only(top: 2, bottom: 6),
+                    child: Text(
+                      'Tahrirlash',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.labelSmall?.copyWith(color: BzColors.white, fontSize: 11),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A white card inside the gradient header (title, subtitle, chevron).
+class _WhiteCard extends StatelessWidget {
+  const _WhiteCard({super.key, required this.title, this.subtitle, required this.onTap, this.icon});
+
+  final String title;
+  final String? subtitle;
+  final VoidCallback onTap;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: BzColors.white,
+      borderRadius: BorderRadius.circular(BzRadius.xl),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: BzSpace.xl, vertical: BzSpace.l),
+          child: Row(
+            children: [
+              if (icon != null) ...[Icon(icon, color: BzColors.indigo), const SizedBox(width: BzSpace.m)],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: BzText.sora(context, 18, color: BzColors.indigo)),
+                    if (subtitle != null)
+                      Text(subtitle!, style: theme.textTheme.bodySmall?.copyWith(color: BzColors.muted)),
+                  ],
+                ),
+              ),
+              const Icon(BzIcons.chevronRight, color: BzColors.muted, size: 20),
+            ],
+          ),
         ),
       ),
     );
@@ -155,46 +333,41 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(BzSpace.gutter, BzSpace.s, BzSpace.s, BzSpace.l),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 32,
-            backgroundColor: BzColors.indigo,
-            child: Text(initials(user.name ?? ''), style: theme.textTheme.titleLarge?.copyWith(color: BzColors.white)),
+    void edit() => unawaited(context.push(AppRoutes.profileEdit));
+    return Row(
+      children: [
+        _Avatar(initials: initials(user.name ?? ''), onEdit: edit),
+        const SizedBox(width: BzSpace.l),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                user.displayName,
+                key: const Key('profile-display-name'),
+                style: BzText.sora(context, 22, color: BzColors.white),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: BzSpace.xs),
+              Text(
+                Phone.format(user.phone),
+                style: theme.textTheme.bodyLarge?.copyWith(color: BzColors.white.withValues(alpha: 0.85)),
+              ),
+            ],
           ),
-          const SizedBox(width: BzSpace.l),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  user.displayName,
-                  style: theme.textTheme.headlineSmall,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: BzSpace.xs),
-                Text(
-                  Phone.format(user.phone),
-                  style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            tooltip: 'Tahrirlash',
-            icon: const Icon(Icons.edit),
-            onPressed: () => unawaited(context.push(AppRoutes.profileEdit)),
-          ),
-        ],
-      ),
+        ),
+        IconButton(
+          tooltip: 'Tahrirlash',
+          icon: const Icon(BzIcons.edit, color: BzColors.white),
+          onPressed: edit,
+        ),
+      ],
     );
   }
 }
 
+/// Bookings / reviews / favorites counters in one white card.
 class _StatsRow extends StatelessWidget {
   const _StatsRow({required this.stats, required this.loading});
 
@@ -204,18 +377,33 @@ class _StatsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String v(int? n) => n == null ? (loading ? '...' : '—') : '$n';
-    return Row(
-      children: [
-        _StatTile(label: 'Bronlar', value: v(stats?.appointmentsTotal), onTap: () => context.go(AppRoutes.bookings)),
-        const SizedBox(width: BzSpace.m),
-        _StatTile(
-          label: 'Sharhlar',
-          value: v(stats?.reviewsTotal),
-          onTap: () => unawaited(context.push(AppRoutes.myReviews)),
+    return Material(
+      color: BzColors.white,
+      borderRadius: BorderRadius.circular(BzRadius.xl),
+      clipBehavior: Clip.antiAlias,
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            _StatTile(
+              label: 'Bronlar',
+              value: v(stats?.appointmentsTotal),
+              onTap: () => context.go(AppRoutes.bookings),
+            ),
+            const VerticalDivider(width: 1, indent: 14, endIndent: 14, color: BzColors.border),
+            _StatTile(
+              label: 'Sharhlar',
+              value: v(stats?.reviewsTotal),
+              onTap: () => unawaited(context.push(AppRoutes.myReviews)),
+            ),
+            const VerticalDivider(width: 1, indent: 14, endIndent: 14, color: BzColors.border),
+            _StatTile(
+              label: 'Sevimlilar',
+              value: v(stats?.favoritesTotal),
+              onTap: () => context.go(AppRoutes.favorites),
+            ),
+          ],
         ),
-        const SizedBox(width: BzSpace.m),
-        _StatTile(label: 'Sevimlilar', value: v(stats?.favoritesTotal), onTap: () => context.go(AppRoutes.favorites)),
-      ],
+      ),
     );
   }
 }
@@ -231,20 +419,16 @@ class _StatTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Expanded(
-      child: Card(
-        margin: EdgeInsets.zero,
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: BzSpace.m, horizontal: BzSpace.s),
-            child: Column(
-              children: [
-                Text(value, style: theme.textTheme.titleLarge),
-                const SizedBox(height: 2),
-                Text(label, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-              ],
-            ),
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: BzSpace.l, horizontal: BzSpace.s),
+          child: Column(
+            children: [
+              Text(value, style: BzText.sora(context, 22, color: BzColors.indigo)),
+              const SizedBox(height: 2),
+              Text(label, style: theme.textTheme.bodySmall?.copyWith(color: BzColors.muted)),
+            ],
           ),
         ),
       ),
@@ -259,37 +443,33 @@ class _AppSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final city = ref.watch(cityProvider);
-    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
-    return Column(
+    return BzGroup(
       children: [
-        ListTile(
-          leading: const Icon(Icons.place_outlined),
-          title: const Text('Shahar'),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(cityLabel(city), style: TextStyle(color: muted)),
-              const Icon(Icons.chevron_right),
-            ],
-          ),
+        BzRow(
+          icon: BzIcons.location,
+          tileIcon: false,
+          title: 'Shahar',
+          trailingText: cityLabel(city),
           onTap: () => unawaited(context.push(AppRoutes.city)),
         ),
-        const ListTile(
-          enabled: false,
-          leading: Icon(Icons.translate),
-          title: Text('Til'),
-          subtitle: Text('Ruscha tez orada'),
-          trailing: Text('O\'zbekcha'),
+        const BzRow(
+          icon: BzIcons.language,
+          tileIcon: false,
+          title: 'Til',
+          subtitle: 'Ruscha tez orada',
+          trailingText: "O'zbekcha",
         ),
-        ListTile(
-          leading: const Icon(Icons.storefront_outlined),
-          title: const Text('Biznesingizni ulang'),
-          trailing: const Icon(Icons.open_in_new, size: 20),
+        BzRow(
+          icon: BzIcons.shop,
+          tileIcon: false,
+          title: 'Biznesingizni ulang',
+          trailing: const Icon(BzIcons.openExternal, size: 20),
           onTap: () => unawaited(_openRegister(ref)),
         ),
-        ListTile(
-          leading: const Icon(Icons.info_outline),
-          title: const Text('Ilova haqida'),
+        BzRow(
+          icon: BzIcons.info,
+          tileIcon: false,
+          title: 'Ilova haqida',
           onTap: () => showAboutDialog(
             context: context,
             applicationName: 'Bizcat',

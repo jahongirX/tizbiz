@@ -4,10 +4,15 @@ import 'package:material_ui/material_ui.dart';
 import 'package:tizbiz_core/tizbiz_core.dart';
 
 /// Marker size; the tail tip sits on the business's coordinate.
-const Size kMapPinSize = Size(56, 66);
+const Size kMapPinSize = Size(92, 80);
 
-/// A round logo bubble with a tail. The selected pin is full size with an apricot ring
-/// (brand: apricot is for CTAs and map pins), the others are smaller with a white ring.
+/// `4.6 (12)` / `Yangi` for a pin's rating label.
+String pinRatingLabel(BusinessCard card) =>
+    card.ratingCount > 0 ? '${card.ratingAvg.toStringAsFixed(1)} (${card.ratingCount})' : 'Yangi';
+
+/// A placemark: the business logo in a round bubble, a white rating pill (`★ 4.6 (12)`)
+/// overlapping its bottom, and a tail. The selected pin is larger with an apricot ring
+/// (brand: apricot is for CTAs and map pins).
 class MapPin extends StatelessWidget {
   const MapPin({super.key, required this.card, required this.selected});
 
@@ -17,41 +22,89 @@ class MapPin extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ring = selected ? BzColors.apricot : BzColors.white;
+    final theme = Theme.of(context);
     return Semantics(
       button: true,
       selected: selected,
-      label: card.name,
+      label: '${card.name}, reyting ${pinRatingLabel(card)}',
       excludeSemantics: true,
       child: AnimatedScale(
-        scale: selected ? 1 : 0.78,
+        scale: selected ? 1.12 : 0.92,
         alignment: Alignment.bottomCenter,
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutBack,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              width: 56,
-              height: 56,
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                color: ring,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: BzColors.indigo.withValues(alpha: selected ? 0.35 : 0.22),
-                    blurRadius: selected ? 14 : 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+        child: SizedBox(
+          width: kMapPinSize.width,
+          height: kMapPinSize.height,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              SizedBox(
+                height: 68,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.topCenter,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 220),
+                      width: 54,
+                      height: 54,
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: ring,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: BzColors.indigo.withValues(alpha: selected ? 0.35 : 0.22),
+                            blurRadius: selected ? 14 : 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: BizLogo(url: card.logo, name: card.name, size: 48, brandColor: card.brandColor),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: selected ? BzColors.indigo : BzColors.white,
+                          borderRadius: BorderRadius.circular(BzRadius.pill),
+                          boxShadow: [
+                            BoxShadow(
+                              color: BzColors.indigo.withValues(alpha: 0.18),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (card.ratingCount > 0) ...[
+                              const Icon(Icons.star_rounded, size: 13, color: BzColors.apricot),
+                              const SizedBox(width: 2),
+                            ],
+                            Text(
+                              pinRatingLabel(card),
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                fontSize: 11,
+                                height: 1.1,
+                                color: selected ? BzColors.white : BzColors.indigo,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: ClipOval(
-                child: BizLogo(url: card.logo, name: card.name, size: 50, brandColor: card.brandColor),
-              ),
-            ),
-            CustomPaint(size: const Size(14, 10), painter: _TailPainter(ring)),
-          ],
+              CustomPaint(size: const Size(12, 8), painter: _TailPainter(selected ? BzColors.indigo : BzColors.white)),
+            ],
+          ),
         ),
       ),
     );

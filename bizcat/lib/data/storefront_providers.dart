@@ -7,7 +7,9 @@ import '../core/api.dart';
 /// Kept alive after success so the detail page, flows, cart and checkout share one fetch;
 /// pull-to-refresh calls `ref.invalidate(storefrontProvider(slug))`.
 final storefrontProvider = FutureProvider.autoDispose.family<StorefrontData, String>((ref, slug) async {
-  final data = await ref.read(apiProvider).get<StorefrontData>(
+  final data = await ref
+      .read(apiProvider)
+      .get<StorefrontData>(
         Endpoints.site(slug),
         auth: RequestAuth.none,
         decode: (d) => StorefrontData.fromJson(JsonRead.object(d)),

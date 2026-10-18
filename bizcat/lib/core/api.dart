@@ -7,12 +7,12 @@ import 'secure_token_store.dart';
 import 'session.dart';
 
 /// Base URL from `--dart-define=API_BASE=...` (default https://api.tizbiz.uz).
-final apiConfigProvider =
-    Provider<ApiConfig>((ref) => ApiConfig.fromEnvironment(log: kDebugMode ? debugPrint : null));
+final apiConfigProvider = Provider<ApiConfig>((ref) => ApiConfig.fromEnvironment(log: kDebugMode ? debugPrint : null));
 
 /// Where the consumer JWT lives.
-final tokenStoreProvider =
-    Provider<TokenStore>((ref) => SecureTokenStore(const FlutterSecureStorage(), 'bizcat_consumer_token'));
+final tokenStoreProvider = Provider<TokenStore>(
+  (ref) => SecureTokenStore(const FlutterSecureStorage(), 'bizcat_consumer_token'),
+);
 
 /// The single HTTP client (consumer tokens only). A 401 on an authenticated request signs out.
 final apiProvider = Provider<ApiClient>((ref) {

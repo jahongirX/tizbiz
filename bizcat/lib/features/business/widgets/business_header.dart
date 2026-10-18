@@ -9,6 +9,7 @@ import 'package:bizcat/shared/widgets/business_cards.dart';
 import 'package:bizcat/shared/widgets/images.dart';
 import 'package:bizcat/shared/widgets/nav.dart';
 import 'package:bizcat/shared/widgets/rating.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -197,19 +198,19 @@ class BusinessActionRow extends ConsumerWidget {
 
     final buttons = <Widget>[
       if (hasPhone)
-        _ActionButton(icon: Icons.call, label: "Qo'ng'iroq", onTap: () => unawaited(callPhone(ref, b.phone))),
+        _ActionButton(icon: BzIcons.call, label: "Qo'ng'iroq", onTap: () => unawaited(callPhone(ref, b.phone))),
       if (hasMap)
         _ActionButton(
-          icon: Icons.map_outlined,
+          icon: BzIcons.map,
           label: 'Xarita',
           onTap: () => unawaited(
             openMap(ref, mapUrl: b.mapUrl, lat: card.lat, lng: card.lng, name: card.name, address: card.address),
           ),
         ),
       if (telegram.isNotEmpty)
-        _ActionButton(icon: Icons.send, label: 'Telegram', onTap: () => unawaited(openTelegram(ref, telegram))),
+        _ActionButton(icon: BzIcons.send, label: 'Telegram', onTap: () => unawaited(openTelegram(ref, telegram))),
       _ActionButton(
-        icon: isFav ? Icons.favorite : Icons.favorite_border,
+        icon: isFav ? BzIcons.heartBold : BzIcons.heart,
         label: 'Sevimli',
         selected: isFav,
         onTap: toggleFavorite,
@@ -286,7 +287,7 @@ class BusinessAddressRow extends ConsumerWidget {
     return Row(
       children: [
         // The map pin is one of the two places the brand's accent color is allowed (secondary).
-        Icon(Icons.place, color: scheme.secondary, size: 22),
+        Icon(BzIcons.locationBold, color: scheme.secondary, size: 22),
         const SizedBox(width: BzSpace.s),
         Expanded(
           child: Column(
@@ -347,10 +348,10 @@ class _BusinessHoursRowState extends State<BusinessHoursRow> {
             padding: const EdgeInsets.symmetric(vertical: BzSpace.s),
             child: Row(
               children: [
-                Icon(Icons.schedule, color: scheme.primary, size: 22),
+                Icon(BzIcons.clock, color: scheme.primary, size: 22),
                 const SizedBox(width: BzSpace.s),
                 Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
-                Icon(_expanded ? Icons.expand_less : Icons.expand_more, color: scheme.onSurfaceVariant),
+                Icon(_expanded ? BzIcons.expandLess : BzIcons.expandMore, color: scheme.onSurfaceVariant),
               ],
             ),
           ),

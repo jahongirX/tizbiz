@@ -9,6 +9,7 @@ import 'package:bizcat/shared/widgets/buttons.dart';
 import 'package:bizcat/shared/widgets/dialogs.dart';
 import 'package:bizcat/shared/widgets/nav.dart';
 import 'package:bizcat/shared/widgets/states.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -105,7 +106,7 @@ class _ReviewComposeScreenState extends ConsumerState<ReviewComposeScreen> {
     if (missingTarget) {
       return scaffold(
         EmptyState(
-          icon: Icons.rate_review_outlined,
+          icon: BzIcons.review,
           title: 'Tashrif tanlanmagan',
           message: "Sharhni \"Bronlarim\" bo'limidagi yakunlangan tashrifdan qoldiring.",
           actionLabel: 'Bronlarim',
@@ -118,17 +119,12 @@ class _ReviewComposeScreenState extends ConsumerState<ReviewComposeScreen> {
     if (error != null) {
       if (error is ApiException && error.isNotFound) {
         return scaffold(
-          EmptyState(
-            icon: Icons.rate_review_outlined,
-            title: 'Sharh topilmadi',
-            actionLabel: 'Orqaga',
-            onAction: _leave,
-          ),
+          EmptyState(icon: BzIcons.review, title: 'Sharh topilmadi', actionLabel: 'Orqaga', onAction: _leave),
         );
       }
       if (error is ApiException && error.isConflict) {
         return scaffold(
-          EmptyState(icon: Icons.info_outline, title: errorText(error), actionLabel: 'Orqaga', onAction: _leave),
+          EmptyState(icon: BzIcons.info, title: errorText(error), actionLabel: 'Orqaga', onAction: _leave),
         );
       }
       return scaffold(

@@ -6,6 +6,7 @@ import 'package:bizcat/shared/widgets/buttons.dart';
 import 'package:bizcat/shared/widgets/images.dart';
 import 'package:bizcat/shared/widgets/states.dart';
 import 'package:bizcat/theme/app_theme.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
@@ -19,9 +20,9 @@ class SlotStepLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: BzSpace.m),
-        child: Text(text, style: Theme.of(context).textTheme.titleMedium),
-      );
+    padding: const EdgeInsets.only(bottom: BzSpace.m),
+    child: Text(text, style: Theme.of(context).textTheme.titleMedium),
+  );
 }
 
 /// A tappable card with a primary border when [selected].
@@ -86,7 +87,7 @@ class SlotServiceCard extends StatelessWidget {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.schedule, size: 16, color: scheme.onSurfaceVariant),
+                        Icon(BzIcons.clock, size: 16, color: scheme.onSurfaceVariant),
                         const SizedBox(width: BzSpace.xs),
                         Text(UzDates.duration(service.durationMin), style: muted),
                       ],
@@ -105,7 +106,7 @@ class SlotServiceCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: BzSpace.s),
-          Icon(Icons.chevron_right, color: scheme.onSurfaceVariant),
+          Icon(BzIcons.chevronRight, color: scheme.onSurfaceVariant),
         ],
       ),
     );
@@ -123,14 +124,11 @@ class _DepositChip extends StatelessWidget {
     final scheme = theme.colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: BzSpace.s, vertical: BzSpace.xs),
-      decoration: BoxDecoration(
-        color: scheme.primaryContainer,
-        borderRadius: BorderRadius.circular(BzRadius.pill),
-      ),
+      decoration: BoxDecoration(color: scheme.primaryContainer, borderRadius: BorderRadius.circular(BzRadius.pill)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.verified_user_outlined, size: 14, color: scheme.onPrimaryContainer),
+          Icon(BzIcons.security, size: 14, color: scheme.onPrimaryContainer),
           const SizedBox(width: BzSpace.xs),
           Flexible(
             child: Text(
@@ -176,7 +174,7 @@ class SlotStaffCard extends StatelessWidget {
               ],
             ),
           ),
-          Icon(Icons.chevron_right, color: scheme.onSurfaceVariant),
+          Icon(BzIcons.chevronRight, color: scheme.onSurfaceVariant),
         ],
       ),
     );
@@ -305,11 +303,7 @@ class _SlotDayStripState extends State<SlotDayStrip> {
   }
 }
 
-const List<(String, String)> _buckets = [
-  ('morning', 'Ertalab'),
-  ('afternoon', 'Kunduzi'),
-  ('evening', 'Kechqurun'),
-];
+const List<(String, String)> _buckets = [('morning', 'Ertalab'), ('afternoon', 'Kunduzi'), ('evening', 'Kechqurun')];
 
 /// `Bo'sh vaqtlar` for the current service/staff/date, grouped by part of day.
 class SlotTimes extends ConsumerWidget {
@@ -340,10 +334,7 @@ class SlotTimes extends ConsumerWidget {
       final e = value.error!;
       body = isOffline(e)
           ? OfflineState(onRetry: () => ref.invalidate(slotAvailabilityProvider(availabilityKey)))
-          : ErrorState(
-              message: errorText(e),
-              onRetry: () => ref.invalidate(slotAvailabilityProvider(availabilityKey)),
-            );
+          : ErrorState(message: errorText(e), onRetry: () => ref.invalidate(slotAvailabilityProvider(availabilityKey)));
     } else {
       final slots = value.requireValue.slots;
       if (slots.isEmpty) {
@@ -356,12 +347,7 @@ class SlotTimes extends ConsumerWidget {
             ),
             if (onNextDay != null) ...[
               const SizedBox(height: BzSpace.m),
-              SecondaryButton(
-                label: 'Keyingi kun',
-                icon: Icons.arrow_forward,
-                expanded: false,
-                onPressed: onNextDay,
-              ),
+              SecondaryButton(label: 'Keyingi kun', icon: BzIcons.forward, expanded: false, onPressed: onNextDay),
             ],
           ],
         );
@@ -393,13 +379,7 @@ class SlotTimes extends ConsumerWidget {
         );
       }
     }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SlotStepLabel("Bo'sh vaqtlar"),
-        body,
-      ],
-    );
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const SlotStepLabel("Bo'sh vaqtlar"), body]);
   }
 }
 
@@ -483,17 +463,14 @@ class SlotAlert extends StatelessWidget {
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(BzSpace.l),
-        decoration: BoxDecoration(
-          color: scheme.errorContainer,
-          borderRadius: BorderRadius.circular(BzRadius.m),
-        ),
+        decoration: BoxDecoration(color: scheme.errorContainer, borderRadius: BorderRadius.circular(BzRadius.m)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.error_outline, color: scheme.onErrorContainer, size: 20),
+                Icon(BzIcons.danger, color: scheme.onErrorContainer, size: 20),
                 const SizedBox(width: BzSpace.s),
                 Expanded(
                   child: Text(message, style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onErrorContainer)),

@@ -8,6 +8,7 @@ import 'package:bizcat/shared/widgets/bottom_bar.dart';
 import 'package:bizcat/shared/widgets/buttons.dart';
 import 'package:bizcat/shared/widgets/nav.dart';
 import 'package:bizcat/shared/widgets/states.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
@@ -107,12 +108,12 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
               labelText: "Tug'ilgan kun",
               hintText: 'Tanlang',
               errorText: s.fieldErrors['birthday'],
-              prefixIcon: const Icon(Icons.cake_outlined),
+              prefixIcon: const Icon(BzIcons.cake),
               suffixIcon: s.birthday == null
                   ? null
                   : IconButton(
                       tooltip: 'Tozalash',
-                      icon: const Icon(Icons.close),
+                      icon: const Icon(BzIcons.close),
                       onPressed: () => ctrl.setBirthday(null),
                     ),
             ),
@@ -156,7 +157,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             decoration: const InputDecoration(
               labelText: 'Telefon',
               helperText: "Telefon raqamni o'zgartirib bo'lmaydi.",
-              prefixIcon: Icon(Icons.phone_outlined),
+              prefixIcon: Icon(BzIcons.call),
             ),
           ),
         ],

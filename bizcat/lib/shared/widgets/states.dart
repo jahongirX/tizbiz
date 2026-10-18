@@ -1,4 +1,5 @@
 import 'package:bizcat/shared/widgets/buttons.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -20,8 +21,12 @@ class LoadingView extends StatefulWidget {
 }
 
 class _LoadingViewState extends State<LoadingView> with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 900), lowerBound: 0.45, upperBound: 1);
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+    lowerBound: 0.45,
+    upperBound: 1,
+  );
 
   @override
   void didChangeDependencies() {
@@ -44,10 +49,10 @@ class _LoadingViewState extends State<LoadingView> with SingleTickerProviderStat
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme.outline;
     Widget box({double? w, required double h, double r = BzRadius.s}) => Container(
-          width: w,
-          height: h,
-          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(r)),
-        );
+      width: w,
+      height: h,
+      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(r)),
+    );
 
     final Widget body;
     switch (widget.kind) {
@@ -64,7 +69,11 @@ class _LoadingViewState extends State<LoadingView> with SingleTickerProviderStat
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [box(h: 14), const SizedBox(height: BzSpace.s), box(w: 120, h: 12)],
+                        children: [
+                          box(h: 14),
+                          const SizedBox(height: BzSpace.s),
+                          box(w: 120, h: 12),
+                        ],
                       ),
                     ),
                   ],
@@ -81,7 +90,10 @@ class _LoadingViewState extends State<LoadingView> with SingleTickerProviderStat
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AspectRatio(aspectRatio: 2, child: box(h: double.infinity, r: BzRadius.l)),
+                    AspectRatio(
+                      aspectRatio: 2,
+                      child: box(h: double.infinity, r: BzRadius.l),
+                    ),
                     const SizedBox(height: BzSpace.s),
                     box(w: 180, h: 14),
                     const SizedBox(height: BzSpace.xs),
@@ -95,7 +107,10 @@ class _LoadingViewState extends State<LoadingView> with SingleTickerProviderStat
         body = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AspectRatio(aspectRatio: 16 / 9, child: box(h: double.infinity, r: BzRadius.l)),
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: box(h: double.infinity, r: BzRadius.l),
+            ),
             const SizedBox(height: BzSpace.l),
             box(w: 200, h: 22),
             const SizedBox(height: BzSpace.s),
@@ -130,14 +145,7 @@ class _LoadingViewState extends State<LoadingView> with SingleTickerProviderStat
 
 /// Centered icon (in an indigo50 circle), title, optional message and indigo action.
 class EmptyState extends StatelessWidget {
-  const EmptyState({
-    super.key,
-    required this.icon,
-    required this.title,
-    this.message,
-    this.actionLabel,
-    this.onAction,
-  });
+  const EmptyState({super.key, required this.icon, required this.title, this.message, this.actionLabel, this.onAction});
 
   final IconData icon;
   final String title;
@@ -191,11 +199,11 @@ class ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => EmptyState(
-        icon: Icons.error_outline,
-        title: message,
-        actionLabel: onRetry == null ? null : 'Qayta urinish',
-        onAction: onRetry,
-      );
+    icon: BzIcons.danger,
+    title: message,
+    actionLabel: onRetry == null ? null : 'Qayta urinish',
+    onAction: onRetry,
+  );
 }
 
 /// No connection: `Internet aloqasi yo'q` with `Qayta urinish`.
@@ -206,10 +214,10 @@ class OfflineState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => EmptyState(
-        icon: Icons.wifi_off,
-        title: "Internet aloqasi yo'q",
-        message: "Ulanishni tekshirib, qayta urinib ko'ring.",
-        actionLabel: onRetry == null ? null : 'Qayta urinish',
-        onAction: onRetry,
-      );
+    icon: BzIcons.offline,
+    title: "Internet aloqasi yo'q",
+    message: "Ulanishni tekshirib, qayta urinib ko'ring.",
+    actionLabel: onRetry == null ? null : 'Qayta urinish',
+    onAction: onRetry,
+  );
 }

@@ -9,6 +9,7 @@ import 'package:bizcat/shared/widgets/nav.dart';
 import 'package:bizcat/shared/widgets/review_tile.dart';
 import 'package:bizcat/shared/widgets/states.dart';
 import 'package:bizcat/shared/widgets/status_chips.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -59,7 +60,7 @@ class MyReviewsScreen extends ConsumerWidget {
             padding: const EdgeInsets.only(top: BzSpace.xxl),
             children: const [
               EmptyState(
-                icon: Icons.rate_review_outlined,
+                icon: BzIcons.review,
                 title: 'Hali sharh qoldirmagansiz',
                 message: 'Yakunlangan tashriflaringizni "Bronlarim" bo\'limida baholang.',
               ),

@@ -3,13 +3,15 @@ import 'dart:async';
 import 'package:bizcat/app/routes.dart';
 import 'package:bizcat/core/city.dart';
 import 'package:bizcat/core/errors.dart';
+import 'package:bizcat/core/launcher.dart';
 import 'package:bizcat/core/session.dart';
 import 'package:bizcat/data/directory_providers.dart';
 import 'package:bizcat/features/home/home_widgets.dart';
 import 'package:bizcat/features/home/providers.dart';
 import 'package:bizcat/shared/widgets/business_cards.dart';
-import 'package:bizcat/shared/widgets/section_header.dart';
 import 'package:bizcat/shared/widgets/states.dart';
+import 'package:bizcat/shared/widgets/ui.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -55,45 +57,41 @@ class HomeScreen extends ConsumerWidget {
 
     final slivers = <Widget>[
       SliverToBoxAdapter(child: HomeTopBar(city: city)),
-      SliverToBoxAdapter(child: HomeGreeting(firstName: _firstName(consumer?.name))),
+      SliverToBoxAdapter(
+        child: HomeGreeting(
+          firstName: _firstName(consumer?.name),
+          onTap: signedIn ? () => context.go(AppRoutes.profile) : null,
+        ),
+      ),
       const SliverToBoxAdapter(child: HomeSearchBar()),
       if (allOffline)
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: OfflineState(onRetry: () => unawaited(refresh(ref))),
-        )
+        SliverFillRemaining(hasScrollBody: false, child: OfflineState(onRetry: () => unawaited(refresh(ref))))
       else ...[
         if (signedIn && next != null)
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(BzSpace.gutter, BzSpace.xl, BzSpace.gutter, 0),
+            padding: const EdgeInsets.fromLTRB(BzSpace.gutter, BzSpace.l, BzSpace.gutter, 0),
             sliver: SliverToBoxAdapter(child: NextBookingCard(appointment: next)),
           ),
         if (noBusinesses)
           SliverToBoxAdapter(child: _NoBusinesses(city: city))
         else ...[
-          _section(const SectionHeader(title: 'Kategoriyalar')),
+          const SliverToBoxAdapter(child: BzSectionTitle(title: 'Kategoriyalar')),
           _categories(context, ref, categories),
         ],
         if (signedIn && revisit.isNotEmpty) ...[
-          _section(const SectionHeader(title: 'Siz borgan joylar')),
+          const SliverToBoxAdapter(child: BzSectionTitle(title: 'Siz borgan joylar')),
           SliverToBoxAdapter(
-            child: HomeCarousel(
-              equalHeight: true,
-              children: [for (final r in revisit) RevisitCard(item: r)],
-            ),
+            child: HomeCarousel(equalHeight: true, children: [for (final r in revisit) RevisitCard(item: r)]),
           ),
         ],
-        if (!noBusinesses) ...[
-          ..._featured(context, ref, featured),
-          ..._topRated(context, ref, topRated),
-        ],
+        if (!noBusinesses) ...[..._featured(context, ref, featured), ..._topRated(context, ref, topRated)],
+        const SliverToBoxAdapter(child: BzSectionTitle(title: 'Foydali')),
+        SliverToBoxAdapter(child: _QuickLinks(signedIn: signedIn)),
         if (!signedIn)
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(BzSpace.gutter, BzSpace.xxl, BzSpace.gutter, 0),
             sliver: SliverToBoxAdapter(
-              child: HomeLoginCard(
-                onLogin: () => unawaited(context.push(AppRoutes.loginWith(from: AppRoutes.home))),
-              ),
+              child: HomeLoginCard(onLogin: () => unawaited(context.push(AppRoutes.loginWith(from: AppRoutes.home)))),
             ),
           ),
         const SliverToBoxAdapter(child: SizedBox(height: BzSpace.xxxl)),
@@ -101,6 +99,7 @@ class HomeScreen extends ConsumerWidget {
     ];
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
@@ -121,24 +120,18 @@ class HomeScreen extends ConsumerWidget {
     return n.split(RegExp(r'\s+')).first;
   }
 
-  static Widget _section(Widget header) => SliverPadding(
-        padding: const EdgeInsets.fromLTRB(BzSpace.gutter, BzSpace.xl, BzSpace.s, BzSpace.s),
-        sliver: SliverToBoxAdapter(child: header),
-      );
+  static Widget _section(Widget header) => SliverToBoxAdapter(child: header);
 
   /// A sliver: the grid, its skeleton (which brings its own gutter) or a compact error.
   Widget _categories(BuildContext context, WidgetRef ref, AsyncValue<List<Category>> async) {
     final all = async.hasError ? null : async.value;
     if (all == null && !async.hasError) {
-      return const SliverToBoxAdapter(child: LoadingView(kind: LoadingKind.grid, rows: 6));
+      return const SliverToBoxAdapter(child: LoadingView(kind: LoadingKind.grid, rows: 3));
     }
     final theme = Theme.of(context);
     final Widget child;
     if (all == null) {
-      child = HomeInlineError(
-        message: errorText(async.error!),
-        onRetry: () => ref.invalidate(categoriesProvider),
-      );
+      child = HomeInlineError(message: errorText(async.error!), onRetry: () => ref.invalidate(categoriesProvider));
     } else {
       final visible = HomeCategoryGrid.visible(all);
       child = visible.isEmpty
@@ -150,6 +143,7 @@ class HomeScreen extends ConsumerWidget {
               categories: visible,
               onTap: (c) => context.go(AppRoutes.exploreWith(category: c.key)),
             );
+      if (visible.isNotEmpty) return SliverToBoxAdapter(child: child);
     }
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: BzSpace.gutter),
@@ -160,11 +154,7 @@ class HomeScreen extends ConsumerWidget {
   List<Widget> _featured(BuildContext context, WidgetRef ref, AsyncValue<Paged<BusinessCard>> async) {
     final items = async.hasError ? null : async.value?.items;
     if (items != null && items.isEmpty) return const [];
-    final header = _section(SectionHeader(
-      title: 'Tavsiya etilgan',
-      actionLabel: 'Hammasi',
-      onAction: () => context.go(AppRoutes.exploreWith(sort: 'featured')),
-    ));
+    final header = _section(const BzSectionTitle(title: 'Tavsiya etilgan'));
     final Widget body;
     if (async.hasError && !async.hasValue) {
       body = Padding(
@@ -175,9 +165,22 @@ class HomeScreen extends ConsumerWidget {
         ),
       );
     } else if (items == null) {
-      body = const _CarouselSkeleton();
+      body = const LoadingView(kind: LoadingKind.cards, rows: 1);
     } else {
-      body = HomeCarousel(children: [for (final c in items) BusinessCardCompact(card: c)]);
+      final shown = items.length > 4 ? items.sublist(0, 4) : items;
+      body = BzGroup(
+        children: [
+          for (final c in shown) BusinessRow(card: c),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(BzSpace.l, BzSpace.s, BzSpace.l, BzSpace.s),
+            child: BzPillButton(
+              key: const Key('home-featured-all'),
+              label: "Hammasini ko'rish",
+              onPressed: () => context.go(AppRoutes.exploreWith(sort: 'featured')),
+            ),
+          ),
+        ],
+      );
     }
     return [header, SliverToBoxAdapter(child: body)];
   }
@@ -185,11 +188,13 @@ class HomeScreen extends ConsumerWidget {
   List<Widget> _topRated(BuildContext context, WidgetRef ref, AsyncValue<Paged<BusinessCard>> async) {
     final items = async.hasError ? null : async.value?.items;
     if (items != null && items.isEmpty) return const [];
-    final header = _section(SectionHeader(
-      title: 'Eng yuqori baholangan',
-      actionLabel: 'Hammasi',
-      onAction: () => context.go(AppRoutes.exploreWith(sort: 'rating')),
-    ));
+    final header = _section(
+      BzSectionTitle(
+        title: 'Eng yuqori baholangan',
+        actionLabel: 'Hammasi',
+        onAction: () => context.go(AppRoutes.exploreWith(sort: 'rating')),
+      ),
+    );
     if (async.hasError && !async.hasValue) {
       return [
         header,
@@ -205,20 +210,56 @@ class HomeScreen extends ConsumerWidget {
       ];
     }
     if (items == null) {
-      return [header, const SliverToBoxAdapter(child: LoadingView(kind: LoadingKind.cards, rows: 2))];
+      return [header, const SliverToBoxAdapter(child: _CarouselSkeleton())];
     }
-    final shown = items.length > 5 ? items.sublist(0, 5) : items;
     return [
       header,
-      SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: BzSpace.gutter),
-        sliver: SliverList.separated(
-          itemCount: shown.length,
-          itemBuilder: (_, i) => BusinessCardTile(card: shown[i]),
-          separatorBuilder: (_, _) => const SizedBox(height: BzSpace.m),
-        ),
+      SliverToBoxAdapter(
+        child: HomeCarousel(children: [for (final c in items) BusinessCardCompact(card: c)]),
       ),
     ];
+  }
+}
+
+/// Shortcuts: map search, favorites, wallet, connect a business.
+class _QuickLinks extends ConsumerWidget {
+  const _QuickLinks({required this.signedIn});
+
+  final bool signedIn;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return BzGroup(
+      children: [
+        BzRow(
+          key: const Key('home-quick-map'),
+          icon: BzIcons.map,
+          title: 'Xaritadan qidirish',
+          subtitle: 'Yaqin atrofdagi bizneslar',
+          onTap: () => unawaited(context.push(AppRoutes.map)),
+        ),
+        BzRow(
+          icon: BzIcons.heart,
+          title: 'Sevimlilar',
+          subtitle: 'Saqlangan bizneslar',
+          onTap: () => context.go(AppRoutes.favorites),
+        ),
+        if (signedIn)
+          BzRow(
+            icon: BzIcons.wallet,
+            title: 'Bonuslarim',
+            subtitle: 'Hamyon va keshbek',
+            onTap: () => unawaited(context.push(AppRoutes.wallet)),
+          ),
+        BzRow(
+          icon: BzIcons.shop,
+          title: 'Biznesingizni ulang',
+          subtitle: 'TizBiz bilan onlayn bron',
+          trailing: const Icon(BzIcons.openExternal, size: 20),
+          onTap: () => unawaited(ref.read(urlOpenerProvider).open(Uri.parse('https://tizbiz.uz/register'))),
+        ),
+      ],
+    );
   }
 }
 
@@ -233,7 +274,7 @@ class _NoBusinesses extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.only(top: BzSpace.l),
       child: EmptyState(
-        icon: Icons.storefront_outlined,
+        icon: BzIcons.shop,
         title: "Bu shaharda hali bizneslar yo'q",
         message: city == null ? "Tez orada yangi bizneslar qo'shiladi." : null,
         actionLabel: city == null ? null : "Barcha shaharlarda ko'rish",

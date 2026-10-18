@@ -1,3 +1,4 @@
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -16,14 +17,19 @@ class SectionHeader extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(title, style: Theme.of(context).textTheme.titleLarge, maxLines: 1, overflow: TextOverflow.ellipsis),
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.titleLarge,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           if (actionLabel != null)
             TextButton(
               onPressed: onAction,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: [Text(actionLabel!), const Icon(Icons.chevron_right, size: 20)],
+                children: [Text(actionLabel!), const Icon(BzIcons.chevronRight, size: 20)],
               ),
             ),
         ],

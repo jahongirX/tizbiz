@@ -8,6 +8,8 @@ import 'package:bizcat/features/bookings/widgets.dart';
 import 'package:bizcat/shared/widgets/login_prompt.dart';
 import 'package:bizcat/shared/widgets/poller.dart';
 import 'package:bizcat/shared/widgets/states.dart';
+import 'package:bizcat/shared/widgets/ui.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -48,9 +50,10 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
     final signedIn = ref.watch(isSignedInProvider);
     if (!signedIn) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Bronlarim')),
+        backgroundColor: Colors.transparent,
+        appBar: bzLargeAppBar(context, 'Bronlarim'),
         body: const LoginPromptView(
-          icon: Icons.event_note_outlined,
+          icon: BzIcons.bookings,
           title: 'Bronlaringiz shu yerda',
           message: "Navbat va buyurtmalaringizni ko'rish uchun kiring.",
           from: AppRoutes.bookings,
@@ -63,7 +66,8 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
       refreshOnResume: true,
       onTick: _refreshAll,
       child: Scaffold(
-        appBar: AppBar(title: const Text('Bronlarim')),
+        backgroundColor: Colors.transparent,
+        appBar: bzLargeAppBar(context, 'Bronlarim'),
         body: Column(
           children: [
             Padding(
@@ -73,8 +77,8 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
                 child: SegmentedButton<bool>(
                   showSelectedIcon: false,
                   segments: const [
-                    ButtonSegment(value: false, label: Text('Bronlar'), icon: Icon(Icons.event_outlined)),
-                    ButtonSegment(value: true, label: Text('Buyurtmalar'), icon: Icon(Icons.receipt_long_outlined)),
+                    ButtonSegment(value: false, label: Text('Bronlar'), icon: Icon(BzIcons.calendar)),
+                    ButtonSegment(value: true, label: Text('Buyurtmalar'), icon: Icon(BzIcons.receipt)),
                   ],
                   selected: {_orders},
                   onSelectionChanged: (v) => setState(() => _orders = v.first),
@@ -210,9 +214,9 @@ class _AppointmentsList extends ConsumerWidget {
       onRetry: () => ref.invalidate(provider),
       onLoadMore: () => unawaited(ref.read(provider.notifier).loadMore()),
       empty: past
-          ? const EmptyState(icon: Icons.history, title: "O'tgan bronlar yo'q")
+          ? const EmptyState(icon: BzIcons.history, title: "O'tgan bronlar yo'q")
           : EmptyState(
-              icon: Icons.event_available,
+              icon: BzIcons.calendarTick,
               title: "Kelgusi bronlar yo'q",
               message: 'Katalogdan biznes tanlab, navbatga yoziling.',
               actionLabel: 'Katalogni ochish',
@@ -245,8 +249,8 @@ class _OrdersList extends ConsumerWidget {
       onRetry: () => ref.invalidate(provider),
       onLoadMore: () => unawaited(ref.read(provider.notifier).loadMore()),
       empty: past
-          ? const EmptyState(icon: Icons.receipt_long_outlined, title: "Buyurtmalar tarixi bo'sh")
-          : const EmptyState(icon: Icons.shopping_bag_outlined, title: "Faol buyurtmalar yo'q"),
+          ? const EmptyState(icon: BzIcons.receipt, title: "Buyurtmalar tarixi bo'sh")
+          : const EmptyState(icon: BzIcons.bag, title: "Faol buyurtmalar yo'q"),
       itemBuilder: (o) => OrderCard(order: o, past: past),
     );
   }

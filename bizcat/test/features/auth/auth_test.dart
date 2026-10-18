@@ -49,6 +49,23 @@ void main() {
     expect(h.location, '/favorites');
   });
 
+  testWidgets('the demo button signs in as the demo consumer in one tap', (t) async {
+    final h = await pumpBizcat(
+      t,
+      location: '/login?from=%2Fbookings',
+      setup: (api) => api
+        ..on('POST', '/v1/consumer/auth/otp', body: Fx.otp)
+        ..on('POST', '/v1/consumer/auth/verify', body: Fx.verify)
+        ..on('GET', '/v1/consumer/me', body: Fx.me),
+    );
+    await t.tap(find.byKey(const Key('login-demo')));
+    await settle(t);
+    expect(h.api.last('POST', '/v1/consumer/auth/otp').json, {'phone': '+998900000001'});
+    expect(h.api.last('POST', '/v1/consumer/auth/verify').json, {'phone': '+998900000001', 'code': '1111'});
+    expect(h.session, isA<SessionSignedIn>());
+    expect(h.location, '/bookings');
+  });
+
   testWidgets('a 422 code shows the field error and clears the field', (t) async {
     await pumpBizcat(
       t,

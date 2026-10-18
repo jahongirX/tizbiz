@@ -1,6 +1,7 @@
 import 'package:bizcat/core/rental_pricing.dart';
 import 'package:bizcat/shared/widgets/flow_widgets.dart';
 import 'package:bizcat/theme/app_theme.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
@@ -41,7 +42,7 @@ class RentalSessionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final icon = session == RentalSession.morning ? Icons.wb_sunny_outlined : Icons.nights_stay_outlined;
+    final icon = session == RentalSession.morning ? BzIcons.sun : BzIcons.moon;
     return Semantics(
       selected: selected,
       button: true,
@@ -86,10 +87,7 @@ class RentalSessionCard extends StatelessWidget {
                       Money.format(RentalPricing.perGuestTiyin(session)),
                       style: theme.textTheme.titleSmall?.copyWith(color: scheme.primary, fontWeight: FontWeight.w700),
                     ),
-                    Text(
-                      '/ kishi',
-                      style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-                    ),
+                    Text('/ kishi', style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
                   ],
                 ),
               ],
@@ -129,7 +127,7 @@ class GuestStepper extends StatelessWidget {
           iconSize: 24,
           style: IconButton.styleFrom(minimumSize: const Size(52, 52)),
           onPressed: value > RentalPricing.minGuests ? () => onStep(-RentalPricing.guestStep) : null,
-          icon: const Icon(Icons.remove),
+          icon: const Icon(BzIcons.remove),
         ),
         const SizedBox(width: BzSpace.m),
         Expanded(
@@ -153,7 +151,7 @@ class GuestStepper extends StatelessWidget {
           iconSize: 24,
           style: IconButton.styleFrom(minimumSize: const Size(52, 52)),
           onPressed: value < RentalPricing.maxGuests ? () => onStep(RentalPricing.guestStep) : null,
-          icon: const Icon(Icons.add),
+          icon: const Icon(BzIcons.add),
         ),
       ],
     );
@@ -169,16 +167,16 @@ class GuestSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SummaryCard(
-        rows: [
-          SummaryRow(label: 'Stollar soni', value: '${RentalPricing.tables(guests)} ta stol'),
-          SummaryRow(label: 'Bir kishiga', value: Money.format(RentalPricing.perGuestTiyin(session))),
-          SummaryRow(
-            label: 'Jami taxminan',
-            value: Money.format(RentalPricing.totalTiyin(session, guests)),
-            emphasize: true,
-          ),
-        ],
-      );
+    rows: [
+      SummaryRow(label: 'Stollar soni', value: '${RentalPricing.tables(guests)} ta stol'),
+      SummaryRow(label: 'Bir kishiga', value: Money.format(RentalPricing.perGuestTiyin(session))),
+      SummaryRow(
+        label: 'Jami taxminan',
+        value: Money.format(RentalPricing.totalTiyin(session, guests)),
+        emphasize: true,
+      ),
+    ],
+  );
 }
 
 /// A tinted alert box (submit errors on the confirm step).
@@ -201,13 +199,10 @@ class RentalAlert extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.error_outline, color: scheme.onErrorContainer, size: 20),
+              Icon(BzIcons.danger, color: scheme.onErrorContainer, size: 20),
               const SizedBox(width: BzSpace.s),
               Expanded(
-                child: Text(
-                  message,
-                  style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onErrorContainer),
-                ),
+                child: Text(message, style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onErrorContainer)),
               ),
             ],
           ),

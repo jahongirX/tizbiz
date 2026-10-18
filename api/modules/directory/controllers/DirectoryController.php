@@ -21,10 +21,11 @@ use yii\web\NotFoundHttpException;
  * payloads are returned (never the Business AR).
  *
  * GET /v1/directory/categories
- * GET /v1/directory/businesses?q=&category=&engine=&city=&sort=&page=&per_page=
+ * GET /v1/directory/businesses?q=&category=&engine=&city=&min_rating=&sort=&page=&per_page=
+ *     (q matches the name, tagline, description, address or an active service name)
  * GET /v1/directory/businesses/<slug>
  * GET /v1/directory/businesses/<slug>/reviews?rating=&page=&per_page=
- * GET /v1/directory/map?q=&category=&engine=&city=&bbox=minLng,minLat,maxLng,maxLat
+ * GET /v1/directory/map?q=&category=&engine=&city=&min_rating=&bbox=minLng,minLat,maxLng,maxLat
  */
 class DirectoryController extends ConsumerController
 {
@@ -202,12 +203,27 @@ class DirectoryController extends ConsumerController
 
         $q = self::strParam('q');
         if ($q !== '') {
+            $table = Business::tableName();
+            // A service name matches too ("soch olish" finds the barbers that offer it).
+            $services = (new Query())
+                ->from(['s' => '{{%services}}'])
+                ->where(new Expression('s.business_id = ' . $table . '.id'))
+                ->andWhere(['s.is_active' => 1])
+                ->andWhere(['like', 's.name', $q]);
             $query->andWhere(['or',
-                ['like', 'name', $q],
-                ['like', 'tagline', $q],
-                ['like', 'description', $q],
-                ['like', 'address', $q],
+                ['like', $table . '.name', $q],
+                ['like', $table . '.tagline', $q],
+                ['like', $table . '.description', $q],
+                ['like', $table . '.address', $q],
+                ['exists', $services],
             ]);
+        }
+        $minRating = self::strParam('min_rating');
+        if ($minRating !== '') {
+            if (!is_numeric($minRating) || (float) $minRating < 0 || (float) $minRating > 5) {
+                throw new BadRequestHttpException('min_rating noto\'g\'ri.');
+            }
+            $query->andWhere(['>=', 'rating_avg', (float) $minRating]);
         }
         $category = self::strParam('category');
         if ($category !== '') {

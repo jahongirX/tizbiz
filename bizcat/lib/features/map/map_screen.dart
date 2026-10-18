@@ -10,6 +10,7 @@ import 'package:bizcat/features/map/widgets/base_map.dart';
 import 'package:bizcat/features/map/widgets/map_business_card.dart';
 import 'package:bizcat/features/map/widgets/map_pin.dart';
 import 'package:bizcat/shared/widgets/category_icon.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,9 +23,13 @@ import 'package:tizbiz_core/tizbiz_core.dart';
 /// Where the map opens before results arrive (the selected city, else Toshkent).
 const Map<String, LatLng> _cityCenters = {'Toshkent': LatLng(41.3111, 69.2797), 'Termiz': LatLng(37.2242, 67.2783)};
 
-/// The map search (`/map?q=&category=`): business pins on a full-screen map, search and
-/// category chips on top, a swipeable card carousel at the bottom. A pin tap selects its card,
-/// a tap on the selected pin or on a card opens the business.
+/// The "4.5+" rating filter.
+const double kMapGoodRating = 4.5;
+
+/// The map search (`/map?q=&category=`, the round button in the middle of the bottom bar):
+/// business placemarks (logo + rating + review count) on a full-screen map, with a service
+/// search and filter chips on top. A placemark tap opens the business card in a modal sheet
+/// (closing it removes it at once); `Batafsil` opens the business page.
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key, this.q, this.category});
 
@@ -39,7 +44,6 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   static const _debounce = Duration(milliseconds: 400);
 
   final _map = MapController();
-  final _pages = PageController(viewportFraction: 0.88);
   late final TextEditingController _search = TextEditingController(text: widget.q ?? '');
   late MapQuery _query = MapQuery(q: widget.q, category: widget.category);
 
@@ -52,10 +56,9 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
 
   /// The result list the camera was last fitted to (fit once per new result set).
   List<BusinessCard>? _fittedTo;
-  int _index = 0;
 
-  /// A page change we caused ourselves (pin tap): do not move the camera again.
-  bool _programmaticPage = false;
+  /// The placemark whose sheet is open.
+  String? _selected;
   LatLng? _me;
   bool _locating = false;
 
@@ -63,7 +66,6 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   void dispose() {
     _timer?.cancel();
     _camera?.dispose();
-    _pages.dispose();
     _search.dispose();
     _map.dispose();
     super.dispose();
@@ -84,14 +86,14 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     final center = LatLngTween(begin: cam.center, end: dest);
     final z = Tween<double>(begin: cam.zoom, end: zoom ?? cam.zoom);
     _camera?.dispose();
-    final c = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
+    final c = AnimationController(vsync: this, duration: const Duration(milliseconds: 450));
     _camera = c;
     final t = CurvedAnimation(parent: c, curve: Curves.easeInOutCubic);
     c.addListener(() => _map.move(center.evaluate(t), z.evaluate(t)));
     unawaited(c.forward());
   }
 
-  /// Frames all pins, leaving room for the search bar on top and the cards below.
+  /// Frames all placemarks, leaving room for the search bar and filters on top.
   void _fit(List<BusinessCard> items) {
     if (!_ready) return;
     final points = [for (final b in items) _point(b)];
@@ -101,24 +103,18 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       return;
     }
     _map.fitCamera(
-      CameraFit.coordinates(
-        coordinates: points,
-        padding: const EdgeInsets.fromLTRB(56, 170, 56, kMapCardHeight + 90),
-        maxZoom: 16,
-      ),
+      CameraFit.coordinates(coordinates: points, padding: const EdgeInsets.fromLTRB(60, 200, 60, 120), maxZoom: 16),
     );
   }
 
   void _onResults(List<BusinessCard> items) {
     if (identical(_fittedTo, items)) return;
     _fittedTo = items;
-    _index = 0;
-    if (_pages.hasClients) _pages.jumpToPage(0);
     // A "search this area" result keeps the viewport the user chose.
     if (_query.bbox == null) _fit(items);
   }
 
-  // ---------------------------------------------------------------- search
+  // ---------------------------------------------------------------- search & filters
 
   void _setQuery(MapQuery next) {
     if (next == _query) return;
@@ -133,7 +129,8 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     _timer?.cancel();
     // A text search looks everywhere, not only in the current viewport.
     _timer = Timer(_debounce, () {
-      if (mounted) _setQuery(_query.copyWith(q: value.trim().isEmpty ? null : value.trim(), bbox: null));
+      final v = value.trim();
+      if (mounted) _setQuery(_query.copyWith(q: v.isEmpty ? null : v, bbox: null));
     });
   }
 
@@ -144,6 +141,8 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   }
 
   void _setCategory(String? key) => _setQuery(_query.copyWith(category: key == _query.category ? null : key));
+
+  void _toggleRating() => _setQuery(_query.copyWith(minRating: _query.minRating == null ? kMapGoodRating : null));
 
   void _searchHere() {
     if (!_ready) return;
@@ -165,31 +164,25 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     }
   }
 
-  // ---------------------------------------------------------------- selection
+  // ---------------------------------------------------------------- placemark sheet
 
-  void _onPinTap(List<BusinessCard> items, int i) {
-    if (i == _index) {
-      _open(items[i]);
-      return;
-    }
-    setState(() => _index = i);
-    _animateTo(_point(items[i]), zoom: _map.camera.zoom < 14 ? 15 : null);
-    if (_pages.hasClients) {
-      _programmaticPage = true;
-      unawaited(
-        _pages
-            .animateToPage(i, duration: const Duration(milliseconds: 350), curve: Curves.easeOutCubic)
-            .whenComplete(() => _programmaticPage = false),
-      );
-    }
+  Future<void> _openSheet(BusinessCard b) async {
+    setState(() => _selected = b.slug);
+    _animateTo(_point(b), zoom: _ready && _map.camera.zoom < 14 ? 15 : null);
+    final open = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: false,
+      useSafeArea: true,
+      barrierColor: BzColors.indigo.withValues(alpha: 0.12),
+      // Closing removes the card at once (no slide-out).
+      sheetAnimationStyle: const AnimationStyle(duration: Duration(milliseconds: 260), reverseDuration: Duration.zero),
+      builder: (sheet) => MapBusinessSheet(card: b, meters: _metersTo(b), onOpen: () => Navigator.of(sheet).pop(true)),
+    );
+    if (!mounted) return;
+    setState(() => _selected = null);
+    if (open ?? false) unawaited(context.push(AppRoutes.business(b.slug)));
   }
-
-  void _onPageChanged(List<BusinessCard> items, int i) {
-    setState(() => _index = i);
-    if (!_programmaticPage && i < items.length) _animateTo(_point(items[i]));
-  }
-
-  void _open(BusinessCard b) => unawaited(context.push(AppRoutes.business(b.slug)));
 
   // ---------------------------------------------------------------- my location
 
@@ -238,18 +231,19 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     final loading = results.isLoading;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final city = ref.watch(cityProvider);
+    final top = MediaQuery.paddingOf(context).top;
 
     ref.listen(mapResultsProvider(_query), (_, next) {
       final v = next.value;
       if (v != null && !next.isLoading) _onResults(_withLocation(v));
     });
 
-    final index = items.isEmpty ? 0 : _index.clamp(0, items.length - 1);
     final markers = <Marker>[
-      for (var i = 0; i < items.length; i++)
-        if (i != index) _marker(items, i, selected: false),
-      // The selected pin is painted last: always on top.
-      if (items.isNotEmpty) _marker(items, index, selected: true),
+      for (final b in items)
+        if (b.slug != _selected) _marker(b, selected: false),
+      // The selected placemark is painted last: always on top.
+      for (final b in items)
+        if (b.slug == _selected) _marker(b, selected: true),
     ];
 
     return Scaffold(
@@ -285,20 +279,21 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           _TopBar(
             controller: _search,
             loading: loading,
-            selectedCategory: _query.category,
+            query: _query,
             onChanged: _onChanged,
             onClear: _clearSearch,
             onCategory: _setCategory,
+            onRating: _toggleRating,
           ),
           if (_moved && !loading)
             Positioned(
-              top: MediaQuery.paddingOf(context).top + 124,
+              top: top + 132,
               left: 0,
               right: 0,
               child: Center(
                 child: _Pill(
                   key: const Key('map-search-here'),
-                  icon: Icons.refresh,
+                  icon: BzIcons.refresh,
                   label: 'Shu hududda qidirish',
                   onTap: _searchHere,
                 ),
@@ -310,63 +305,34 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
             bottom: 0,
             child: SafeArea(
               top: false,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: BzSpace.gutter),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(BzSpace.gutter, 0, BzSpace.gutter, BzSpace.l),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(child: _status(context, results, items, dark)),
+                    const SizedBox(width: BzSpace.s),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
-                          child: Align(
-                            alignment: Alignment.bottomLeft,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.75),
-                                borderRadius: BorderRadius.circular(BzRadius.s),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                child: Text(
-                                  kMapAttribution,
-                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: dark ? BzColors.darkMuted : BzColors.muted,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
+                        _RoundButton(
+                          key: const Key('map-show-all'),
+                          tooltip: "Hammasini ko'rsatish",
+                          icon: BzIcons.fitAll,
+                          onTap: _showAll,
                         ),
-                        const SizedBox(width: BzSpace.s),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _RoundButton(
-                              key: const Key('map-show-all'),
-                              tooltip: "Hammasini ko'rsatish",
-                              icon: Icons.zoom_out_map,
-                              onTap: _showAll,
-                            ),
-                            const SizedBox(height: BzSpace.s),
-                            _RoundButton(
-                              key: const Key('map-locate'),
-                              tooltip: 'Mening joylashuvim',
-                              icon: Icons.my_location,
-                              busy: _locating,
-                              onTap: () => unawaited(_locate()),
-                            ),
-                          ],
+                        const SizedBox(height: BzSpace.s),
+                        _RoundButton(
+                          key: const Key('map-locate'),
+                          tooltip: 'Mening joylashuvim',
+                          icon: BzIcons.myLocation,
+                          busy: _locating,
+                          onTap: () => unawaited(_locate()),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: BzSpace.m),
-                  _bottom(context, results, items, index),
-                  const SizedBox(height: BzSpace.m),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -375,8 +341,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     );
   }
 
-  Marker _marker(List<BusinessCard> items, int i, {required bool selected}) {
-    final b = items[i];
+  Marker _marker(BusinessCard b, {required bool selected}) {
     return Marker(
       key: ValueKey('pin-${b.slug}'),
       point: _point(b),
@@ -384,74 +349,86 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       height: kMapPinSize.height,
       alignment: Alignment.topCenter,
       child: GestureDetector(
-        onTap: () => _onPinTap(items, i),
+        behavior: HitTestBehavior.opaque,
+        onTap: () => unawaited(_openSheet(b)),
         child: MapPin(card: b, selected: selected),
       ),
     );
   }
 
-  Widget _bottom(BuildContext context, AsyncValue<List<BusinessCard>> results, List<BusinessCard> items, int index) {
+  /// Bottom-left: the result count, an error with retry, or "nothing found"; plus attribution.
+  Widget _status(BuildContext context, AsyncValue<List<BusinessCard>> results, List<BusinessCard> items, bool dark) {
+    final Widget? pill;
     if (results.hasError && !results.isLoading) {
-      return Center(
-        child: _Pill(
-          icon: Icons.refresh,
-          label: isOffline(results.error!) ? "Internet yo'q · Qayta urinish" : 'Xatolik · Qayta urinish',
-          onTap: () => ref.invalidate(mapResultsProvider(_query)),
-        ),
+      pill = _Pill(
+        icon: BzIcons.retry,
+        label: isOffline(results.error!) ? "Internet yo'q · Qayta urinish" : 'Xatolik · Qayta urinish',
+        onTap: () => ref.invalidate(mapResultsProvider(_query)),
       );
-    }
-    if (results.value == null) return const SizedBox(height: kMapCardHeight);
-    if (items.isEmpty) {
-      return Center(
-        child: _Pill(
-          key: const Key('map-empty'),
-          icon: Icons.search_off,
-          label: _query.bbox != null ? "Bu hududda topilmadi · Hammasini ko'rish" : 'Hech narsa topilmadi',
-          onTap: _query.bbox != null ? _showAll : null,
-        ),
+    } else if (results.value == null) {
+      pill = null;
+    } else if (items.isEmpty) {
+      pill = _Pill(
+        key: const Key('map-empty'),
+        icon: BzIcons.searchEmpty,
+        label: _query.bbox != null ? 'Bu hududda topilmadi · Hammasi' : 'Hech narsa topilmadi',
+        onTap: _query.bbox != null ? _showAll : null,
       );
+    } else {
+      pill = _Pill(key: const Key('map-count'), icon: BzIcons.shop, label: '${items.length} ta biznes');
     }
-    return SizedBox(
-      height: kMapCardHeight,
-      child: PageView.builder(
-        key: const Key('map-cards'),
-        controller: _pages,
-        itemCount: items.length,
-        onPageChanged: (i) => _onPageChanged(items, i),
-        itemBuilder: (_, i) => MapBusinessCard(
-          card: items[i],
-          selected: i == index,
-          meters: _metersTo(items[i]),
-          onOpen: () => _open(items[i]),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ?pill,
+        const SizedBox(height: BzSpace.s),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.75),
+            borderRadius: BorderRadius.circular(BzRadius.s),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            child: Text(
+              kMapAttribution,
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(color: dark ? BzColors.darkMuted : BzColors.muted, fontSize: 10),
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }
 
-/// Back button + search field + category chips, floating over the map.
+/// Back button + service search + filter chips (rating, categories), floating over the map.
 class _TopBar extends ConsumerWidget {
   const _TopBar({
     required this.controller,
     required this.loading,
-    required this.selectedCategory,
+    required this.query,
     required this.onChanged,
     required this.onClear,
     required this.onCategory,
+    required this.onRating,
   });
 
   final TextEditingController controller;
   final bool loading;
-  final String? selectedCategory;
+  final MapQuery query;
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
   final ValueChanged<String?> onCategory;
+  final VoidCallback onRating;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final categories = ref.watch(categoriesProvider).value ?? const <Category>[];
     final canPop = context.canPop();
+    final radius = BorderRadius.circular(BzRadius.xl);
 
     return SafeArea(
       bottom: false,
@@ -463,12 +440,12 @@ class _TopBar extends ConsumerWidget {
             child: Row(
               children: [
                 if (canPop) ...[
-                  _RoundButton(tooltip: 'Orqaga', icon: Icons.arrow_back, onTap: () => context.pop()),
+                  _RoundButton(tooltip: 'Orqaga', icon: BzIcons.back, onTap: () => context.pop()),
                   const SizedBox(width: BzSpace.s),
                 ],
                 Expanded(
                   child: DecoratedBox(
-                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(BzRadius.pill), boxShadow: [_shadow]),
+                    decoration: BoxDecoration(borderRadius: radius, boxShadow: [_shadow]),
                     child: TextField(
                       key: const Key('map-search'),
                       controller: controller,
@@ -477,8 +454,8 @@ class _TopBar extends ConsumerWidget {
                       onSubmitted: onChanged,
                       decoration: InputDecoration(
                         isDense: true,
-                        hintText: 'Xaritadan qidirish...',
-                        prefixIcon: const Icon(Icons.search),
+                        hintText: 'Qaysi xizmat kerak? Soch olish, tort...',
+                        prefixIcon: const Icon(BzIcons.search),
                         suffixIcon: loading
                             ? const Padding(
                                 padding: EdgeInsets.all(14),
@@ -486,13 +463,15 @@ class _TopBar extends ConsumerWidget {
                               )
                             : controller.text.isEmpty
                             ? null
-                            : IconButton(tooltip: 'Tozalash', icon: const Icon(Icons.close), onPressed: onClear),
+                            : IconButton(tooltip: 'Tozalash', icon: const Icon(BzIcons.close), onPressed: onClear),
                         filled: true,
                         fillColor: scheme.surface,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(BzRadius.pill),
-                          borderSide: BorderSide.none,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                        border: OutlineInputBorder(borderRadius: radius, borderSide: BorderSide.none),
+                        enabledBorder: OutlineInputBorder(borderRadius: radius, borderSide: BorderSide.none),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: radius,
+                          borderSide: BorderSide(color: scheme.primary, width: 1.5),
                         ),
                       ),
                     ),
@@ -502,26 +481,35 @@ class _TopBar extends ConsumerWidget {
             ),
           ),
           SizedBox(
-            height: 52,
+            height: 56,
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: BzSpace.gutter, vertical: BzSpace.s),
               child: Row(
                 children: [
-                  _CategoryChip(
+                  _FilterChip(
+                    key: const Key('map-rating'),
+                    label: '${kMapGoodRating.toStringAsFixed(1)}+',
+                    icon: Icons.star_rounded,
+                    iconColor: BzColors.apricot,
+                    selected: query.minRating != null,
+                    onTap: onRating,
+                  ),
+                  const SizedBox(width: BzSpace.s),
+                  _FilterChip(
                     label: 'Hammasi',
-                    icon: Icons.apps,
-                    selected: selectedCategory == null,
+                    icon: BzIcons.category,
+                    selected: query.category == null,
                     onTap: () => onCategory(null),
                   ),
                   for (final c in categories)
                     if (c.count > 0) ...[
                       const SizedBox(width: BzSpace.s),
-                      _CategoryChip(
+                      _FilterChip(
                         key: ValueKey('map-cat-${c.key}'),
                         label: categoryShortLabel(c.label),
                         icon: categoryIconData(c.icon),
-                        selected: selectedCategory == c.key,
+                        selected: query.category == c.key,
                         onTap: () => onCategory(c.key),
                       ),
                     ],
@@ -537,19 +525,21 @@ class _TopBar extends ConsumerWidget {
 
 final _shadow = BoxShadow(color: BzColors.indigo.withValues(alpha: 0.16), blurRadius: 12, offset: const Offset(0, 4));
 
-class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
     super.key,
     required this.label,
     required this.icon,
     required this.selected,
     required this.onTap,
+    this.iconColor,
   });
 
   final String label;
   final IconData icon;
   final bool selected;
   final VoidCallback onTap;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -559,21 +549,20 @@ class _CategoryChip extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      child: Material(
-        color: selected ? scheme.primary : scheme.surface,
-        borderRadius: BorderRadius.circular(BzRadius.pill),
-        elevation: 0,
-        child: InkWell(
+      child: DecoratedBox(
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(BzRadius.pill), boxShadow: [_shadow]),
+        child: Material(
+          color: selected ? scheme.primary : scheme.surface,
           borderRadius: BorderRadius.circular(BzRadius.pill),
-          onTap: onTap,
-          child: DecoratedBox(
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(BzRadius.pill), boxShadow: [_shadow]),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: BzSpace.m, vertical: 7),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, size: 16, color: fg),
+                  Icon(icon, size: 17, color: iconColor ?? fg),
                   const SizedBox(width: 6),
                   Text(label, style: theme.textTheme.labelLarge?.copyWith(color: fg)),
                 ],
@@ -641,7 +630,7 @@ class _Pill extends StatelessWidget {
               children: [
                 Icon(icon, size: 18, color: scheme.primary),
                 const SizedBox(width: BzSpace.s),
-                Text(label, style: theme.textTheme.labelLarge),
+                Flexible(child: Text(label, style: theme.textTheme.labelLarge)),
               ],
             ),
           ),

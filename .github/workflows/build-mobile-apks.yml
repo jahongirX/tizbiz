@@ -23,6 +23,10 @@ on:
         description: "API base URL baked into the apps"
         required: true
         default: "https://api.tizbiz.uz"
+      demo-logins:
+        description: "Show one-tap demo sign-in (turn off for store builds)"
+        required: true
+        default: "true"
 
 jobs:
   apk:
@@ -41,6 +45,7 @@ jobs:
     env:
       KS: ${{ secrets.SIGNING_KEY_STORE_BASE64 }}
       API_BASE: ${{ github.event.inputs.api-base || 'https://api.tizbiz.uz' }}
+      DEMO_LOGINS: ${{ github.event.inputs.demo-logins || 'true' }}
     defaults:
       run:
         working-directory: ${{ matrix.dir }}
@@ -77,6 +82,7 @@ jobs:
         run: >
           flutter build apk --release
           --dart-define=API_BASE=${{ env.API_BASE }}
+          --dart-define=DEMO_LOGINS=${{ env.DEMO_LOGINS }}
           --build-name=1.0.0
           --build-number=${{ github.run_number }}
 

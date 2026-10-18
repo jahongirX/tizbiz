@@ -50,12 +50,7 @@ class CtaButton extends StatelessWidget {
       child: FilledButton(
         style: style,
         onPressed: onPressed == null ? null : (loading ? () {} : onPressed),
-        child: _ButtonContent(
-          label: label,
-          icon: icon,
-          loading: loading,
-          spinnerColor: BzColors.indigo,
-        ),
+        child: _ButtonContent(label: label, icon: icon, loading: loading, spinnerColor: BzColors.indigo),
       ),
     );
   }
@@ -166,17 +161,17 @@ class _ButtonContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return SizedBox(
-        width: 20,
-        height: 20,
-        child: CircularProgressIndicator(strokeWidth: 2.2, color: spinnerColor),
-      );
+      return SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: spinnerColor));
     }
     final text = Text(label, maxLines: 1, overflow: TextOverflow.ellipsis);
     if (icon == null) return text;
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: [Icon(icon, size: 20), const SizedBox(width: BzSpace.s), Flexible(child: text)],
+      children: [
+        Icon(icon, size: 20),
+        const SizedBox(width: BzSpace.s),
+        Flexible(child: text),
+      ],
     );
   }
 }

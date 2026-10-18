@@ -1,4 +1,5 @@
 import 'package:bizcat/core/errors.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
@@ -67,19 +68,15 @@ class RentalCalendar extends StatelessWidget {
                 IconButton(
                   tooltip: 'Oldingi oy',
                   onPressed: canPrev ? onPrev : null,
-                  icon: const Icon(Icons.chevron_left),
+                  icon: const Icon(BzIcons.chevronLeft),
                 ),
                 Expanded(
-                  child: Text(
-                    rentalMonthTitle(month),
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.titleMedium,
-                  ),
+                  child: Text(rentalMonthTitle(month), textAlign: TextAlign.center, style: theme.textTheme.titleMedium),
                 ),
                 IconButton(
                   tooltip: 'Keyingi oy',
                   onPressed: canNext ? onNext : null,
-                  icon: const Icon(Icons.chevron_right),
+                  icon: const Icon(BzIcons.chevronRight),
                 ),
               ],
             ),
@@ -108,11 +105,7 @@ class RentalCalendar extends StatelessWidget {
                   if (loading)
                     Semantics(
                       label: 'Yuklanmoqda...',
-                      child: const SizedBox(
-                        width: 28,
-                        height: 28,
-                        child: CircularProgressIndicator(strokeWidth: 2.5),
-                      ),
+                      child: const SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 2.5)),
                     ),
                 ],
               ),
@@ -246,8 +239,15 @@ class _DayCell extends StatelessWidget {
       fg = outOfRange ? scheme.onSurfaceVariant.withValues(alpha: 0.45) : scheme.onSurface;
     }
 
-    final label = '${UzDates.dayMonthYear(date)}, '
-        '${taken ? 'band' : outOfRange ? 'mavjud emas' : isSelected ? 'tanlangan' : "bo'sh"}';
+    final label =
+        '${UzDates.dayMonthYear(date)}, '
+        '${taken
+            ? 'band'
+            : outOfRange
+            ? 'mavjud emas'
+            : isSelected
+            ? 'tanlangan'
+            : "bo'sh"}';
 
     return Semantics(
       button: enabled,
@@ -342,13 +342,10 @@ class _InlineError extends StatelessWidget {
     final scheme = theme.colorScheme;
     return Container(
       padding: const EdgeInsets.all(BzSpace.l),
-      decoration: BoxDecoration(
-        color: scheme.errorContainer,
-        borderRadius: BorderRadius.circular(BzRadius.m),
-      ),
+      decoration: BoxDecoration(color: scheme.errorContainer, borderRadius: BorderRadius.circular(BzRadius.m)),
       child: Column(
         children: [
-          Icon(Icons.error_outline, color: scheme.onErrorContainer),
+          Icon(BzIcons.danger, color: scheme.onErrorContainer),
           const SizedBox(height: BzSpace.s),
           Text(
             message,
@@ -356,11 +353,7 @@ class _InlineError extends StatelessWidget {
             style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onErrorContainer),
           ),
           const SizedBox(height: BzSpace.s),
-          TextButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Qayta urinish'),
-          ),
+          TextButton.icon(onPressed: onRetry, icon: const Icon(BzIcons.refresh), label: const Text('Qayta urinish')),
         ],
       ),
     );

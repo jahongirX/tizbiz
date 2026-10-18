@@ -27,7 +27,9 @@ class DepositService {
   ///
   /// Throws [ApiException] (409/422 with Uzbek texts) or [DepositLaunchException].
   Future<DepositCheckout> startPayme(int appointmentId) async {
-    final checkout = await _ref.read(apiProvider).post<DepositCheckout>(
+    final checkout = await _ref
+        .read(apiProvider)
+        .post<DepositCheckout>(
           Endpoints.paymentsDeposit,
           body: {'appointment_id': appointmentId, 'provider': PaymentProvider.payme.wire},
           idempotencyKey: Idempotency.deposit(appointmentId),

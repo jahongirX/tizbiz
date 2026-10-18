@@ -4,6 +4,7 @@ import 'package:bizcat/app/routes.dart';
 import 'package:bizcat/core/favorites.dart';
 import 'package:bizcat/core/session.dart';
 import 'package:bizcat/shared/widgets/nav.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -38,7 +39,7 @@ class FavoriteButton extends ConsumerWidget {
     final fav = ref.watch(favoritesProvider);
     final on = fav.loaded ? fav.contains(businessId) : initial;
     final scheme = Theme.of(context).colorScheme;
-    final icon = Icon(on ? Icons.favorite : Icons.favorite_border, size: size, color: scheme.primary);
+    final icon = Icon(on ? BzIcons.heartBold : BzIcons.heart, size: size, color: scheme.primary);
 
     void onTap() {
       if (!ref.read(isSignedInProvider)) {
@@ -54,9 +55,7 @@ class FavoriteButton extends ConsumerWidget {
       tooltip: on ? 'Sevimlilardan olib tashlash' : "Sevimlilarga qo'shish",
       onPressed: onTap,
       icon: icon,
-      style: onImage
-          ? IconButton.styleFrom(backgroundColor: Colors.white, foregroundColor: scheme.primary)
-          : null,
+      style: onImage ? IconButton.styleFrom(backgroundColor: Colors.white, foregroundColor: scheme.primary) : null,
     );
     return button;
   }

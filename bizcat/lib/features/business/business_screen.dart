@@ -14,6 +14,7 @@ import 'package:bizcat/shared/widgets/buttons.dart';
 import 'package:bizcat/shared/widgets/favorite_button.dart';
 import 'package:bizcat/shared/widgets/nav.dart';
 import 'package:bizcat/shared/widgets/states.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -41,7 +42,7 @@ class BusinessScreen extends ConsumerWidget {
       final e = page.error!;
       if (e is ApiException && e.isNotFound) {
         body = EmptyState(
-          icon: Icons.storefront_outlined,
+          icon: BzIcons.shop,
           title: 'Biznes topilmadi',
           message: "Bu sahifa o'chirilgan yoki manzil noto'g'ri.",
           actionLabel: 'Katalogga qaytish',
@@ -125,7 +126,7 @@ class _BusinessViewState extends ConsumerState<_BusinessView> with SingleTickerP
             automaticallyImplyLeading: false,
             leading: Padding(
               padding: const EdgeInsets.all(6),
-              child: CoverIconButton(icon: Icons.arrow_back, tooltip: 'Orqaga', onPressed: () => popOrGo(context)),
+              child: CoverIconButton(icon: BzIcons.back, tooltip: 'Orqaga', onPressed: () => popOrGo(context)),
             ),
             actions: [
               Padding(
@@ -212,7 +213,7 @@ class _BookingBar extends ConsumerWidget {
               const SizedBox(height: 8),
               PrimaryButton(
                 label: "Qo'ng'iroq qilish",
-                icon: Icons.call,
+                icon: BzIcons.call,
                 onPressed: () => unawaited(callPhone(ref, phone)),
               ),
             ],

@@ -13,6 +13,7 @@ import 'package:bizcat/shared/widgets/nav.dart';
 import 'package:bizcat/shared/widgets/poller.dart';
 import 'package:bizcat/shared/widgets/states.dart';
 import 'package:bizcat/shared/widgets/status_chips.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -54,7 +55,7 @@ class OrderDetailScreen extends ConsumerWidget {
       final e = value.error!;
       if (e is ApiException && e.isNotFound) {
         body = EmptyState(
-          icon: Icons.receipt_long_outlined,
+          icon: BzIcons.receipt,
           title: 'Buyurtma topilmadi',
           actionLabel: 'Bronlarim',
           onAction: () => context.go(AppRoutes.bookingsWith(tab: 'orders')),
@@ -119,7 +120,7 @@ class _OrderBody extends ConsumerWidget {
             ),
           if (o.status == OrderStatus.cancelled)
             const InfoLine(
-              icon: Icons.block,
+              icon: BzIcons.block,
               text: 'Bekor qilingan',
               foreground: BzColors.neutral,
               background: BzColors.neutralBg,
@@ -178,14 +179,14 @@ class _OrderBody extends ConsumerWidget {
             const SizedBox(height: BzSpace.m),
             PrimaryButton(
               label: 'Sharh qoldirish',
-              icon: Icons.rate_review_outlined,
+              icon: BzIcons.review,
               onPressed: () => unawaited(context.push(AppRoutes.reviewNew(orderId: o.id, businessName: b?.name))),
             ),
           ] else if (o.reviewId != null) ...[
             const SizedBox(height: BzSpace.m),
             SecondaryButton(
               label: 'Sharhim',
-              icon: Icons.rate_review_outlined,
+              icon: BzIcons.review,
               onPressed: () => unawaited(context.push(AppRoutes.myReviews)),
             ),
           ],
@@ -193,7 +194,7 @@ class _OrderBody extends ConsumerWidget {
             const SizedBox(height: BzSpace.m),
             SecondaryButton(
               label: 'Qayta buyurtma',
-              icon: Icons.replay,
+              icon: BzIcons.retry,
               onPressed: () => unawaited(context.push(AppRoutes.menu(b.slug, reorder: o.id))),
             ),
           ],
@@ -254,7 +255,7 @@ class OrderProgress extends StatelessWidget {
                         color: i <= current ? scheme.primary : scheme.surfaceContainerHighest,
                       ),
                       child: i < current
-                          ? Icon(Icons.check, size: 16, color: scheme.onPrimary)
+                          ? Icon(BzIcons.check, size: 16, color: scheme.onPrimary)
                           : i == current
                           ? Icon(Icons.circle, size: 8, color: scheme.onPrimary)
                           : null,

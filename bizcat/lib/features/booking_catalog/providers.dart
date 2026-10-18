@@ -34,7 +34,10 @@ List<CatalogSection> catalogSections(StorefrontData s) {
   final seen = <int>{};
   final other = <Service>[];
   for (final c in s.categories) {
-    final items = [for (final i in c.items) if (seen.add(i.id)) i];
+    final items = [
+      for (final i in c.items)
+        if (seen.add(i.id)) i,
+    ];
     if (items.isEmpty) continue;
     if (c.id == 0) {
       other.addAll(items);
@@ -52,10 +55,10 @@ List<CatalogSection> catalogSections(StorefrontData s) {
 
 /// Every orderable item of the storefront by id (categories and the flat `items` list).
 Map<int, Service> catalogItemsById(StorefrontData s) => {
-      for (final c in s.categories)
-        for (final i in c.items) i.id: i,
-      for (final i in s.items) i.id: i,
-    };
+  for (final c in s.categories)
+    for (final i in c.items) i.id: i,
+  for (final i in s.items) i.id: i,
+};
 
 /// The images of an item for the detail sheet: `image` first, then `gallery`, deduplicated.
 List<String> itemImages(Service item) {
@@ -205,10 +208,9 @@ class CartController extends Notifier<CartState> {
 final reorderSourceProvider = FutureProvider.autoDispose.family<Order?, int>((ref, id) async {
   final consumerId = ref.watch(consumerIdProvider);
   if (consumerId == null) return null;
-  return ref.read(apiProvider).get<Order>(
-        Endpoints.consumerOrder(id),
-        decode: (d) => Order.fromJson(JsonRead.object(d)),
-      );
+  return ref
+      .read(apiProvider)
+      .get<Order>(Endpoints.consumerOrder(id), decode: (d) => Order.fromJson(JsonRead.object(d)));
 });
 
 // ---------------------------------------------------------------------------------------------
@@ -252,16 +254,15 @@ final class CheckoutState {
     Object? error = _keep,
     Map<String, String>? fieldErrors,
     Object? placed = _keep,
-  }) =>
-      CheckoutState(
-        name: name ?? this.name,
-        note: note ?? this.note,
-        idempotencyKey: identical(idempotencyKey, _keep) ? this.idempotencyKey : idempotencyKey as String?,
-        submitting: submitting ?? this.submitting,
-        error: identical(error, _keep) ? this.error : error,
-        fieldErrors: fieldErrors ?? this.fieldErrors,
-        placed: identical(placed, _keep) ? this.placed : placed as Order?,
-      );
+  }) => CheckoutState(
+    name: name ?? this.name,
+    note: note ?? this.note,
+    idempotencyKey: identical(idempotencyKey, _keep) ? this.idempotencyKey : idempotencyKey as String?,
+    submitting: submitting ?? this.submitting,
+    error: identical(error, _keep) ? this.error : error,
+    fieldErrors: fieldErrors ?? this.fieldErrors,
+    placed: identical(placed, _keep) ? this.placed : placed as Order?,
+  );
 }
 
 /// The form fields a 422 pointer can point at.
@@ -270,8 +271,9 @@ const Set<String> kCheckoutFields = {'name', 'note'};
 /// Max lengths of the form (BP: name 2..64 when given, note max 500).
 const int kNameMin = 2, kNameMax = 64, kNoteMax = 500;
 
-final checkoutControllerProvider =
-    NotifierProvider.autoDispose.family<CheckoutController, CheckoutState, String>(CheckoutController.new);
+final checkoutControllerProvider = NotifierProvider.autoDispose.family<CheckoutController, CheckoutState, String>(
+  CheckoutController.new,
+);
 
 class CheckoutController extends Notifier<CheckoutState> {
   CheckoutController(this.slug);

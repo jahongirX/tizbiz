@@ -1,5 +1,6 @@
 import 'package:bizcat/app/routes.dart';
 import 'package:bizcat/shared/widgets/states.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -12,7 +13,7 @@ class NotFoundScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(),
       body: EmptyState(
-        icon: Icons.search_off,
+        icon: BzIcons.searchEmpty,
         title: 'Sahifa topilmadi',
         actionLabel: 'Bosh sahifaga',
         onAction: () => context.go(AppRoutes.home),

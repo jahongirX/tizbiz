@@ -6,6 +6,7 @@ import 'package:bizcat/shared/widgets/async_body.dart';
 import 'package:bizcat/shared/widgets/images.dart';
 import 'package:bizcat/shared/widgets/states.dart';
 import 'package:bizcat/theme/app_theme.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -45,7 +46,7 @@ class LoyaltyWalletScreen extends ConsumerWidget {
             padding: const EdgeInsets.only(top: BzSpace.xxxl),
             children: const [
               EmptyState(
-                icon: Icons.account_balance_wallet_outlined,
+                icon: BzIcons.wallet,
                 title: "Hali bonuslar yo'q",
                 message: "Bizcat orqali yoziling va keshbek to'plang.",
               ),
@@ -141,7 +142,7 @@ class _EntryCard extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          Icon(Icons.chevron_right, color: scheme.onSurfaceVariant),
+                          Icon(BzIcons.chevronRight, color: scheme.onSurfaceVariant),
                         ],
                       ),
                       const SizedBox(height: BzSpace.m),

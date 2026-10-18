@@ -15,6 +15,7 @@ import 'package:bizcat/shared/widgets/rating.dart';
 import 'package:bizcat/shared/widgets/review_tile.dart';
 import 'package:bizcat/shared/widgets/section_header.dart';
 import 'package:bizcat/shared/widgets/states.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -195,7 +196,7 @@ class OfferingsTab extends ConsumerWidget {
       ],
       SecondaryButton(
         label: "Hammasini ko'rish (${all.length})",
-        icon: Icons.restaurant_menu,
+        icon: BzIcons.menuBoard,
         onPressed: () => unawaited(context.push(AppRoutes.menu(slug))),
       ),
     ];
@@ -253,7 +254,7 @@ class ServiceRow extends StatelessWidget {
               style: theme.textTheme.titleSmall?.copyWith(color: scheme.primary, fontWeight: FontWeight.w700),
             ),
             const SizedBox(width: BzSpace.xs),
-            Icon(Icons.chevron_right, color: scheme.onSurfaceVariant),
+            Icon(BzIcons.chevronRight, color: scheme.onSurfaceVariant),
           ],
         ),
       ),
@@ -329,10 +330,7 @@ class RentalSessionCard extends StatelessWidget {
                   color: scheme.primaryContainer,
                   borderRadius: BorderRadius.circular(BzRadius.m),
                 ),
-                child: Icon(
-                  session == RentalSession.morning ? Icons.wb_sunny_outlined : Icons.nights_stay_outlined,
-                  color: scheme.primary,
-                ),
+                child: Icon(session == RentalSession.morning ? BzIcons.sun : BzIcons.moon, color: scheme.primary),
               ),
               const SizedBox(width: BzSpace.m),
               Expanded(
@@ -418,7 +416,7 @@ class ReviewsPreviewTab extends StatelessWidget {
         storageKey: 'reviews',
         onRefresh: onRefresh,
         children: const [
-          EmptyState(icon: Icons.rate_review_outlined, title: "Hali sharhlar yo'q"),
+          EmptyState(icon: BzIcons.review, title: "Hali sharhlar yo'q"),
           SizedBox(height: BzSpace.s),
           Center(child: _MutedNote(_reviewHint)),
         ],
@@ -476,7 +474,7 @@ class InfoTab extends ConsumerWidget {
           Card(
             clipBehavior: Clip.antiAlias,
             child: ListTile(
-              leading: Icon(Icons.call, color: scheme.primary),
+              leading: Icon(BzIcons.call, color: scheme.primary),
               title: Text(Phone.format(b.phone)),
               subtitle: const Text('Telefon'),
               onTap: () => unawaited(callPhone(ref, b.phone)),

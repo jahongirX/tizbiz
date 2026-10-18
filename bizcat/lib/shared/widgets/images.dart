@@ -36,8 +36,8 @@ class NetImage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ph = placeholder ??
-        Container(width: width, height: height, color: Theme.of(context).colorScheme.primaryContainer);
+    final ph =
+        placeholder ?? Container(width: width, height: height, color: Theme.of(context).colorScheme.primaryContainer);
     final u = url?.trim();
     Widget child;
     if (u == null || u.isEmpty || !ref.watch(netImagesEnabledProvider)) {
@@ -86,11 +86,11 @@ class BizLogo extends StatelessWidget {
       child: Text(
         initials(name),
         style: Theme.of(context).textTheme.displaySmall?.copyWith(
-              fontSize: size * 0.38,
-              fontWeight: FontWeight.w700,
-              color: BzColors.white,
-              height: 1,
-            ),
+          fontSize: size * 0.38,
+          fontWeight: FontWeight.w700,
+          color: BzColors.white,
+          height: 1,
+        ),
       ),
     );
     return SizedBox(

@@ -12,11 +12,11 @@ enum RentalStep { session, guests, date, confirm }
 
 /// The step titles under the StepHeader.
 String rentalStepTitle(RentalStep s) => switch (s) {
-      RentalStep.session => 'Vaqt',
-      RentalStep.guests => 'Mehmonlar',
-      RentalStep.date => 'Sana',
-      RentalStep.confirm => 'Tasdiqlash',
-    };
+  RentalStep.session => 'Vaqt',
+  RentalStep.guests => 'Mehmonlar',
+  RentalStep.date => 'Sana',
+  RentalStep.confirm => 'Tasdiqlash',
+};
 
 /// Snackbar after a 409 on submit.
 const String rentalConflictMessage = "Kechirasiz, bu sana band bo'ldi. Iltimos, boshqa sanani tanlang.";
@@ -28,8 +28,7 @@ const String rentalNoHallMessage = "Zal resursi topilmadi. Iltimos, biznesga qo'
 final rentalNowProvider = Provider<DateTime Function()>((_) => DateTime.now);
 
 /// Today in the business timezone.
-LocalDate rentalToday(DateTime Function() now, String? timezone) =>
-    Dates.todayLocal(timezone: timezone, now: now());
+LocalDate rentalToday(DateTime Function() now, String? timezone) => Dates.todayLocal(timezone: timezone, now: now());
 
 /// The last bookable day (web CalendarStep HORIZON_DAYS).
 LocalDate rentalHorizonEnd(LocalDate today) => today.addDays(RentalPricing.horizonDays);
@@ -100,23 +99,23 @@ final class RentalFlowState {
     Object? idempotencyKey = _keep,
     bool? submitting,
     Object? submitError = _keep,
-  }) =>
-      RentalFlowState(
-        step: step ?? this.step,
-        session: identical(session, _keep) ? this.session : session as RentalSession?,
-        guests: guests ?? this.guests,
-        date: identical(date, _keep) ? this.date : date as LocalDate?,
-        visibleMonth: visibleMonth ?? this.visibleMonth,
-        notes: notes ?? this.notes,
-        idempotencyKey: identical(idempotencyKey, _keep) ? this.idempotencyKey : idempotencyKey as String?,
-        submitting: submitting ?? this.submitting,
-        submitError: identical(submitError, _keep) ? this.submitError : submitError,
-      );
+  }) => RentalFlowState(
+    step: step ?? this.step,
+    session: identical(session, _keep) ? this.session : session as RentalSession?,
+    guests: guests ?? this.guests,
+    date: identical(date, _keep) ? this.date : date as LocalDate?,
+    visibleMonth: visibleMonth ?? this.visibleMonth,
+    notes: notes ?? this.notes,
+    idempotencyKey: identical(idempotencyKey, _keep) ? this.idempotencyKey : idempotencyKey as String?,
+    submitting: submitting ?? this.submitting,
+    submitError: identical(submitError, _keep) ? this.submitError : submitError,
+  );
 }
 
 /// Family key = slug.
-final rentalFlowProvider =
-    NotifierProvider.autoDispose.family<RentalFlowController, RentalFlowState, String>(RentalFlowController.new);
+final rentalFlowProvider = NotifierProvider.autoDispose.family<RentalFlowController, RentalFlowState, String>(
+  RentalFlowController.new,
+);
 
 class RentalFlowController extends Notifier<RentalFlowState> {
   RentalFlowController(this.slug);
@@ -242,7 +241,9 @@ class RentalFlowController extends Notifier<RentalFlowState> {
     state = state.copyWith(submitting: true, submitError: null, idempotencyKey: key, guests: guests);
 
     try {
-      final res = await ref.read(apiProvider).request<Appointment>(
+      final res = await ref
+          .read(apiProvider)
+          .request<Appointment>(
             'POST',
             Endpoints.consumerAppointments,
             body: ConsumerBookingRequest.rental(
@@ -300,7 +301,9 @@ bool isRentalNoHall(Object? e) => e is _NoHall;
 final bookedDaysProvider = FutureProvider.autoDispose.family<BookedDays, String>((ref, slug) async {
   final store = await ref.watch(storefrontProvider(slug).future);
   final today = rentalToday(ref.read(rentalNowProvider), store.business.timezone);
-  return ref.read(apiProvider).get<BookedDays>(
+  return ref
+      .read(apiProvider)
+      .get<BookedDays>(
         Endpoints.siteBookedDays(slug),
         query: ApiQuery.localDays(from: today, to: rentalHorizonEnd(today)),
         auth: RequestAuth.none,

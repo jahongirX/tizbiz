@@ -90,11 +90,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   children: [
                     Center(child: Image.asset('assets/brand/tizbiz-logo.png', height: 48, semanticLabel: 'TizBiz')),
                     const SizedBox(height: 24),
-                    Text('Biznes kabinetiga kirish',
-                        textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall),
+                    Text(
+                      'Biznes kabinetiga kirish',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
                     const SizedBox(height: 4),
-                    Text('TizBiz Biznes', textAlign: TextAlign.center, style: TextStyle(color: c.textMuted)),
+                    Text(
+                      'TizBiz Biznes',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: c.textMuted),
+                    ),
                     const SizedBox(height: 24),
+                    if (showDemo) ...[
+                      DemoLoginChips(onPick: _fillDemo, enabled: !_busy),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          const Expanded(child: Divider()),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Text('yoki telefon raqam bilan', style: TextStyle(color: c.textMuted)),
+                          ),
+                          const Expanded(child: Divider()),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     if (notice != null && notice.trim().isNotEmpty) ...[
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -113,11 +135,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       const SizedBox(height: 16),
                     ],
-                    PhoneField(
-                      controller: _phone,
-                      enabled: !_busy,
-                      textInputAction: TextInputAction.next,
-                    ),
+                    PhoneField(controller: _phone, enabled: !_busy, textInputAction: TextInputAction.next),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _password,
@@ -143,10 +161,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                           : const Text('Kirish'),
                     ),
-                    if (showDemo) ...[
-                      const SizedBox(height: 24),
-                      DemoLoginChips(onPick: _fillDemo, enabled: !_busy),
-                    ],
                     const SizedBox(height: 24),
                     TextButton(
                       onPressed: () => unawaited(openRegister()),

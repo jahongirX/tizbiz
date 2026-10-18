@@ -15,6 +15,7 @@ import 'package:bizcat/shared/widgets/nav.dart';
 import 'package:bizcat/shared/widgets/poller.dart';
 import 'package:bizcat/shared/widgets/states.dart';
 import 'package:bizcat/shared/widgets/status_chips.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -44,7 +45,7 @@ class AppointmentDetailScreen extends ConsumerWidget {
       final e = value.error!;
       if (e is ApiException && e.isNotFound) {
         body = EmptyState(
-          icon: Icons.event_busy,
+          icon: BzIcons.calendarRemove,
           title: 'Bron topilmadi',
           message: "Bu bron o'chirilgan yoki sizga tegishli emas.",
           actionLabel: 'Bronlarim',
@@ -120,7 +121,7 @@ class _AppointmentBody extends ConsumerWidget {
           ] else if (depositPaid(a) && a.status != AppointmentStatus.canceled) ...[
             const SizedBox(height: BzSpace.m),
             const InfoLine(
-              icon: Icons.verified_outlined,
+              icon: BzIcons.verify,
               text: "Oldindan to'lov qilingan",
               foreground: BzColors.success,
               background: BzColors.successBg,
@@ -134,7 +135,7 @@ class _AppointmentBody extends ConsumerWidget {
             const SizedBox(height: BzSpace.m),
             PrimaryButton(
               label: "Qo'ng'iroq qilish",
-              icon: Icons.call,
+              icon: BzIcons.call,
               onPressed: () => unawaited(callPhone(ref, phone)),
             ),
           ],
@@ -142,14 +143,14 @@ class _AppointmentBody extends ConsumerWidget {
             const SizedBox(height: BzSpace.m),
             PrimaryButton(
               label: 'Sharh qoldirish',
-              icon: Icons.rate_review_outlined,
+              icon: BzIcons.review,
               onPressed: () => unawaited(context.push(AppRoutes.reviewNew(appointmentId: a.id, businessName: b?.name))),
             ),
           ] else if (a.reviewId != null) ...[
             const SizedBox(height: BzSpace.m),
             SecondaryButton(
               label: 'Sharhim',
-              icon: Icons.rate_review_outlined,
+              icon: BzIcons.review,
               onPressed: () => unawaited(context.push(AppRoutes.myReviews)),
             ),
           ],
@@ -283,7 +284,7 @@ class _DepositCalloutState extends ConsumerState<_DepositCallout> {
           children: [
             Row(
               children: [
-                const Icon(Icons.account_balance_wallet_outlined, color: fg),
+                const Icon(BzIcons.wallet, color: fg),
                 const SizedBox(width: BzSpace.s),
                 Expanded(
                   child: Text(
@@ -322,7 +323,7 @@ class _DepositCalloutState extends ConsumerState<_DepositCallout> {
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(
                   onPressed: () => unawaited(ctrl.refresh(silent: false)),
-                  icon: const Icon(Icons.refresh),
+                  icon: const Icon(BzIcons.refresh),
                   label: const Text('Yangilash'),
                 ),
               ),
@@ -330,7 +331,7 @@ class _DepositCalloutState extends ConsumerState<_DepositCallout> {
             ],
             CtaButton(
               label: "Payme orqali to'lash",
-              icon: Icons.payment,
+              icon: BzIcons.card,
               loading: _paying,
               onPressed: _paying ? null : () => unawaited(_pay()),
             ),

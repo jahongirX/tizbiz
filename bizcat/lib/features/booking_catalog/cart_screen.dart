@@ -11,6 +11,7 @@ import 'package:bizcat/shared/widgets/dialogs.dart';
 import 'package:bizcat/shared/widgets/flow_widgets.dart';
 import 'package:bizcat/shared/widgets/nav.dart';
 import 'package:bizcat/shared/widgets/states.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -40,7 +41,7 @@ class CartScreen extends ConsumerWidget {
       return Scaffold(
         appBar: AppBar(title: Text(copy.cartTitle)),
         body: EmptyState(
-          icon: Icons.shopping_bag_outlined,
+          icon: BzIcons.bag,
           title: copy.emptyCart,
           actionLabel: CatalogText.backToMenu,
           onAction: () => popOrGo(context, AppRoutes.menu(slug)),
@@ -54,7 +55,7 @@ class CartScreen extends ConsumerWidget {
         actions: [
           IconButton(
             tooltip: CatalogText.clearCart,
-            icon: const Icon(Icons.delete_sweep_outlined),
+            icon: const Icon(BzIcons.delete),
             onPressed: () => unawaited(_clear(context, ref)),
           ),
         ],
@@ -76,7 +77,7 @@ class CartScreen extends ConsumerWidget {
                 alignment: Alignment.centerRight,
                 padding: const EdgeInsets.only(right: BzSpace.l),
                 color: theme.colorScheme.errorContainer,
-                child: Icon(Icons.delete_outline, color: theme.colorScheme.onErrorContainer),
+                child: Icon(BzIcons.delete, color: theme.colorScheme.onErrorContainer),
               ),
               onDismissed: (_) => ctl.remove(line.item.id),
               child: _CartLineRow(
@@ -91,10 +92,7 @@ class CartScreen extends ConsumerWidget {
             rows: [SummaryRow(label: CatalogText.total, value: Money.format(cart.totalTiyin), emphasize: true)],
           ),
           const SizedBox(height: BzSpace.m),
-          Text(
-            copy.pickupNote,
-            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
+          Text(copy.pickupNote, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
         ],
       ),
     );
@@ -141,7 +139,7 @@ class _CartLineRow extends StatelessWidget {
               IconButton(
                 tooltip: CatalogText.remove,
                 visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.close),
+                icon: const Icon(BzIcons.close),
                 onPressed: onRemove,
               ),
               Text(

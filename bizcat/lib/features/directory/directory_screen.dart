@@ -8,6 +8,7 @@ import 'package:bizcat/features/directory/providers.dart';
 import 'package:bizcat/features/directory/widgets/directory_filters.dart';
 import 'package:bizcat/shared/widgets/business_cards.dart';
 import 'package:bizcat/shared/widgets/states.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -160,7 +161,10 @@ class _DirectoryScreenState extends ConsumerState<DirectoryScreen> {
     });
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        toolbarHeight: 72,
         titleSpacing: BzSpace.gutter,
         title: _SearchField(
           controller: _search,
@@ -173,7 +177,7 @@ class _DirectoryScreenState extends ConsumerState<DirectoryScreen> {
           IconButton(
             key: const Key('directory-map'),
             tooltip: 'Xaritada',
-            icon: const Icon(Icons.map_outlined),
+            icon: const Icon(BzIcons.map),
             onPressed: () {
               final f = ref.read(directoryFilterProvider);
               unawaited(context.push(AppRoutes.mapWith(q: f.q, category: f.category)));
@@ -263,13 +267,18 @@ class _SearchField extends StatelessWidget {
       decoration: InputDecoration(
         isDense: true,
         hintText: 'Qidirish...',
-        prefixIcon: const Icon(Icons.search),
+        prefixIcon: const Icon(BzIcons.search),
         suffixIcon: controller.text.isEmpty
             ? null
-            : IconButton(tooltip: 'Tozalash', icon: const Icon(Icons.close), onPressed: onClear),
+            : IconButton(tooltip: 'Tozalash', icon: const Icon(BzIcons.close), onPressed: onClear),
         filled: true,
-        fillColor: scheme.surfaceContainerHighest,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(BzRadius.pill), borderSide: BorderSide.none),
+        fillColor: scheme.surface,
+        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(BzRadius.xl), borderSide: BorderSide.none),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(BzRadius.xl),
+          borderSide: BorderSide.none,
+        ),
       ),
     );
   }
@@ -319,7 +328,7 @@ class _Empty extends ConsumerWidget {
       padding: const EdgeInsets.only(top: BzSpace.xxl),
       children: [
         EmptyState(
-          icon: Icons.search_off,
+          icon: BzIcons.searchEmpty,
           title: 'Hech narsa topilmadi',
           message: "Boshqa so'z yoki filtr bilan urinib ko'ring.",
           actionLabel: 'Filtrlarni tozalash',

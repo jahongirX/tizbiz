@@ -32,11 +32,13 @@ final nextAppointmentProvider = FutureProvider.autoDispose<Appointment?>((ref) a
   final consumerId = ref.watch(consumerIdProvider);
   ref.watch(bookingsRevisionProvider);
   if (consumerId == null) return null;
-  final page = await ref.read(apiProvider).getPage(
-    Endpoints.consumerAppointments,
-    Appointment.fromJson,
-    query: const {'scope': 'upcoming', 'page': 1, 'per_page': 1},
-  );
+  final page = await ref
+      .read(apiProvider)
+      .getPage(
+        Endpoints.consumerAppointments,
+        Appointment.fromJson,
+        query: const {'scope': 'upcoming', 'page': 1, 'per_page': 1},
+      );
   return page.items.isEmpty ? null : page.items.first;
 });
 
@@ -104,17 +106,17 @@ final class RevisitItem {
   /// slot -> bookSlot(slug, serviceId, staffId); rental -> bookRental(slug);
   /// catalog -> menu(slug, reorder: orderId).
   String rebookPath() => switch (flow) {
-        BookingFlow.slot => AppRoutes.bookSlot(business.slug, serviceId: serviceId, staffId: staffId),
-        BookingFlow.rental => AppRoutes.bookRental(business.slug),
-        BookingFlow.catalog => AppRoutes.menu(business.slug, reorder: orderId),
-      };
+    BookingFlow.slot => AppRoutes.bookSlot(business.slug, serviceId: serviceId, staffId: staffId),
+    BookingFlow.rental => AppRoutes.bookRental(business.slug),
+    BookingFlow.catalog => AppRoutes.menu(business.slug, reorder: orderId),
+  };
 
   /// The card's button text.
   String get rebookLabel => switch (flow) {
-        BookingFlow.slot => 'Qayta yozilish',
-        BookingFlow.rental => 'Yana bron qilish',
-        BookingFlow.catalog => orderId == null ? 'Qayta yozilish' : 'Qayta buyurtma',
-      };
+    BookingFlow.slot => 'Qayta yozilish',
+    BookingFlow.rental => 'Yana bron qilish',
+    BookingFlow.catalog => orderId == null ? 'Qayta yozilish' : 'Qayta buyurtma',
+  };
 }
 
 /// 'Napoleon torti (1 kg) ×2' / 'Napoleon torti (1 kg)' / '... va yana 2 ta'. null without items.
@@ -162,16 +164,16 @@ final revisitProvider = FutureProvider.autoDispose<List<RevisitItem>>((ref) asyn
   }
 
   final results = await (
-    safe(api.getPage(
-      Endpoints.consumerAppointments,
-      Appointment.fromJson,
-      query: const {'scope': 'past', 'page': 1, 'per_page': 50},
-    )),
-    safe(api.getPage(
-      Endpoints.consumerOrders,
-      Order.fromJson,
-      query: const {'scope': 'past', 'page': 1, 'per_page': 50},
-    )),
+    safe(
+      api.getPage(
+        Endpoints.consumerAppointments,
+        Appointment.fromJson,
+        query: const {'scope': 'past', 'page': 1, 'per_page': 50},
+      ),
+    ),
+    safe(
+      api.getPage(Endpoints.consumerOrders, Order.fromJson, query: const {'scope': 'past', 'page': 1, 'per_page': 50}),
+    ),
   ).wait;
   final (appointments, appointmentsError) = results.$1;
   final (orders, ordersError) = results.$2;

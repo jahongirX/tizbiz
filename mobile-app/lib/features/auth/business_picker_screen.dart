@@ -32,15 +32,21 @@ class _BusinessPickerScreenState extends ConsumerState<BusinessPickerScreen> {
     }
     setState(() => _busy = true);
     final nav = Navigator.of(context, rootNavigator: true);
-    unawaited(showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      useRootNavigator: true,
-      builder: (_) => const PopScope(
-        canPop: false,
-        child: Center(child: Card(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))),
+    unawaited(
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        useRootNavigator: true,
+        builder: (_) => const PopScope(
+          canPop: false,
+          child: Center(
+            child: Card(
+              child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()),
+            ),
+          ),
+        ),
       ),
-    ));
+    );
     Object? error;
     try {
       await session.switchBusiness(m.id);

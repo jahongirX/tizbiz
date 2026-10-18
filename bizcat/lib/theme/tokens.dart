@@ -29,6 +29,16 @@ abstract final class BzColors {
   /// Card/input borders, dividers.
   static const border = Color(0xFFECE5DA);
 
+  // app surfaces (cool, indigo-tinted: white cards read clearly on them)
+  /// Page background.
+  static const bg = Color(0xFFF3F2F8);
+
+  /// Top of the page gradient (fades into [bg]).
+  static const bgTop = Color(0xFFE6E3F8);
+
+  /// Icon tiles inside white cards, secondary pill buttons.
+  static const tile = Color(0xFFF1F0F6);
+
   // derived (not brand colors; functional)
   /// Selected chip bg tint, nav indicator, info chip bg.
   static const indigo50 = Color(0xFFECEBFA);
@@ -50,6 +60,12 @@ abstract final class BzColors {
 
   /// Primary buttons/selection in dark; text on it = indigo.
   static const darkPrimary = Color(0xFFC7C5F7);
+
+  /// Top of the dark page gradient.
+  static const darkBgTop = Color(0xFF221E4A);
+
+  /// Icon tiles in dark cards.
+  static const darkTile = Color(0xFF262250);
 }
 
 /// Spacing scale.
@@ -63,4 +79,10 @@ abstract final class BzSpace {
 /// Corner radii.
 abstract final class BzRadius {
   static const s = 8.0, m = 12.0, l = 16.0, xl = 20.0, pill = 999.0;
+
+  /// Grouped white cards (lists, sections).
+  static const card = 24.0;
+
+  /// Icon tiles inside rows.
+  static const tile = 14.0;
 }

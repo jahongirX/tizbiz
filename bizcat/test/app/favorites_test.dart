@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bizcat/core/favorites.dart';
 import 'package:bizcat/shared/widgets/favorite_button.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -14,7 +15,12 @@ BusinessCard get _aziza => BusinessCard.fromJson(Fx.items(Fx.cards)[1]);
 
 void main() {
   testWidgets('signed in: favorites load from the server', (t) async {
-    final h = await pumpBizcat(t, signedIn: true, setup: (api) => api.on('GET', Endpoints.consumerFavorites, body: Fx.favorites));
+    final h = await pumpBizcat(
+      t,
+      signedIn: true,
+      location: '/favorites',
+      setup: (api) => api.on('GET', Endpoints.consumerFavorites, body: Fx.favorites),
+    );
     await settle(t);
     expect(h.api.called('GET', Endpoints.consumerFavorites), isTrue);
     final s = h.container.read(favoritesProvider);
@@ -116,18 +122,18 @@ void main() {
       setup: (api) => api.on('PUT', Endpoints.consumerFavorite(3), status: 204),
     );
     await settle(t);
-    expect(find.byIcon(Icons.favorite_border), findsOneWidget);
+    expect(find.byIcon(BzIcons.heart), findsOneWidget);
     await t.tap(find.byType(FavoriteButton));
     await settle(t);
     expect(app.api.called('PUT', Endpoints.consumerFavorite(3)), isTrue);
-    expect(find.byIcon(Icons.favorite), findsOneWidget);
+    expect(find.byIcon(BzIcons.heartBold), findsOneWidget);
     expect(find.byTooltip('Sevimlilardan olib tashlash'), findsOneWidget);
   });
 
   testWidgets('FavoriteButton signed out shows the heart off', (t) async {
     await pumpInApp(t, const FavoriteButton(businessId: 3, initial: true));
     // Signed out: favorites are "loaded" and empty, so the heart is off.
-    expect(find.byIcon(Icons.favorite_border), findsOneWidget);
+    expect(find.byIcon(BzIcons.heart), findsOneWidget);
     expect(find.byTooltip("Sevimlilarga qo'shish"), findsOneWidget);
   });
 }

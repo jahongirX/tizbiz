@@ -16,11 +16,16 @@ const int kSlotDayStrip = 14;
 const String kSlotTakenMessage = "Kechirasiz, bu vaqt band bo'ldi. Iltimos, boshqa vaqtni tanlang.";
 
 /// Services a consumer can book online: active and online-bookable.
-List<Service> bookableServices(StorefrontData s) =>
-    [for (final x in s.services) if (x.isActive && x.onlineBookable) x];
+List<Service> bookableServices(StorefrontData s) => [
+  for (final x in s.services)
+    if (x.isActive && x.onlineBookable) x,
+];
 
 /// Staff a consumer can pick: active.
-List<Staff> activeStaff(StorefrontData s) => [for (final x in s.staff) if (x.isActive) x];
+List<Staff> activeStaff(StorefrontData s) => [
+  for (final x in s.staff)
+    if (x.isActive) x,
+];
 
 /// Name rule on the confirm step: empty is fine (the server keeps the account name); else 2..64.
 String? validateSlotName(String value) {
@@ -86,26 +91,26 @@ final class SlotFlowState {
     Object? idempotencyKey = _keep,
     bool? submitting,
     Object? submitError = _keep,
-  }) =>
-      SlotFlowState(
-        initialized: initialized ?? this.initialized,
-        step: step ?? this.step,
-        service: identical(service, _keep) ? this.service : service as Service?,
-        staff: identical(staff, _keep) ? this.staff : staff as Staff?,
-        date: date ?? this.date,
-        slot: identical(slot, _keep) ? this.slot : slot as AvailabilitySlot?,
-        name: name ?? this.name,
-        notes: notes ?? this.notes,
-        idempotencyKey: identical(idempotencyKey, _keep) ? this.idempotencyKey : idempotencyKey as String?,
-        submitting: submitting ?? this.submitting,
-        submitError: identical(submitError, _keep) ? this.submitError : submitError,
-      );
+  }) => SlotFlowState(
+    initialized: initialized ?? this.initialized,
+    step: step ?? this.step,
+    service: identical(service, _keep) ? this.service : service as Service?,
+    staff: identical(staff, _keep) ? this.staff : staff as Staff?,
+    date: date ?? this.date,
+    slot: identical(slot, _keep) ? this.slot : slot as AvailabilitySlot?,
+    name: name ?? this.name,
+    notes: notes ?? this.notes,
+    idempotencyKey: identical(idempotencyKey, _keep) ? this.idempotencyKey : idempotencyKey as String?,
+    submitting: submitting ?? this.submitting,
+    submitError: identical(submitError, _keep) ? this.submitError : submitError,
+  );
 }
 
 /// Family key = slug. `init(storefront, {serviceId, staffId})` is called once after the
 /// storefront loads.
-final slotFlowProvider =
-    NotifierProvider.autoDispose.family<SlotFlowController, SlotFlowState, String>(SlotFlowController.new);
+final slotFlowProvider = NotifierProvider.autoDispose.family<SlotFlowController, SlotFlowState, String>(
+  SlotFlowController.new,
+);
 
 class SlotFlowController extends Notifier<SlotFlowState> {
   SlotFlowController(this.slug);
@@ -189,12 +194,7 @@ class SlotFlowController extends Notifier<SlotFlowState> {
 
   /// -> confirm, with a fresh idempotency key.
   void pickSlot(AvailabilitySlot slot) {
-    state = state.copyWith(
-      slot: slot,
-      idempotencyKey: Idempotency.newKey(),
-      submitError: null,
-      step: SlotStep.confirm,
-    );
+    state = state.copyWith(slot: slot, idempotencyKey: Idempotency.newKey(), submitError: null, step: SlotStep.confirm);
   }
 
   /// The previous step. Returns false on the first step (the caller pops).
@@ -248,7 +248,9 @@ class SlotFlowController extends Notifier<SlotFlowState> {
     final revision = ref.read(bookingsRevisionProvider.notifier);
     state = s.copyWith(submitting: true, submitError: null, idempotencyKey: key);
     try {
-      final res = await ref.read(apiProvider).request<Appointment>(
+      final res = await ref
+          .read(apiProvider)
+          .request<Appointment>(
             'POST',
             Endpoints.consumerAppointments,
             body: ConsumerBookingRequest.slot(
@@ -297,12 +299,14 @@ class SlotFlowController extends Notifier<SlotFlowState> {
 }
 
 /// GET /v1/staff/{id}/availability?date=&service_id= (no token).
-final slotAvailabilityProvider =
-    FutureProvider.autoDispose.family<Availability, ({int staffId, int serviceId, LocalDate date})>((ref, k) {
-  return ref.read(apiProvider).get<Availability>(
-        Endpoints.availability(k.staffId),
-        query: ApiQuery.availability(date: k.date, serviceId: k.serviceId),
-        auth: RequestAuth.none,
-        decode: (d) => Availability.fromJson(JsonRead.object(d)),
-      );
-});
+final slotAvailabilityProvider = FutureProvider.autoDispose
+    .family<Availability, ({int staffId, int serviceId, LocalDate date})>((ref, k) {
+      return ref
+          .read(apiProvider)
+          .get<Availability>(
+            Endpoints.availability(k.staffId),
+            query: ApiQuery.availability(date: k.date, serviceId: k.serviceId),
+            auth: RequestAuth.none,
+            decode: (d) => Availability.fromJson(JsonRead.object(d)),
+          );
+    });

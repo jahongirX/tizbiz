@@ -15,6 +15,7 @@ import 'package:bizcat/shared/widgets/flow_widgets.dart';
 import 'package:bizcat/shared/widgets/location_card.dart';
 import 'package:bizcat/shared/widgets/nav.dart';
 import 'package:bizcat/shared/widgets/states.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -25,11 +26,11 @@ const String _title = 'Navbatga yozilish';
 
 /// Step titles under the StepHeader.
 String slotStepTitle(SlotStep s) => switch (s) {
-      SlotStep.service => 'Xizmat',
-      SlotStep.staff => 'Mutaxassis',
-      SlotStep.datetime => 'Vaqt',
-      SlotStep.confirm => 'Tasdiqlash',
-    };
+  SlotStep.service => 'Xizmat',
+  SlotStep.staff => 'Mutaxassis',
+  SlotStep.datetime => 'Vaqt',
+  SlotStep.confirm => 'Tasdiqlash',
+};
 
 /// `/b/:slug/book`: service -> staff -> date/time -> confirm (port of web SlotEngineApp.vue).
 class SlotBookingScreen extends ConsumerStatefulWidget {
@@ -62,12 +63,7 @@ class _SlotBookingScreenState extends ConsumerState<SlotBookingScreen> {
         }
         return const _PlainScaffold(body: _DetailLoading());
       }
-      return _SlotFlowView(
-        slug: widget.slug,
-        store: data,
-        serviceId: widget.serviceId,
-        staffId: widget.staffId,
-      );
+      return _SlotFlowView(slug: widget.slug, store: data, serviceId: widget.serviceId, staffId: widget.staffId);
     }
 
     return _PlainScaffold(
@@ -87,7 +83,10 @@ class _PlainScaffold extends StatelessWidget {
   final Widget body;
 
   @override
-  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text(_title)), body: body);
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text(_title)),
+    body: body,
+  );
 }
 
 class _SlotFlowView extends ConsumerStatefulWidget {
@@ -165,19 +164,19 @@ class _SlotFlowViewState extends ConsumerState<_SlotFlowView> {
       SlotStep.staff => _StaffStep(store: widget.store, selected: state.staff, onPick: _flow.pickStaff),
       SlotStep.datetime => _DateTimeStep(state: state, flow: _flow),
       SlotStep.confirm => _ConfirmStep(
-          slug: widget.slug,
-          store: widget.store,
-          state: state,
-          name: _name,
-          notes: _notes,
-          nameError: _nameError,
-          onName: (v) {
-            _flow.setName(v);
-            if (_nameError != null) setState(() => _nameError = null);
-          },
-          onNotes: _flow.setNotes,
-          onRetry: _submit,
-        ),
+        slug: widget.slug,
+        store: widget.store,
+        state: state,
+        name: _name,
+        notes: _notes,
+        nameError: _nameError,
+        onName: (v) {
+          _flow.setName(v);
+          if (_nameError != null) setState(() => _nameError = null);
+        },
+        onNotes: _flow.setNotes,
+        onRetry: _submit,
+      ),
     };
 
     return PopScope(
@@ -212,7 +211,9 @@ class _SlotFlowViewState extends ConsumerState<_SlotFlowView> {
               ),
             ),
             const SizedBox(height: BzSpace.l),
-            _Gutter(child: StepHeader(step: state.stepNumber, total: SlotStep.values.length, title: slotStepTitle(step))),
+            _Gutter(
+              child: StepHeader(step: state.stepNumber, total: SlotStep.values.length, title: slotStepTitle(step)),
+            ),
             const SizedBox(height: BzSpace.xl),
             content,
           ],
@@ -228,8 +229,10 @@ class _Gutter extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) =>
-      Padding(padding: const EdgeInsets.symmetric(horizontal: BzSpace.gutter), child: child);
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: BzSpace.gutter),
+    child: child,
+  );
 }
 
 // ---------------------------------------------------------------- service
@@ -247,7 +250,7 @@ class _ServiceStep extends ConsumerWidget {
     final phone = store.business.phone;
     if (services.isEmpty) {
       return EmptyState(
-        icon: Icons.event_busy,
+        icon: BzIcons.calendarRemove,
         title: "Hozircha onlayn yozilish uchun xizmatlar yo'q",
         actionLabel: Phone.telUri(phone) == null ? null : "Qo'ng'iroq qilish",
         onAction: Phone.telUri(phone) == null ? null : () => unawaited(callPhone(ref, phone)),
@@ -281,7 +284,7 @@ class _StaffStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final staff = activeStaff(store);
     if (staff.isEmpty) {
-      return const EmptyState(icon: Icons.person_off_outlined, title: 'Mutaxassislar topilmadi.');
+      return const EmptyState(icon: BzIcons.userOff, title: 'Mutaxassislar topilmadi.');
     }
     return _Gutter(
       child: Column(
@@ -317,10 +320,7 @@ class _DateTimeStep extends StatelessWidget {
         const _Gutter(child: SlotStepLabel('Sanani tanlang')),
         SlotDayStrip(today: flow.today, selected: state.date, onPick: flow.pickDate),
         const SizedBox(height: BzSpace.xl),
-        if (error != null) ...[
-          _Gutter(child: SlotAlert(message: errorText(error))),
-          const SizedBox(height: BzSpace.l),
-        ],
+        if (error != null) ...[_Gutter(child: SlotAlert(message: errorText(error))), const SizedBox(height: BzSpace.l)],
         if (key != null)
           _Gutter(
             child: SlotTimes(
@@ -399,12 +399,7 @@ class _ConfirmStep extends ConsumerWidget {
             Text("Bron qilingandan so'ng Payme orqali to'lashingiz mumkin.", style: muted),
           ],
           const SizedBox(height: BzSpace.l),
-          LocationCard(
-            address: business.address,
-            mapUrl: business.mapUrl,
-            name: business.name,
-            phone: business.phone,
-          ),
+          LocationCard(address: business.address, mapUrl: business.mapUrl, name: business.name, phone: business.phone),
           const SizedBox(height: BzSpace.xl),
           TextField(
             key: const ValueKey('slot-name-field'),
@@ -462,16 +457,13 @@ class _SubmitAlert extends StatelessWidget {
     if (e is ApiException && (e.isForbidden || e.isNotFound)) {
       return SlotAlert(
         message: e.message,
-        action: PrimaryButton(
-          label: 'Biznes sahifasiga',
-          onPressed: () => popOrGo(context, AppRoutes.business(slug)),
-        ),
+        action: PrimaryButton(label: 'Biznes sahifasiga', onPressed: () => popOrGo(context, AppRoutes.business(slug))),
       );
     }
     if (e is ApiException && e.status == 422) return SlotAlert(message: e.message);
     return SlotAlert(
       message: errorText(e),
-      action: SecondaryButton(label: 'Qayta urinish', icon: Icons.refresh, onPressed: onRetry),
+      action: SecondaryButton(label: 'Qayta urinish', icon: BzIcons.refresh, onPressed: onRetry),
     );
   }
 }
@@ -483,7 +475,7 @@ class _DetailLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const SingleChildScrollView(
-        physics: NeverScrollableScrollPhysics(),
-        child: LoadingView(kind: LoadingKind.detail),
-      );
+    physics: NeverScrollableScrollPhysics(),
+    child: LoadingView(kind: LoadingKind.detail),
+  );
 }

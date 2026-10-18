@@ -1,6 +1,7 @@
 import 'package:bizcat/app/app.dart';
 import 'package:bizcat/app/router.dart';
 import 'package:bizcat/app/routes.dart';
+import 'package:bizcat/app/shell.dart';
 import 'package:bizcat/core/api.dart';
 import 'package:bizcat/core/images.dart';
 import 'package:bizcat/core/prefs.dart';
@@ -283,30 +284,31 @@ void main() {
   });
 
   group('shell', () {
-    testWidgets('5 tabs; tapping switches branches', (t) async {
+    testWidgets('4 tabs + the map button; tapping switches branches', (t) async {
       final h = await pumpBizcat(t, signedIn: true);
-      for (final label in ['Asosiy', 'Katalog', 'Bronlarim', 'Sevimlilar', 'Profil']) {
-        expect(find.descendant(of: find.byType(NavigationBar), matching: find.text(label)), findsOneWidget);
+      for (final label in ['Asosiy', 'Katalog', 'Bronlarim', 'Profil']) {
+        expect(find.descendant(of: find.byType(BzBottomBar), matching: find.text(label)), findsOneWidget);
       }
-      await t.tap(find.descendant(of: find.byType(NavigationBar), matching: find.text('Katalog')));
+      expect(find.byKey(const Key('tab-map')), findsOneWidget);
+      await t.tap(find.descendant(of: find.byType(BzBottomBar), matching: find.text('Katalog')));
       await settle(t);
       expect(h.location, '/explore');
-      await t.tap(find.descendant(of: find.byType(NavigationBar), matching: find.text('Profil')));
+      await t.tap(find.descendant(of: find.byType(BzBottomBar), matching: find.text('Profil')));
       await settle(t);
       expect(h.location, '/profile');
     });
 
     testWidgets('tapping the active tab pops to its root', (t) async {
       final h = await pumpBizcat(t, signedIn: true, location: '/profile/wallet');
-      expect(find.byType(NavigationBar), findsOneWidget);
-      await t.tap(find.descendant(of: find.byType(NavigationBar), matching: find.text('Profil')));
+      expect(find.byType(BzBottomBar), findsOneWidget);
+      await t.tap(find.descendant(of: find.byType(BzBottomBar), matching: find.text('Profil')));
       await settle(t);
       expect(h.location, '/profile');
     });
 
     testWidgets('top-level routes have no bottom bar', (t) async {
       await pumpBizcat(t, location: '/b/shox-barber');
-      expect(find.byType(NavigationBar), findsNothing);
+      expect(find.byType(BzBottomBar), findsNothing);
     });
   });
 }

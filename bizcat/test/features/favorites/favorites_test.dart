@@ -1,5 +1,6 @@
 import 'package:bizcat/core/favorites.dart';
 import 'package:bizcat/shared/widgets/business_cards.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -23,7 +24,7 @@ void main() {
     await settle(t);
     expect(find.byType(BusinessCardTile), findsNWidgets(2));
 
-    await t.tap(find.descendant(of: find.byKey(const ValueKey('fav-2')), matching: find.byIcon(Icons.favorite)));
+    await t.tap(find.descendant(of: find.byKey(const ValueKey('fav-2')), matching: find.byIcon(BzIcons.heartBold)));
     await settle(t);
     expect(h.api.called('DELETE', '/v1/consumer/favorites/2'), isTrue);
     expect(find.byKey(const ValueKey('fav-2')), findsNothing);

@@ -7,9 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
-  runApp(ProviderScope(
-    retry: (_, _) => null,
-    overrides: [prefsProvider.overrideWithValue(prefs)],
-    child: const BizcatApp(),
-  ));
+  runApp(
+    ProviderScope(retry: (_, _) => null, overrides: [prefsProvider.overrideWithValue(prefs)], child: const BizcatApp()),
+  );
 }

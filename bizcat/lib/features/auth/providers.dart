@@ -88,22 +88,20 @@ final class LoginState {
     Object? resendAvailableAt = _keep,
     Object? codeExpiresAt = _keep,
     Object? ttlSec = _keep,
-  }) =>
-      LoginState(
-        sending: sending ?? this.sending,
-        verifying: verifying ?? this.verifying,
-        saving: saving ?? this.saving,
-        phone: identical(phone, _keep) ? this.phone : phone as String?,
-        phoneError: identical(phoneError, _keep) ? this.phoneError : phoneError as String?,
-        codeError: identical(codeError, _keep) ? this.codeError : codeError as String?,
-        nameError: identical(nameError, _keep) ? this.nameError : nameError as String?,
-        error: identical(error, _keep) ? this.error : error as String?,
-        rateLimited: rateLimited ?? this.rateLimited,
-        resendAvailableAt:
-            identical(resendAvailableAt, _keep) ? this.resendAvailableAt : resendAvailableAt as DateTime?,
-        codeExpiresAt: identical(codeExpiresAt, _keep) ? this.codeExpiresAt : codeExpiresAt as DateTime?,
-        ttlSec: identical(ttlSec, _keep) ? this.ttlSec : ttlSec as int?,
-      );
+  }) => LoginState(
+    sending: sending ?? this.sending,
+    verifying: verifying ?? this.verifying,
+    saving: saving ?? this.saving,
+    phone: identical(phone, _keep) ? this.phone : phone as String?,
+    phoneError: identical(phoneError, _keep) ? this.phoneError : phoneError as String?,
+    codeError: identical(codeError, _keep) ? this.codeError : codeError as String?,
+    nameError: identical(nameError, _keep) ? this.nameError : nameError as String?,
+    error: identical(error, _keep) ? this.error : error as String?,
+    rateLimited: rateLimited ?? this.rateLimited,
+    resendAvailableAt: identical(resendAvailableAt, _keep) ? this.resendAvailableAt : resendAvailableAt as DateTime?,
+    codeExpiresAt: identical(codeExpiresAt, _keep) ? this.codeExpiresAt : codeExpiresAt as DateTime?,
+    ttlSec: identical(ttlSec, _keep) ? this.ttlSec : ttlSec as int?,
+  );
 
   /// The resend timer only applies to the phone it was issued for.
   DateTime? resendAvailableFor(String normalizedPhone) => phone == normalizedPhone ? resendAvailableAt : null;

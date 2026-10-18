@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bizcat/app/routes.dart';
 import 'package:bizcat/shared/widgets/rating.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -49,10 +50,11 @@ class ReviewTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (review.createdAt != null) Text(UzDates.ago(review.createdAt!, now: now), style: theme.textTheme.bodySmall),
+              if (review.createdAt != null)
+                Text(UzDates.ago(review.createdAt!, now: now), style: theme.textTheme.bodySmall),
               if (onEdit != null || onDelete != null)
                 PopupMenuButton<String>(
-                  icon: Icon(Icons.more_vert, color: scheme.onSurfaceVariant),
+                  icon: Icon(BzIcons.more, color: scheme.onSurfaceVariant),
                   onSelected: (v) => v == 'edit' ? onEdit?.call() : onDelete?.call(),
                   itemBuilder: (_) => [
                     if (onEdit != null) const PopupMenuItem(value: 'edit', child: Text('Tahrirlash')),
@@ -76,7 +78,10 @@ class ReviewTile extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(BzSpace.m),
-              decoration: BoxDecoration(color: scheme.primaryContainer, borderRadius: BorderRadius.circular(BzRadius.m)),
+              decoration: BoxDecoration(
+                color: scheme.primaryContainer,
+                borderRadius: BorderRadius.circular(BzRadius.m),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

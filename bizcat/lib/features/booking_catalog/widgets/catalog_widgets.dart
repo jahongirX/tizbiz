@@ -1,4 +1,5 @@
 import 'package:bizcat/shared/widgets/images.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tizbiz_core/tizbiz_core.dart';
@@ -30,7 +31,7 @@ class ItemThumb extends StatelessWidget {
         height: size,
         color: scheme.primaryContainer,
         alignment: Alignment.center,
-        child: Icon(Icons.image_outlined, size: size * 0.38, color: scheme.onSurfaceVariant),
+        child: Icon(BzIcons.image, size: size * 0.38, color: scheme.onSurfaceVariant),
       ),
     );
   }
@@ -63,17 +64,17 @@ class QtyStepper extends StatelessWidget {
     final scheme = theme.colorScheme;
     final side = compact ? 36.0 : 44.0;
     Widget button(IconData icon, String tooltip, VoidCallback? onPressed) => SizedBox(
-          width: side,
-          height: side,
-          child: IconButton(
-            padding: EdgeInsets.zero,
-            iconSize: compact ? 18 : 22,
-            tooltip: tooltip,
-            color: scheme.primary,
-            onPressed: onPressed,
-            icon: Icon(icon),
-          ),
-        );
+      width: side,
+      height: side,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        iconSize: compact ? 18 : 22,
+        tooltip: tooltip,
+        color: scheme.primary,
+        onPressed: onPressed,
+        icon: Icon(icon),
+      ),
+    );
     return DecoratedBox(
       decoration: BoxDecoration(
         border: Border.all(color: scheme.primary, width: 1.2),
@@ -82,7 +83,7 @@ class QtyStepper extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          button(Icons.remove, CatalogText.decrease, qty > min ? onDec : null),
+          button(BzIcons.remove, CatalogText.decrease, qty > min ? onDec : null),
           ConstrainedBox(
             constraints: BoxConstraints(minWidth: compact ? 24 : 32),
             child: Text(
@@ -91,7 +92,7 @@ class QtyStepper extends StatelessWidget {
               style: theme.textTheme.titleMedium?.copyWith(color: scheme.primary),
             ),
           ),
-          button(Icons.add, CatalogText.increase, qty < kMaxLineQty ? onInc : null),
+          button(BzIcons.add, CatalogText.increase, qty < kMaxLineQty ? onInc : null),
         ],
       ),
     );
@@ -116,7 +117,7 @@ class AddButton extends StatelessWidget {
           visualDensity: VisualDensity.compact,
         ),
         onPressed: onPressed,
-        icon: const Icon(Icons.add, size: 18),
+        icon: const Icon(BzIcons.add, size: 18),
         label: const Text(CatalogText.add),
       ),
     );
@@ -137,10 +138,7 @@ class NoticeCard extends StatelessWidget {
     final scheme = theme.colorScheme;
     return Container(
       padding: const EdgeInsets.all(BzSpace.m),
-      decoration: BoxDecoration(
-        color: scheme.primaryContainer,
-        borderRadius: BorderRadius.circular(BzRadius.m),
-      ),
+      decoration: BoxDecoration(color: scheme.primaryContainer, borderRadius: BorderRadius.circular(BzRadius.m)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -150,10 +148,7 @@ class NoticeCard extends StatelessWidget {
               Icon(icon, size: 20, color: scheme.onPrimaryContainer),
               const SizedBox(width: BzSpace.s),
               Expanded(
-                child: Text(
-                  text,
-                  style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onPrimaryContainer),
-                ),
+                child: Text(text, style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onPrimaryContainer)),
               ),
             ],
           ),
@@ -190,7 +185,7 @@ class CatalogAlert extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.error_outline, color: scheme.onErrorContainer, size: 20),
+                Icon(BzIcons.danger, color: scheme.onErrorContainer, size: 20),
                 const SizedBox(width: BzSpace.s),
                 Expanded(
                   child: Text(message, style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onErrorContainer)),

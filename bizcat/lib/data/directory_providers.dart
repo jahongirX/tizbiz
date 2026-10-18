@@ -23,8 +23,7 @@ final businessPageProvider = FutureProvider.autoDispose.family<BusinessPage, Str
   ref
     ..watch(consumerIdProvider)
     ..watch(reviewsRevisionProvider);
-  return ref.read(apiProvider).get<BusinessPage>(
-        Endpoints.directoryBusiness(slug),
-        decode: (d) => BusinessPage.fromJson(JsonRead.object(d)),
-      );
+  return ref
+      .read(apiProvider)
+      .get<BusinessPage>(Endpoints.directoryBusiness(slug), decode: (d) => BusinessPage.fromJson(JsonRead.object(d)));
 });

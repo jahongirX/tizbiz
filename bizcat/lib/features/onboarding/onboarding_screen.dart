@@ -7,6 +7,7 @@ import 'package:bizcat/features/onboarding/widgets/city_options.dart';
 import 'package:bizcat/shared/widgets/brand.dart';
 import 'package:bizcat/shared/widgets/buttons.dart';
 import 'package:bizcat/theme/app_theme.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -38,8 +39,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   String get _target => safeFrom(widget.from) ?? AppRoutes.home;
 
   void _skipToCity() => unawaited(
-        _controller.animateToPage(_pages - 1, duration: const Duration(milliseconds: 300), curve: Curves.easeOut),
-      );
+    _controller.animateToPage(_pages - 1, duration: const Duration(milliseconds: 300), curve: Curves.easeOut),
+  );
 
   Future<void> _finish({required bool withCity}) async {
     if (_finishing) return;
@@ -84,15 +85,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       width: 128,
                       height: 128,
                       decoration: BoxDecoration(color: scheme.primaryContainer, shape: BoxShape.circle),
-                      child: Icon(Icons.event_available, size: 72, color: scheme.primary),
+                      child: Icon(BzIcons.calendarTick, size: 72, color: scheme.primary),
                     ),
                     title: 'Navbat bir necha bosishda',
                     text: "Qo'ng'iroqsiz yoziling, bronlaringiz doim qo'lingizda.",
                   ),
-                  _CityPage(
-                    selected: _city,
-                    onSelect: (c) => setState(() => _city = c),
-                  ),
+                  _CityPage(selected: _city, onSelect: (c) => setState(() => _city = c)),
                 ],
               ),
             ),
@@ -102,10 +100,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               child: _page < _pages - 1
                   ? SecondaryButton(
                       label: 'Davom etish',
-                      onPressed: () => unawaited(_controller.nextPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOut,
-                      )),
+                      onPressed: () => unawaited(
+                        _controller.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeOut),
+                      ),
                     )
                   : Column(
                       mainAxisSize: MainAxisSize.min,
@@ -148,7 +145,11 @@ class _InfoPage extends StatelessWidget {
           const SizedBox(height: BzSpace.xxxl),
           visual,
           const SizedBox(height: BzSpace.xxxl),
-          Text(title, textAlign: TextAlign.center, style: BzText.sora(context, 24, weight: FontWeight.w700)),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: BzText.sora(context, 24, weight: FontWeight.w700),
+          ),
           const SizedBox(height: BzSpace.m),
           Text(
             text,

@@ -21,8 +21,7 @@ class LoginNameScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginNameScreenState extends ConsumerState<LoginNameScreen> {
-  late final TextEditingController _name =
-      TextEditingController(text: ref.read(currentConsumerProvider)?.name ?? '');
+  late final TextEditingController _name = TextEditingController(text: ref.read(currentConsumerProvider)?.name ?? '');
 
   @override
   void dispose() {
@@ -48,10 +47,7 @@ class _LoginNameScreenState extends ConsumerState<LoginNameScreen> {
     return AuthScaffold(
       onBack: () => context.go(_target),
       children: [
-        const AuthHeader(
-          title: 'Ismingiz nima?',
-          subtitle: Text("Biznes sizni shu ism bilan ko'radi."),
-        ),
+        const AuthHeader(title: 'Ismingiz nima?', subtitle: Text("Biznes sizni shu ism bilan ko'radi.")),
         const SizedBox(height: BzSpace.xxl),
         TextField(
           controller: _name,
@@ -63,11 +59,7 @@ class _LoginNameScreenState extends ConsumerState<LoginNameScreen> {
           autofillHints: const [AutofillHints.name],
           onChanged: _onChanged,
           onSubmitted: (_) => unawaited(_save()),
-          decoration: InputDecoration(
-            labelText: 'Ism',
-            counterText: '',
-            errorText: state.nameError,
-          ),
+          decoration: InputDecoration(labelText: 'Ism', counterText: '', errorText: state.nameError),
         ),
         if (state.error != null) ...[
           const SizedBox(height: BzSpace.m),

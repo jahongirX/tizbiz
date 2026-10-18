@@ -4,40 +4,40 @@ import 'package:tizbiz_core/tizbiz_core.dart';
 
 /// Consumer-facing appointment status label (Bizcat wording).
 String appointmentStatusLabel(AppointmentStatus s) => switch (s) {
-      AppointmentStatus.pending => 'Kutilmoqda',
-      AppointmentStatus.confirmed => 'Tasdiqlangan',
-      AppointmentStatus.arrived => 'Jarayonda',
-      AppointmentStatus.completed => 'Yakunlandi',
-      AppointmentStatus.noShow => 'Kelmadi',
-      AppointmentStatus.canceled => 'Bekor qilingan',
-      AppointmentStatus.unknown => "Noma'lum",
-    };
+  AppointmentStatus.pending => 'Kutilmoqda',
+  AppointmentStatus.confirmed => 'Tasdiqlangan',
+  AppointmentStatus.arrived => 'Jarayonda',
+  AppointmentStatus.completed => 'Yakunlandi',
+  AppointmentStatus.noShow => 'Kelmadi',
+  AppointmentStatus.canceled => 'Bekor qilingan',
+  AppointmentStatus.unknown => "Noma'lum",
+};
 
 /// Consumer-facing order status label (never "Yetkazildi": there is no delivery).
 String orderStatusLabel(OrderStatus s) => switch (s) {
-      OrderStatus.newOrder => 'Yangi',
-      OrderStatus.confirmed => 'Tasdiqlangan',
-      OrderStatus.preparing => 'Tayyorlanmoqda',
-      OrderStatus.ready => 'Tayyor',
-      OrderStatus.delivered => 'Topshirildi',
-      OrderStatus.cancelled => 'Bekor qilingan',
-      OrderStatus.unknown => "Noma'lum",
-    };
+  OrderStatus.newOrder => 'Yangi',
+  OrderStatus.confirmed => 'Tasdiqlangan',
+  OrderStatus.preparing => 'Tayyorlanmoqda',
+  OrderStatus.ready => 'Tayyor',
+  OrderStatus.delivered => 'Topshirildi',
+  OrderStatus.cancelled => 'Bekor qilingan',
+  OrderStatus.unknown => "Noma'lum",
+};
 
 (Color, Color) _appointmentColors(AppointmentStatus s) => switch (s) {
-      AppointmentStatus.pending => (BzColors.warning, BzColors.warningBg),
-      AppointmentStatus.confirmed || AppointmentStatus.arrived => (BzColors.indigo, BzColors.indigo50),
-      AppointmentStatus.completed => (BzColors.success, BzColors.successBg),
-      AppointmentStatus.noShow => (BzColors.danger, BzColors.dangerBg),
-      AppointmentStatus.canceled || AppointmentStatus.unknown => (BzColors.neutral, BzColors.neutralBg),
-    };
+  AppointmentStatus.pending => (BzColors.warning, BzColors.warningBg),
+  AppointmentStatus.confirmed || AppointmentStatus.arrived => (BzColors.indigo, BzColors.indigo50),
+  AppointmentStatus.completed => (BzColors.success, BzColors.successBg),
+  AppointmentStatus.noShow => (BzColors.danger, BzColors.dangerBg),
+  AppointmentStatus.canceled || AppointmentStatus.unknown => (BzColors.neutral, BzColors.neutralBg),
+};
 
 (Color, Color) _orderColors(OrderStatus s) => switch (s) {
-      OrderStatus.newOrder => (BzColors.warning, BzColors.warningBg),
-      OrderStatus.confirmed || OrderStatus.preparing => (BzColors.indigo, BzColors.indigo50),
-      OrderStatus.ready || OrderStatus.delivered => (BzColors.success, BzColors.successBg),
-      OrderStatus.cancelled || OrderStatus.unknown => (BzColors.neutral, BzColors.neutralBg),
-    };
+  OrderStatus.newOrder => (BzColors.warning, BzColors.warningBg),
+  OrderStatus.confirmed || OrderStatus.preparing => (BzColors.indigo, BzColors.indigo50),
+  OrderStatus.ready || OrderStatus.delivered => (BzColors.success, BzColors.successBg),
+  OrderStatus.cancelled || OrderStatus.unknown => (BzColors.neutral, BzColors.neutralBg),
+};
 
 /// A pill with fg/bg colors and a `labelSmall` label.
 class StatusPill extends StatelessWidget {

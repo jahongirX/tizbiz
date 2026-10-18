@@ -10,9 +10,12 @@ const Object _keep = Object();
 /// Query of GET /v1/directory/map (a family key: has ==/hashCode).
 @immutable
 final class MapQuery {
-  const MapQuery({this.q, this.category, this.bbox});
+  const MapQuery({this.q, this.category, this.bbox, this.minRating});
 
   final String? q, category;
+
+  /// e.g. 4.5 = only businesses rated 4.5 and up.
+  final double? minRating;
 
   /// 'minLng,minLat,maxLng,maxLat' of a "search this area" viewport; null = everywhere.
   final String? bbox;
@@ -23,22 +26,28 @@ final class MapQuery {
       return (t == null || t.isEmpty) ? null : t;
     }
 
-    return {'q': ?clean(q), 'category': ?clean(category), 'bbox': ?clean(bbox)};
+    return {'q': ?clean(q), 'category': ?clean(category), 'bbox': ?clean(bbox), 'min_rating': ?minRating?.toString()};
   }
 
   /// Nullable fields use a sentinel: `copyWith(bbox: null)` clears it.
-  MapQuery copyWith({Object? q = _keep, Object? category = _keep, Object? bbox = _keep}) => MapQuery(
-    q: identical(q, _keep) ? this.q : q as String?,
-    category: identical(category, _keep) ? this.category : category as String?,
-    bbox: identical(bbox, _keep) ? this.bbox : bbox as String?,
-  );
+  MapQuery copyWith({Object? q = _keep, Object? category = _keep, Object? bbox = _keep, Object? minRating = _keep}) =>
+      MapQuery(
+        q: identical(q, _keep) ? this.q : q as String?,
+        category: identical(category, _keep) ? this.category : category as String?,
+        bbox: identical(bbox, _keep) ? this.bbox : bbox as String?,
+        minRating: identical(minRating, _keep) ? this.minRating : minRating as double?,
+      );
 
   @override
   bool operator ==(Object other) =>
-      other is MapQuery && other.q == q && other.category == category && other.bbox == bbox;
+      other is MapQuery &&
+      other.q == q &&
+      other.category == category &&
+      other.bbox == bbox &&
+      other.minRating == minRating;
 
   @override
-  int get hashCode => Object.hash(q, category, bbox);
+  int get hashCode => Object.hash(q, category, bbox, minRating);
 }
 
 /// The viewport as a bbox param, rounded so tiny pans reuse the cached result.

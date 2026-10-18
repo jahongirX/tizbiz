@@ -7,6 +7,7 @@ import 'package:bizcat/core/rental_pricing.dart';
 import 'package:bizcat/shared/widgets/buttons.dart';
 import 'package:bizcat/shared/widgets/images.dart';
 import 'package:bizcat/shared/widgets/status_chips.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -173,14 +174,14 @@ class AppointmentCard extends StatelessWidget {
               ],
               const SizedBox(height: BzSpace.s),
               _MetaRow(
-                icon: Icons.event,
+                icon: BzIcons.calendar,
                 text: UzDates.dateTime(a.startLocal(), today: bookingToday(b)),
               ),
               if (showUnpaid) ...[
                 const SizedBox(height: BzSpace.m),
                 InfoLine(
                   dense: true,
-                  icon: Icons.account_balance_wallet_outlined,
+                  icon: BzIcons.wallet,
                   text: "Oldindan to'lov: ${Money.format(a.depositTiyin)} · to'lanmagan",
                   foreground: BzColors.warning,
                   background: BzColors.warningBg,
@@ -189,7 +190,7 @@ class AppointmentCard extends StatelessWidget {
                 const SizedBox(height: BzSpace.m),
                 const InfoLine(
                   dense: true,
-                  icon: Icons.verified_outlined,
+                  icon: BzIcons.verify,
                   text: "Oldindan to'lov qilingan",
                   foreground: BzColors.success,
                   background: BzColors.successBg,
@@ -203,7 +204,7 @@ class AppointmentCard extends StatelessWidget {
                       Expanded(
                         child: SecondaryButton(
                           label: 'Sharh qoldirish',
-                          icon: Icons.rate_review_outlined,
+                          icon: BzIcons.review,
                           onPressed: () =>
                               unawaited(context.push(AppRoutes.reviewNew(appointmentId: a.id, businessName: b?.name))),
                         ),
@@ -212,7 +213,7 @@ class AppointmentCard extends StatelessWidget {
                       Expanded(
                         child: Row(
                           children: [
-                            Icon(Icons.check_circle_outline, size: 16, color: muted),
+                            Icon(BzIcons.tick, size: 16, color: muted),
                             const SizedBox(width: 6),
                             Text('Sharh qoldirilgan', style: theme.textTheme.bodySmall?.copyWith(color: muted)),
                           ],
@@ -223,7 +224,7 @@ class AppointmentCard extends StatelessWidget {
                       Expanded(
                         child: SecondaryButton(
                           label: 'Qayta yozilish',
-                          icon: Icons.replay,
+                          icon: BzIcons.retry,
                           onPressed: () => unawaited(
                             context.push(
                               bookingEntryPath(
@@ -287,7 +288,7 @@ class OrderCard extends StatelessWidget {
                     const SizedBox(width: BzSpace.m),
                     Expanded(
                       child: _MetaRow(
-                        icon: Icons.schedule,
+                        icon: BzIcons.clock,
                         text: UzDates.dayLabel(Dates.localDateOf(created, bookingTimezone(b)), today: bookingToday(b)),
                       ),
                     ),
@@ -298,14 +299,14 @@ class OrderCard extends StatelessWidget {
                 const SizedBox(height: BzSpace.m),
                 SecondaryButton(
                   label: 'Sharh qoldirish',
-                  icon: Icons.rate_review_outlined,
+                  icon: BzIcons.review,
                   onPressed: () => unawaited(context.push(AppRoutes.reviewNew(orderId: o.id, businessName: b?.name))),
                 ),
               ] else if (reviewed) ...[
                 const SizedBox(height: BzSpace.m),
                 Row(
                   children: [
-                    Icon(Icons.check_circle_outline, size: 16, color: scheme.onSurfaceVariant),
+                    Icon(BzIcons.tick, size: 16, color: scheme.onSurfaceVariant),
                     const SizedBox(width: 6),
                     Text(
                       'Sharh qoldirilgan',
@@ -342,7 +343,7 @@ class SuccessHero extends StatelessWidget {
             width: 80,
             height: 80,
             decoration: const BoxDecoration(color: BzColors.successBg, shape: BoxShape.circle),
-            child: const Icon(Icons.check_rounded, size: 44, color: BzColors.success),
+            child: const Icon(BzIcons.check, size: 44, color: BzColors.success),
           ),
           const SizedBox(height: BzSpace.l),
           Text(title, style: theme.textTheme.headlineSmall, textAlign: TextAlign.center),

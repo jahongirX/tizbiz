@@ -11,6 +11,7 @@ import 'package:bizcat/shared/widgets/async_body.dart';
 import 'package:bizcat/shared/widgets/buttons.dart';
 import 'package:bizcat/shared/widgets/images.dart';
 import 'package:bizcat/shared/widgets/states.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -93,7 +94,10 @@ class _PlainScaffold extends StatelessWidget {
   final Widget body;
 
   @override
-  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text(title)), body: body);
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: Text(title)),
+    body: body,
+  );
 }
 
 class _MenuView extends ConsumerStatefulWidget {
@@ -194,16 +198,11 @@ class _MenuViewState extends ConsumerState<_MenuView> {
 
     final Widget body;
     if (_sections.isEmpty) {
-      body = EmptyState(icon: Icons.restaurant_menu, title: copy.emptyMenu);
+      body = EmptyState(icon: BzIcons.menuBoard, title: copy.emptyMenu);
     } else {
       body = Column(
         children: [
-          _CategoryBar(
-            sections: _sections,
-            active: active,
-            chipKey: _chipKey,
-            onTap: (id) => unawaited(_jumpTo(id)),
-          ),
+          _CategoryBar(sections: _sections, active: active, chipKey: _chipKey, onTap: (id) => unawaited(_jumpTo(id))),
           const Divider(height: 1),
           Expanded(
             child: RefreshIndicator(
@@ -247,10 +246,7 @@ class _MenuViewState extends ConsumerState<_MenuView> {
       appBar: AppBar(title: Text(store.business.name)),
       bottomNavigationBar: cart.isEmpty
           ? null
-          : _CartBar(
-              cart: cart,
-              onOpen: () => unawaited(context.push(AppRoutes.cart(widget.slug))),
-            ),
+          : _CartBar(cart: cart, onOpen: () => unawaited(context.push(AppRoutes.cart(widget.slug)))),
       body: body,
     );
   }
@@ -298,7 +294,13 @@ class _CategoryBar extends StatelessWidget {
 // ---------------------------------------------------------------- item row
 
 class _ItemRow extends StatelessWidget {
-  const _ItemRow({required this.item, required this.qty, required this.onTap, required this.onAdd, required this.onDec});
+  const _ItemRow({
+    required this.item,
+    required this.qty,
+    required this.onTap,
+    required this.onAdd,
+    required this.onDec,
+  });
 
   final Service item;
   final int qty;
@@ -383,7 +385,10 @@ class _CartBar extends StatelessWidget {
                     ),
                     Text(
                       Money.format(cart.totalTiyin),
-                      style: theme.textTheme.titleMedium?.copyWith(color: scheme.onPrimary, fontWeight: FontWeight.w700),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: scheme.onPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ],
                 ),

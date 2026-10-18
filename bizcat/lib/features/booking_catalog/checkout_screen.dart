@@ -14,6 +14,7 @@ import 'package:bizcat/shared/widgets/bottom_bar.dart';
 import 'package:bizcat/shared/widgets/buttons.dart';
 import 'package:bizcat/shared/widgets/flow_widgets.dart';
 import 'package:bizcat/shared/widgets/states.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -84,7 +85,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           if (mounted) context.go(AppRoutes.menu(widget.slug));
         });
       }
-      return Scaffold(appBar: AppBar(title: const Text(_title)), body: const LoadingView());
+      return Scaffold(
+        appBar: AppBar(title: const Text(_title)),
+        body: const LoadingView(),
+      );
     }
 
     final copy = CatalogCopy.forEngine(store.value?.engine);
@@ -205,7 +209,7 @@ class _CheckoutForm extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: BzSpace.m),
-        NoticeCard(icon: Icons.storefront_outlined, text: copy.pickupNote),
+        NoticeCard(icon: BzIcons.shop, text: copy.pickupNote),
         if (error != null && !hasFieldErrors) ...[
           const SizedBox(height: BzSpace.l),
           _SubmitAlert(error: error, phone: business.phone, onRetry: onRetry),
@@ -232,7 +236,7 @@ class _SubmitAlert extends ConsumerWidget {
         action: canCall
             ? SecondaryButton(
                 label: CatalogText.call,
-                icon: Icons.call_outlined,
+                icon: BzIcons.call,
                 onPressed: () => unawaited(callPhone(ref, phone)),
               )
             : null,
@@ -242,7 +246,7 @@ class _SubmitAlert extends ConsumerWidget {
     if (e is ApiException && (e.status == 400 || e.status == 422)) return CatalogAlert(message: e.message);
     return CatalogAlert(
       message: errorText(e),
-      action: SecondaryButton(label: 'Qayta urinish', icon: Icons.refresh, onPressed: onRetry),
+      action: SecondaryButton(label: 'Qayta urinish', icon: BzIcons.refresh, onPressed: onRetry),
     );
   }
 }

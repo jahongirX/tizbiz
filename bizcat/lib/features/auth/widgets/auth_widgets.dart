@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bizcat/shared/widgets/brand.dart';
 import 'package:bizcat/shared/widgets/nav.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -22,7 +23,7 @@ class AuthScaffold extends StatelessWidget {
       appBar: AppBar(
         leading: IconButton(
           tooltip: 'Orqaga',
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(BzIcons.back),
           onPressed: onBack ?? () => popOrGo(context),
         ),
       ),
@@ -70,10 +71,7 @@ class AuthHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (showMark) ...[
-          const BrandMark(size: 48),
-          const SizedBox(height: BzSpace.xl),
-        ],
+        if (showMark) ...[const BrandMark(size: 48), const SizedBox(height: BzSpace.xl)],
         Text(title, style: theme.textTheme.headlineSmall),
         if (subtitle != null) ...[
           const SizedBox(height: BzSpace.s),
@@ -111,7 +109,7 @@ class AuthBanner extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(isError ? Icons.error_outline : Icons.info_outline, size: 20, color: fg),
+            Icon(isError ? BzIcons.danger : BzIcons.info, size: 20, color: fg),
             const SizedBox(width: BzSpace.s),
             Expanded(
               child: Column(

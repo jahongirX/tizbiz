@@ -4,6 +4,7 @@ import 'package:bizcat/app/routes.dart';
 import 'package:bizcat/shared/widgets/favorite_button.dart';
 import 'package:bizcat/shared/widgets/images.dart';
 import 'package:bizcat/shared/widgets/rating.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -69,23 +70,37 @@ class BusinessCardTile extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(card.name,
-                            style: theme.textTheme.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        child: Text(
+                          card.name,
+                          style: theme.textTheme.titleMedium,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       const SizedBox(width: BzSpace.s),
                       RatingBadge(avg: card.ratingAvg, count: card.ratingCount),
                     ],
                   ),
                   if (card.categoryLabel != null)
-                    Text(card.categoryLabel!, style: theme.textTheme.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text(
+                      card.categoryLabel!,
+                      style: theme.textTheme.bodySmall,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   if (place != null) ...[
                     const SizedBox(height: BzSpace.xs),
                     Row(
                       children: [
-                        Icon(Icons.place_outlined, size: 16, color: scheme.onSurfaceVariant),
+                        Icon(BzIcons.location, size: 16, color: scheme.onSurfaceVariant),
                         const SizedBox(width: BzSpace.xs),
                         Expanded(
-                          child: Text(place, style: theme.textTheme.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                          child: Text(
+                            place,
+                            style: theme.textTheme.bodySmall,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
                     ),
@@ -95,7 +110,9 @@ class BusinessCardTile extends StatelessWidget {
                     Row(
                       children: [
                         if (price != null)
-                          Expanded(child: Text(price, style: theme.textTheme.titleMedium?.copyWith(color: scheme.primary)))
+                          Expanded(
+                            child: Text(price, style: theme.textTheme.titleMedium?.copyWith(color: scheme.primary)),
+                          )
                         else
                           const Spacer(),
                         if (card.isFeatured) const FeaturedChip(),
@@ -169,7 +186,12 @@ class BusinessCardCompact extends StatelessWidget {
                         if (place != null) ...[
                           const SizedBox(width: BzSpace.s),
                           Expanded(
-                            child: Text(place, style: theme.textTheme.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                            child: Text(
+                              place,
+                              style: theme.textTheme.bodySmall,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ],
                       ],
@@ -182,5 +204,82 @@ class BusinessCardCompact extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// A row inside a white group: logo, name, `category · ★ 4.6 (12) · place`, chevron.
+class BusinessRow extends StatelessWidget {
+  const BusinessRow({super.key, required this.card, this.onTap, this.trailing});
+
+  final BusinessCard card;
+
+  /// Default: `context.push(AppRoutes.business(card.slug))`.
+  final VoidCallback? onTap;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final muted = theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant);
+    final place = card.district ?? card.city;
+    final category = card.categoryLabel == null ? null : _short(card.categoryLabel!);
+    final price = priceFromLabel(card.priceFromTiyin);
+    return InkWell(
+      key: ValueKey('business-row-${card.slug}'),
+      onTap: onTap ?? () => unawaited(context.push(AppRoutes.business(card.slug))),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: BzSpace.l, vertical: 10),
+        child: Row(
+          children: [
+            BizLogo(url: card.logo, name: card.name, size: 56, brandColor: card.brandColor),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    card.name,
+                    style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      if (card.ratingCount > 0) ...[
+                        const Icon(Icons.star_rounded, size: 16, color: BzColors.apricot),
+                        const SizedBox(width: 2),
+                        Text('${card.ratingAvg.toStringAsFixed(1)} (${card.ratingCount})', style: muted),
+                        const SizedBox(width: 6),
+                      ],
+                      Expanded(
+                        child: Text(
+                          [?category, ?place].join(' · '),
+                          style: muted,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (price != null) ...[
+                    const SizedBox(height: 2),
+                    Text(price, style: theme.textTheme.labelLarge, maxLines: 1),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: BzSpace.xs),
+            trailing ?? Icon(BzIcons.chevronRight, size: 20, color: scheme.onSurfaceVariant),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _short(String label) {
+    final i = label.indexOf(' / ');
+    return (i < 0 ? label : label.substring(0, i)).trim();
   }
 }

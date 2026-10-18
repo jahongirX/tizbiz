@@ -9,6 +9,15 @@ import '../../support/test_app.dart';
 void main() {
   const signedOut = SessionSignedOut();
 
+  // Debug builds show the demo panel above the form: give the form room on screen.
+  setUp(() {
+    final binding = TestWidgetsFlutterBinding.ensureInitialized();
+    binding.platformDispatcher.views.first
+      ..physicalSize = const Size(800, 2400)
+      ..devicePixelRatio = 1;
+  });
+  tearDown(() => TestWidgetsFlutterBinding.instance.platformDispatcher.views.first.reset());
+
   testWidgets('empty submit shows both errors and does not log in', (t) async {
     final s = await pumpScreen(t, const LoginScreen(), session: signedOut);
     await t.tap(find.widgetWithText(FilledButton, 'Kirish'));

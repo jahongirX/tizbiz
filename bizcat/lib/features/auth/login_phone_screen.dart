@@ -5,6 +5,7 @@ import 'package:bizcat/features/auth/providers.dart';
 import 'package:bizcat/features/auth/widgets/auth_widgets.dart';
 import 'package:bizcat/shared/widgets/buttons.dart';
 import 'package:bizcat/shared/widgets/phone_field.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +13,13 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Step 1 of the sign-in: the phone number (BIZCAT-SPEC §9.2).
+/// The seeded demo consumer (bookings, orders, reviews) and its fixed OTP code.
+const kDemoConsumerPhone = '+998900000001';
+const kDemoConsumerCode = '1111';
+
+/// One-tap demo sign-in: `--dart-define=DEMO_LOGINS=true` (the CI APK build sets it) or debug.
+const kShowDemoLogin = bool.fromEnvironment('DEMO_LOGINS') || kDebugMode;
+
 class LoginPhoneScreen extends ConsumerStatefulWidget {
   const LoginPhoneScreen({super.key, this.from, this.expired = false});
 
@@ -51,6 +59,18 @@ class _LoginPhoneScreenState extends ConsumerState<LoginPhoneScreen> {
     final ok = await ref.read(loginControllerProvider.notifier).requestCode(normalized);
     if (!mounted || !ok) return;
     _openCode(normalized);
+  }
+
+  /// One tap demo sign-in: the demo consumer phone with its fixed code (no SMS).
+  Future<void> _demo() async {
+    final ctrl = ref.read(loginControllerProvider.notifier);
+    if (ref.read(loginControllerProvider).busy) return;
+    // Sign-in refreshes the router (which leaves /login), so keep the router, not the context.
+    final router = GoRouter.of(context);
+    if (!await ctrl.requestCode(kDemoConsumerPhone)) return;
+    final session = await ctrl.verify(kDemoConsumerPhone, kDemoConsumerCode);
+    if (session == null) return;
+    router.go(safeFrom(widget.from) ?? AppRoutes.home);
   }
 
   void _openCode(String normalized) {
@@ -111,17 +131,15 @@ class _LoginPhoneScreenState extends ConsumerState<LoginPhoneScreen> {
           ),
         ],
         const SizedBox(height: BzSpace.xl),
-        CtaButton(
-          label: 'Kod olish',
-          loading: state.sending,
-          onPressed: _complete ? () => unawaited(_submit()) : null,
-        ),
-        if (kDebugMode) ...[
-          const SizedBox(height: BzSpace.l),
-          Text(
-            'Demo: 90 000 00 01 · kod 1111',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall?.copyWith(color: muted),
+        CtaButton(label: 'Kod olish', loading: state.sending, onPressed: _complete ? () => unawaited(_submit()) : null),
+        if (kShowDemoLogin) ...[
+          const SizedBox(height: BzSpace.m),
+          SecondaryButton(
+            key: const Key('login-demo'),
+            label: 'Demo mijoz sifatida kirish',
+            icon: BzIcons.user,
+            loading: state.verifying,
+            onPressed: state.busy ? null : () => unawaited(_demo()),
           ),
         ],
       ],

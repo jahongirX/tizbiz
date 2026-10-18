@@ -14,6 +14,7 @@ import 'package:bizcat/shared/widgets/rating.dart';
 import 'package:bizcat/shared/widgets/review_tile.dart';
 import 'package:bizcat/shared/widgets/states.dart';
 import 'package:bizcat/shared/widgets/status_chips.dart';
+import 'package:bizcat/theme/bz_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -123,7 +124,7 @@ void main() {
     expect(find.text('Shox Barber'), findsOneWidget);
     expect(find.text('Aziza K.'), findsOneWidget);
     expect(find.text('Soch olish · Usta Jahongir'), findsOneWidget);
-    await t.tap(find.byIcon(Icons.more_vert));
+    await t.tap(find.byIcon(BzIcons.more));
     await t.pumpAndSettle();
     await t.tap(find.text('Tahrirlash'));
     await t.pumpAndSettle();
@@ -136,11 +137,11 @@ void main() {
   });
 
   testWidgets('CategoryTile + icon mapping', (t) async {
-    expect(categoryIconData('scissors'), Icons.content_cut);
-    expect(categoryIconData('rings'), Icons.celebration_outlined);
-    expect(categoryIconData('zzz'), Icons.storefront_outlined);
+    expect(categoryIconData('scissors'), BzIcons.scissor);
+    expect(categoryIconData('rings'), BzIcons.wedding);
+    expect(categoryIconData('zzz'), BzIcons.shop);
     final cat = Category.fromJson(Fx.items(Fx.categories).first);
-    await pumpInApp(t, SizedBox(width: 120, child: CategoryTile(category: cat)));
+    await pumpInApp(t, Center(child: CategoryTile(category: cat)));
     expect(find.text('Barber'), findsOneWidget);
     expect(find.text('1 ta'), findsOneWidget);
   });

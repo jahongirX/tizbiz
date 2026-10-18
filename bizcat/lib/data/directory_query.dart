@@ -50,16 +50,15 @@ final class DirectoryQuery {
     String? sort,
     int? page,
     int? perPage,
-  }) =>
-      DirectoryQuery(
-        q: identical(q, _keep) ? this.q : q as String?,
-        category: identical(category, _keep) ? this.category : category as String?,
-        engine: identical(engine, _keep) ? this.engine : engine as String?,
-        city: identical(city, _keep) ? this.city : city as String?,
-        sort: sort ?? this.sort,
-        page: page ?? this.page,
-        perPage: perPage ?? this.perPage,
-      );
+  }) => DirectoryQuery(
+    q: identical(q, _keep) ? this.q : q as String?,
+    category: identical(category, _keep) ? this.category : category as String?,
+    engine: identical(engine, _keep) ? this.engine : engine as String?,
+    city: identical(city, _keep) ? this.city : city as String?,
+    sort: sort ?? this.sort,
+    page: page ?? this.page,
+    perPage: perPage ?? this.perPage,
+  );
 
   @override
   bool operator ==(Object other) =>
