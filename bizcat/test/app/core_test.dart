@@ -153,7 +153,7 @@ void main() {
   });
 
   test('cities', () {
-    expect(kCities, ['Toshkent', 'Termiz']);
+    expect(kCities, ['Termiz', 'Toshkent']);
     expect(cityLabel(null), 'Barcha shaharlar');
     expect(cityLabel('Termiz'), 'Termiz');
   });

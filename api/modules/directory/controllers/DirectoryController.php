@@ -5,6 +5,7 @@ namespace api\modules\directory\controllers;
 use api\modules\consumer\components\ConsumerController;
 use common\helpers\Categories;
 use common\models\Business;
+use common\models\BusinessBranch;
 use common\models\ConsumerFavorite;
 use common\models\Review;
 use common\presenters\BusinessPresenter;
@@ -26,6 +27,7 @@ use yii\web\NotFoundHttpException;
  * GET /v1/directory/businesses/<slug>
  * GET /v1/directory/businesses/<slug>/reviews?rating=&page=&per_page=
  * GET /v1/directory/map?q=&category=&engine=&city=&min_rating=&bbox=minLng,minLat,maxLng,maxLat
+ *     (each card carries its `branches` with coordinates: one placemark per point)
  */
 class DirectoryController extends ConsumerController
 {
@@ -106,9 +108,19 @@ class DirectoryController extends ConsumerController
      */
     public function actionMap(): array
     {
-        $query = self::filteredQuery()
-            ->andWhere(['not', ['lat' => null]])
-            ->andWhere(['not', ['lng' => null]]);
+        $table = Business::tableName();
+        $branchQuery = static fn () => (new Query())
+            ->from(['br' => BusinessBranch::tableName()])
+            ->where(new Expression('br.business_id = ' . $table . '.id'))
+            ->andWhere(['br.is_active' => 1])
+            ->andWhere(['not', ['br.lat' => null]])
+            ->andWhere(['not', ['br.lng' => null]]);
+
+        // On the map: the business's own point, or any branch with coordinates.
+        $query = self::filteredQuery()->andWhere(['or',
+            ['and', ['not', [$table . '.lat' => null]], ['not', [$table . '.lng' => null]]],
+            ['exists', $branchQuery()],
+        ]);
 
         $bbox = self::strParam('bbox');
         if ($bbox !== '') {
@@ -120,11 +132,19 @@ class DirectoryController extends ConsumerController
             if ($minLat > $maxLat || $minLat < -90 || $maxLat > 90 || $minLng < -180 || $maxLng > 180) {
                 throw new BadRequestHttpException('bbox noto\'g\'ri.');
             }
-            $query->andWhere(['between', 'lat', $minLat, $maxLat]);
-            // A viewport across the antimeridian has minLng > maxLng.
-            $query->andWhere($minLng <= $maxLng
-                ? ['between', 'lng', $minLng, $maxLng]
-                : ['or', ['>=', 'lng', $minLng], ['<=', 'lng', $maxLng]]);
+            $inBox = static function (string $lat, string $lng) use ($minLng, $minLat, $maxLng, $maxLat): array {
+                // A viewport across the antimeridian has minLng > maxLng.
+                return ['and',
+                    ['between', $lat, $minLat, $maxLat],
+                    $minLng <= $maxLng
+                        ? ['between', $lng, $minLng, $maxLng]
+                        : ['or', ['>=', $lng, $minLng], ['<=', $lng, $maxLng]],
+                ];
+            };
+            $query->andWhere(['or',
+                $inBox($table . '.lat', $table . '.lng'),
+                ['exists', $branchQuery()->andWhere($inBox('br.lat', 'br.lng'))],
+            ]);
         }
 
         $total = (int) (clone $query)->orderBy(null)->count();
@@ -134,10 +154,15 @@ class DirectoryController extends ConsumerController
         $consumer = $this->consumerOrNull();
         $prices = BusinessPresenter::priceFromMap($businesses);
         $favs = self::favoriteIds($consumer !== null ? (int) $consumer->id : null, $businesses);
+        $branches = BusinessBranch::activeByBusiness(array_map(static fn (Business $b) => (int) $b->id, $businesses));
         return [
             'data' => array_map(static fn (Business $b) => BusinessPresenter::card($b, [
                 'price_from_tiyin' => $prices[(int) $b->id] ?? null,
                 'is_favorite' => isset($favs[(int) $b->id]),
+                'branches' => array_values(array_filter(
+                    $branches[(int) $b->id] ?? [],
+                    static fn (BusinessBranch $br) => $br->lat !== null && $br->lng !== null,
+                )),
             ]), $businesses),
             'meta' => ['total' => $total, 'truncated' => $total > count($businesses)],
         ];

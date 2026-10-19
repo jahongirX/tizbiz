@@ -9,6 +9,7 @@ import 'package:bizcat/shared/widgets/rating.dart';
 import 'package:bizcat/theme/bz_icons.dart';
 import 'package:bizcat/theme/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart' show LatLng;
 import 'package:material_ui/material_ui.dart';
 import 'package:tizbiz_core/tizbiz_core.dart';
 
@@ -16,17 +17,25 @@ import 'package:tizbiz_core/tizbiz_core.dart';
 String distanceLabel(double meters) =>
     meters < 1000 ? '${(meters / 10).round() * 10} m' : '${(meters / 1000).toStringAsFixed(1)} km';
 
-/// Google Maps directions to the business (opens the maps app on the phone).
-Uri directionsUri(BusinessCard b) => Uri.parse('https://www.google.com/maps/dir/?api=1&destination=${b.lat},${b.lng}');
+/// Google Maps directions to a point (opens the maps app on the phone).
+Uri directionsUri(LatLng at) =>
+    Uri.parse('https://www.google.com/maps/dir/?api=1&destination=${at.latitude},${at.longitude}');
 
 /// The business card shown in a modal sheet when a placemark is tapped: cover with logo,
-/// name, category, rating with the review count, address, distance, price, and two actions:
-/// `Batafsil` (opens the business page) and `Yo'nalish` (directions).
+/// name, category, rating with the review count, address (of the branch, for a branch
+/// placemark), distance, price, and two actions: `Batafsil` (opens the business page) and
+/// `Yo'nalish` (directions to the placemark).
 class MapBusinessSheet extends ConsumerWidget {
-  const MapBusinessSheet({super.key, required this.card, required this.onOpen, this.meters});
+  const MapBusinessSheet({super.key, required this.card, required this.onOpen, this.branch, this.at, this.meters});
 
   final BusinessCard card;
   final VoidCallback onOpen;
+
+  /// Set for a branch placemark.
+  final BusinessBranch? branch;
+
+  /// The placemark's point (directions go there).
+  final LatLng? at;
 
   /// Distance from the consumer, when their position is known.
   final double? meters;
@@ -36,8 +45,12 @@ class MapBusinessSheet extends ConsumerWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final muted = theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant);
-    final category = card.categoryLabel;
-    final place = card.address ?? card.district ?? card.city;
+    final br = branch;
+    final category = br == null ? card.categoryLabel : 'Filial: ${br.name}';
+    final place = br != null
+        ? [?br.address, if (br.district != null && br.city != 'Termiz') br.district!].join(', ')
+        : card.address ?? card.district ?? card.city;
+    final target = at ?? (card.hasLocation ? LatLng(card.lat!, card.lng!) : null);
     final price = priceFromLabel(card.priceFromTiyin);
     const logo = 64.0;
 
@@ -111,7 +124,7 @@ class MapBusinessSheet extends ConsumerWidget {
                   Text("Hali sharh yo'q", style: muted),
               ],
             ),
-            if (place != null || meters != null) ...[
+            if (place != null && place.isNotEmpty || meters != null) ...[
               const SizedBox(height: BzSpace.m),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,9 +163,9 @@ class MapBusinessSheet extends ConsumerWidget {
                     key: const Key('map-sheet-route'),
                     label: "Yo'nalish",
                     icon: BzIcons.route,
-                    onPressed: card.hasLocation
+                    onPressed: target != null
                         ? () => unawaited(
-                            ref.read(urlOpenerProvider).open(directionsUri(card)).then((ok) {
+                            ref.read(urlOpenerProvider).open(directionsUri(target)).then((ok) {
                               if (!ok) showSnack("Xaritani ochib bo'lmadi.");
                             }),
                           )

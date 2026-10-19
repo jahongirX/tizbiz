@@ -2,8 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'prefs.dart';
 
-/// Demo data is in Toshkent; Termiz is the target market.
-const List<String> kCities = ['Toshkent', 'Termiz'];
+/// Termiz is the launch city (the listings and demo businesses are there).
+const List<String> kCities = ['Termiz', 'Toshkent'];
 
 /// The selected city (null = all cities), persisted in prefs.
 final cityProvider = NotifierProvider<CityController, String?>(CityController.new);

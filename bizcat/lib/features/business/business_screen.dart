@@ -137,7 +137,11 @@ class _BusinessViewState extends ConsumerState<_BusinessView> with SingleTickerP
             flexibleSpace: BusinessCoverSpace(business: page.business),
           ),
           SliverToBoxAdapter(
-            child: BusinessHeaderBlock(page: page, onRatingTap: () => _tabs.animateTo(1)),
+            child: BusinessHeaderBlock(
+              page: page,
+              onRatingTap: () => _tabs.animateTo(1),
+              onBranchesTap: () => _tabs.animateTo(2),
+            ),
           ),
           SliverPersistentHeader(
             pinned: true,
@@ -205,7 +209,7 @@ class _BookingBar extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Onlayn yozilish vaqtincha yopiq',
+              card.isClaimed ? 'Onlayn yozilish vaqtincha yopiq' : "Bu biznes hali onlayn bron qabul qilmaydi",
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),

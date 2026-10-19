@@ -67,6 +67,9 @@ const slug =
 
 const loading = ref(true)
 const notFound = ref(false)
+// A directory listing imported from an open source: the owner has not joined yet,
+// so there is no mini-site under its name.
+const unclaimed = ref(null)
 const loadError = ref('')
 const payload = ref(null)
 
@@ -80,6 +83,7 @@ onMounted(async () => {
   try {
     const data = await api.get(`/v1/site/${encodeURIComponent(slug)}`)
     if (!data.business) notFound.value = true
+    else if (data.business.is_claimed === false) unclaimed.value = data.business
     else {
       payload.value = data
       applyTheme(data.engine || 'slot', data.business)
@@ -118,6 +122,16 @@ onMounted(async () => {
       <div style="font-size: 44px">🔍</div>
       <h2>Biznes topilmadi</h2>
       <p class="note">"{{ slug }}" manzili bo‘yicha biznes mavjud emas.</p>
+    </div>
+  </div>
+
+  <!-- Listing not connected yet -->
+  <div v-else-if="unclaimed" class="center">
+    <div>
+      <div style="font-size: 44px">🏪</div>
+      <h2>{{ unclaimed.name }}</h2>
+      <p class="note">Bu biznes hali TizBiz’ga ulanmagan, shuning uchun onlayn bron va buyurtma yo‘q.</p>
+      <p class="note">Bu sizning biznesingizmi? <a href="https://tizbiz.uz/register">Bepul ulang</a></p>
     </div>
   </div>
 

@@ -5,6 +5,7 @@ import 'package:bizcat/core/favorites.dart';
 import 'package:bizcat/core/launcher.dart';
 import 'package:bizcat/core/session.dart';
 import 'package:bizcat/features/business/providers.dart';
+import 'package:bizcat/features/business/widgets/branches_card.dart';
 import 'package:bizcat/shared/widgets/business_cards.dart';
 import 'package:bizcat/shared/widgets/images.dart';
 import 'package:bizcat/shared/widgets/nav.dart';
@@ -106,10 +107,13 @@ class CoverIconButton extends StatelessWidget {
 /// Name, category, tagline, the rating badge (tap -> reviews tab), the actions, the address and
 /// today's hours.
 class BusinessHeaderBlock extends StatelessWidget {
-  const BusinessHeaderBlock({super.key, required this.page, required this.onRatingTap});
+  const BusinessHeaderBlock({super.key, required this.page, required this.onRatingTap, this.onBranchesTap});
 
   final BusinessPage page;
   final VoidCallback onRatingTap;
+
+  /// Opens the tab that lists the branches.
+  final VoidCallback? onBranchesTap;
 
   @override
   Widget build(BuildContext context) {
@@ -152,8 +156,18 @@ class BusinessHeaderBlock extends StatelessWidget {
                 ),
               ),
               if (card.isFeatured) ...[const SizedBox(width: BzSpace.s), const FeaturedChip()],
+              if (card.branches.isNotEmpty) ...[
+                const SizedBox(width: BzSpace.s),
+                ActionChip(
+                  key: const Key('business-branches-chip'),
+                  avatar: Icon(BzIcons.location, size: 16, color: scheme.primary),
+                  label: Text('${card.branches.length} ta filial'),
+                  onPressed: onBranchesTap,
+                ),
+              ],
             ],
           ),
+          if (!card.isClaimed) ...[const SizedBox(height: BzSpace.m), const UnclaimedNote()],
           const SizedBox(height: BzSpace.l),
           BusinessActionRow(page: page),
           if ((card.address ?? '').trim().isNotEmpty) ...[

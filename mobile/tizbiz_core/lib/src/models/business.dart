@@ -91,6 +91,8 @@ final class BusinessCard {
     this.onlineBookingEnabled = true,
     this.priceFromTiyin,
     this.isFavorite = false,
+    this.isClaimed = true,
+    this.branches = const [],
   });
 
   factory BusinessCard.fromJson(Map<String, dynamic> json) => BusinessCard(
@@ -116,6 +118,11 @@ final class BusinessCard {
         onlineBookingEnabled: JsonRead.boolean(json['online_booking_enabled'], true),
         priceFromTiyin: JsonRead.integerOrNull(json['price_from_tiyin']),
         isFavorite: JsonRead.boolean(json['is_favorite']),
+        isClaimed: JsonRead.boolean(json['is_claimed'], true),
+        branches: [
+          for (final b in (json['branches'] is List ? json['branches'] as List : const []))
+            if (b is Map) BusinessBranch.fromJson(b.cast<String, dynamic>()),
+        ],
       );
 
   final int id;
@@ -147,6 +154,13 @@ final class BusinessCard {
   /// Always present; false when anonymous.
   final bool isFavorite;
 
+  /// False for a listing imported from an open source before the owner joined: info only,
+  /// no booking.
+  final bool isClaimed;
+
+  /// Active branches (the map endpoint sends only those with coordinates).
+  final List<BusinessBranch> branches;
+
   bool get hasLocation => lat != null && lng != null;
 
   BusinessCard copyWith({bool? isFavorite}) => BusinessCard(
@@ -172,6 +186,8 @@ final class BusinessCard {
         onlineBookingEnabled: onlineBookingEnabled,
         priceFromTiyin: priceFromTiyin,
         isFavorite: isFavorite ?? this.isFavorite,
+        isClaimed: isClaimed,
+        branches: branches,
       );
 
   Map<String, dynamic> toJson() => {
@@ -197,6 +213,64 @@ final class BusinessCard {
         'online_booking_enabled': onlineBookingEnabled,
         'price_from_tiyin': priceFromTiyin,
         'is_favorite': isFavorite,
+        'is_claimed': isClaimed,
+        'branches': [for (final b in branches) b.toJson()],
+      };
+}
+
+/// A branch (filial) of a business: its own address and map point.
+@immutable
+final class BusinessBranch {
+  const BusinessBranch({
+    required this.id,
+    required this.name,
+    this.city,
+    this.district,
+    this.address,
+    this.landmark,
+    this.phone,
+    this.hours,
+    this.lat,
+    this.lng,
+  });
+
+  factory BusinessBranch.fromJson(Map<String, dynamic> json) => BusinessBranch(
+        id: JsonRead.integer(json['id']),
+        name: JsonRead.string(json['name']),
+        city: JsonRead.nonEmptyOrNull(json['city']),
+        district: JsonRead.nonEmptyOrNull(json['district']),
+        address: JsonRead.nonEmptyOrNull(json['address']),
+        landmark: JsonRead.nonEmptyOrNull(json['landmark']),
+        phone: JsonRead.nonEmptyOrNull(json['phone']),
+        hours: JsonRead.nonEmptyOrNull(json['hours']),
+        lat: JsonRead.numberOrNull(json['lat']),
+        lng: JsonRead.numberOrNull(json['lng']),
+      );
+
+  final int id;
+  final String name;
+  final String? city;
+  final String? district;
+  final String? address;
+  final String? landmark;
+  final String? phone;
+  final String? hours;
+  final double? lat;
+  final double? lng;
+
+  bool get hasLocation => lat != null && lng != null;
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'city': city,
+        'district': district,
+        'address': address,
+        'landmark': landmark,
+        'phone': phone,
+        'hours': hours,
+        'lat': lat,
+        'lng': lng,
       };
 }
 

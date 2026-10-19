@@ -20,8 +20,32 @@ import 'package:latlong2/latlong.dart' show Distance, LatLng, LengthUnit;
 import 'package:material_ui/material_ui.dart';
 import 'package:tizbiz_core/tizbiz_core.dart';
 
-/// Where the map opens before results arrive (the selected city, else Toshkent).
+/// Where the map opens before results arrive (the selected city, else Termiz).
 const Map<String, LatLng> _cityCenters = {'Toshkent': LatLng(41.3111, 69.2797), 'Termiz': LatLng(37.2242, 67.2783)};
+
+/// The first view frames the points within this distance of the city centre (a chain's
+/// far-away branches would otherwise zoom out to the whole region).
+const double _cityRadiusMeters = 30000;
+
+/// One placemark: a business at its own point, or at one of its branches.
+typedef MapPoint = ({String key, BusinessCard card, BusinessBranch? branch, LatLng at});
+
+/// Every placemark of [items]: the business point plus each branch point (a branch at the
+/// business's own spot is skipped).
+List<MapPoint> mapPoints(List<BusinessCard> items) {
+  final out = <MapPoint>[];
+  for (final b in items) {
+    final main = b.hasLocation ? LatLng(b.lat!, b.lng!) : null;
+    if (main != null) out.add((key: b.slug, card: b, branch: null, at: main));
+    for (final br in b.branches) {
+      if (!br.hasLocation) continue;
+      final at = LatLng(br.lat!, br.lng!);
+      if (main != null && const Distance().as(LengthUnit.Meter, main, at) < 30) continue;
+      out.add((key: '${b.slug}#${br.id}', card: b, branch: br, at: at));
+    }
+  }
+  return out;
+}
 
 /// The "4.5+" rating filter.
 const double kMapGoodRating = 4.5;
@@ -55,9 +79,9 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   bool _moved = false;
 
   /// The result list the camera was last fitted to (fit once per new result set).
-  List<BusinessCard>? _fittedTo;
+  List<MapPoint>? _fittedTo;
 
-  /// The placemark whose sheet is open.
+  /// The key of the placemark whose sheet is open.
   String? _selected;
   LatLng? _me;
   bool _locating = false;
@@ -71,12 +95,20 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     super.dispose();
   }
 
-  List<BusinessCard> _withLocation(List<BusinessCard> items) => [
-    for (final b in items)
-      if (b.hasLocation) b,
-  ];
+  LatLng get _cityCenter => _cityCenters[ref.read(cityProvider)] ?? _cityCenters['Termiz']!;
 
-  LatLng _point(BusinessCard b) => LatLng(b.lat!, b.lng!);
+  /// Placemarks of a result list, cached per list instance (so `identical` works for fitting).
+  List<MapPoint> _pointsOf(List<BusinessCard>? items) {
+    if (items == null) return const [];
+    if (!identical(items, _pointsFor)) {
+      _pointsFor = items;
+      _points = mapPoints(items);
+    }
+    return _points;
+  }
+
+  List<BusinessCard>? _pointsFor;
+  List<MapPoint> _points = const [];
 
   // ---------------------------------------------------------------- camera
 
@@ -93,10 +125,18 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     unawaited(c.forward());
   }
 
-  /// Frames all placemarks, leaving room for the search bar and filters on top.
-  void _fit(List<BusinessCard> items) {
+  /// Frames the placemarks, leaving room for the search bar and filters on top. With
+  /// [nearCity] only those around the city centre (when there are any).
+  void _fit(List<MapPoint> all, {bool nearCity = false}) {
     if (!_ready) return;
-    final points = [for (final b in items) _point(b)];
+    var points = [for (final p in all) p.at];
+    if (nearCity) {
+      final near = [
+        for (final p in points)
+          if (const Distance().as(LengthUnit.Meter, _cityCenter, p) <= _cityRadiusMeters) p,
+      ];
+      if (near.isNotEmpty) points = near;
+    }
     if (points.isEmpty) return;
     if (points.length == 1) {
       _map.move(points.first, 15);
@@ -107,11 +147,11 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     );
   }
 
-  void _onResults(List<BusinessCard> items) {
-    if (identical(_fittedTo, items)) return;
-    _fittedTo = items;
+  void _onResults(List<MapPoint> points) {
+    if (identical(_fittedTo, points)) return;
+    _fittedTo = points;
     // A "search this area" result keeps the viewport the user chose.
-    if (_query.bbox == null) _fit(items);
+    if (_query.bbox == null) _fit(points, nearCity: true);
   }
 
   // ---------------------------------------------------------------- search & filters
@@ -159,16 +199,17 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     if (_query.bbox != null) {
       _setQuery(_query.copyWith(bbox: null));
     } else if (items != null) {
-      _fit(_withLocation(items));
+      _fit(_pointsOf(items));
       setState(() => _moved = false);
     }
   }
 
   // ---------------------------------------------------------------- placemark sheet
 
-  Future<void> _openSheet(BusinessCard b) async {
-    setState(() => _selected = b.slug);
-    _animateTo(_point(b), zoom: _ready && _map.camera.zoom < 14 ? 15 : null);
+  Future<void> _openSheet(MapPoint p) async {
+    final b = p.card;
+    setState(() => _selected = p.key);
+    _animateTo(p.at, zoom: _ready && _map.camera.zoom < 14 ? 15 : null);
     final open = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -177,7 +218,13 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       barrierColor: BzColors.indigo.withValues(alpha: 0.12),
       // Closing removes the card at once (no slide-out).
       sheetAnimationStyle: const AnimationStyle(duration: Duration(milliseconds: 260), reverseDuration: Duration.zero),
-      builder: (sheet) => MapBusinessSheet(card: b, meters: _metersTo(b), onOpen: () => Navigator.of(sheet).pop(true)),
+      builder: (sheet) => MapBusinessSheet(
+        card: b,
+        branch: p.branch,
+        at: p.at,
+        meters: _metersTo(p.at),
+        onOpen: () => Navigator.of(sheet).pop(true),
+      ),
     );
     if (!mounted) return;
     setState(() => _selected = null);
@@ -217,9 +264,9 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     }
   }
 
-  double? _metersTo(BusinessCard b) {
+  double? _metersTo(LatLng at) {
     final me = _me;
-    return me == null ? null : const Distance().as(LengthUnit.Meter, me, _point(b));
+    return me == null ? null : const Distance().as(LengthUnit.Meter, me, at);
   }
 
   // ---------------------------------------------------------------- build
@@ -227,7 +274,8 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   @override
   Widget build(BuildContext context) {
     final results = ref.watch(mapResultsProvider(_query));
-    final items = _withLocation(results.value ?? const []);
+    final items = results.value ?? const <BusinessCard>[];
+    final points = _pointsOf(results.value);
     final loading = results.isLoading;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final city = ref.watch(cityProvider);
@@ -235,15 +283,15 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
 
     ref.listen(mapResultsProvider(_query), (_, next) {
       final v = next.value;
-      if (v != null && !next.isLoading) _onResults(_withLocation(v));
+      if (v != null && !next.isLoading) _onResults(_pointsOf(v));
     });
 
     final markers = <Marker>[
-      for (final b in items)
-        if (b.slug != _selected) _marker(b, selected: false),
+      for (final p in points)
+        if (p.key != _selected) _marker(p, selected: false),
       // The selected placemark is painted last: always on top.
-      for (final b in items)
-        if (b.slug == _selected) _marker(b, selected: true),
+      for (final p in points)
+        if (p.key == _selected) _marker(p, selected: true),
     ];
 
     return Scaffold(
@@ -253,7 +301,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
             key: const Key('map'),
             mapController: _map,
             options: MapOptions(
-              initialCenter: _cityCenters[city] ?? _cityCenters['Toshkent']!,
+              initialCenter: _cityCenters[city] ?? _cityCenters['Termiz']!,
               initialZoom: 12,
               minZoom: 4,
               maxZoom: 19,
@@ -261,7 +309,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
               onMapReady: () {
                 _ready = true;
                 final v = ref.read(mapResultsProvider(_query)).value;
-                if (v != null) _onResults(_withLocation(v));
+                if (v != null) _onResults(_pointsOf(v));
               },
               onPositionChanged: (_, hasGesture) {
                 if (hasGesture && !_moved) setState(() => _moved = true);
@@ -341,16 +389,17 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     );
   }
 
-  Marker _marker(BusinessCard b, {required bool selected}) {
+  Marker _marker(MapPoint p, {required bool selected}) {
+    final b = p.card;
     return Marker(
-      key: ValueKey('pin-${b.slug}'),
-      point: _point(b),
+      key: ValueKey('pin-${p.key}'),
+      point: p.at,
       width: kMapPinSize.width,
       height: kMapPinSize.height,
       alignment: Alignment.topCenter,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () => unawaited(_openSheet(b)),
+        onTap: () => unawaited(_openSheet(p)),
         child: MapPin(card: b, selected: selected),
       ),
     );

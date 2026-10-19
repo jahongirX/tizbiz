@@ -4,6 +4,7 @@ namespace common\presenters;
 
 use common\helpers\Categories;
 use common\models\Business;
+use common\models\BusinessBranch;
 use Yii;
 use yii\db\Query;
 
@@ -28,7 +29,8 @@ final class BusinessPresenter
             'address' => $b->address,
             'map_url' => $b->map_url,
             'timezone' => $b->timezone,
-            'online_booking_enabled' => (bool) $b->online_booking_enabled,
+            'online_booking_enabled' => (bool) $b->online_booking_enabled && (bool) $b->is_claimed,
+            'is_claimed' => (bool) $b->is_claimed,
             'tagline' => $b->tagline,
             // Branding (nullable) — the public storefront themes itself from these.
             'logo' => $b->logo,
@@ -70,15 +72,36 @@ final class BusinessPresenter
             'rating_avg' => round((float) $b->rating_avg, 2),
             'rating_count' => (int) $b->rating_count,
             'is_featured' => $featuredUntil > time(),
-            'online_booking_enabled' => (bool) $b->online_booking_enabled,
+            'online_booking_enabled' => (bool) $b->online_booking_enabled && (bool) $b->is_claimed,
+            'is_claimed' => (bool) $b->is_claimed,
             'price_from_tiyin' => $price !== null ? (int) $price : null,
             'is_favorite' => (bool) ($extra['is_favorite'] ?? false),
+        ] + (array_key_exists('branches', $extra)
+            ? ['branches' => array_map([self::class, 'branch'], $extra['branches'])]
+            : []);
+    }
+
+    /** One branch: its name, address and map point. */
+    public static function branch(BusinessBranch $br): array
+    {
+        return [
+            'id' => (int) $br->id,
+            'name' => $br->name,
+            'city' => $br->city,
+            'district' => $br->district,
+            'address' => $br->address,
+            'landmark' => $br->landmark,
+            'phone' => $br->phone,
+            'hours' => $br->hours,
+            'lat' => self::floatOrNull($br->lat),
+            'lng' => self::floatOrNull($br->lng),
         ];
     }
 
     /** Directory detail: card + contact/about fields + opening hours. */
     public static function detail(Business $b, array $extra = []): array
     {
+        $extra += ['branches' => BusinessBranch::activeByBusiness([(int) $b->id])[(int) $b->id] ?? []];
         return self::card($b, $extra) + [
             'phone' => $b->phone,
             'map_url' => $b->map_url,

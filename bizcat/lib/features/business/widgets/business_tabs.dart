@@ -7,6 +7,7 @@ import 'package:bizcat/core/launcher.dart';
 import 'package:bizcat/core/rental_pricing.dart';
 import 'package:bizcat/data/storefront_providers.dart';
 import 'package:bizcat/features/business/providers.dart';
+import 'package:bizcat/features/business/widgets/branches_card.dart';
 import 'package:bizcat/features/business/widgets/business_header.dart';
 import 'package:bizcat/shared/widgets/buttons.dart';
 import 'package:bizcat/shared/widgets/images.dart';
@@ -469,6 +470,7 @@ class InfoTab extends ConsumerWidget {
           Text(description, style: theme.textTheme.bodyMedium),
         const SizedBox(height: BzSpace.l),
         LocationCard(address: card.address, mapUrl: b.mapUrl, lat: card.lat, lng: card.lng, name: card.name),
+        if (card.branches.isNotEmpty) ...[const SizedBox(height: BzSpace.m), BranchesCard(branches: card.branches)],
         if (hasPhone) ...[
           const SizedBox(height: BzSpace.m),
           Card(

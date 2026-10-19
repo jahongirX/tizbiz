@@ -35,6 +35,9 @@ use yii\db\ActiveQuery;
  * @property string|null $lat decimal(10,7) as string from the driver
  * @property string|null $lng decimal(10,7) as string from the driver
  * @property bool $is_listed shown in the Bizcat directory
+ * @property bool $is_claimed false for a listing imported from an open source before the owner joins
+ * @property string|null $source where an imported listing came from: 'osm' | 'web'
+ * @property string|null $source_ref the record id in that source (re-imports update it)
  * @property string|float $rating_avg cached AVG of published reviews (see Review::recomputeBusinessRating)
  * @property int $rating_count cached COUNT of published reviews
  * @property int|null $featured_until unix ts; featured while > now
@@ -115,6 +118,10 @@ class Business extends ActiveRecord
             [['description'], 'string', 'max' => 2000],
             [['is_listed'], 'boolean'],
             [['is_listed'], 'default', 'value' => true],
+            [['is_claimed'], 'boolean'],
+            [['is_claimed'], 'default', 'value' => true],
+            [['source'], 'string', 'max' => 16],
+            [['source_ref'], 'string', 'max' => 64],
             // Aggregates maintained by the server only (never mass-assignable).
             [['!rating_avg'], 'number', 'min' => 0, 'max' => 5],
             [['!rating_count', '!featured_until'], 'integer', 'min' => 0],
@@ -195,4 +202,13 @@ class Business extends ActiveRecord
         $features = is_array($this->features) ? $this->features : [];
         return array_key_exists($key, $features) ? (bool) $features[$key] : $default;
     }
+
+    /** Active branches, in display order. */
+    public function getBranches(): \yii\db\ActiveQuery
+    {
+        return $this->hasMany(BusinessBranch::class, ['business_id' => 'id'])
+            ->andOnCondition(['is_active' => 1])
+            ->orderBy(['sort' => SORT_ASC, 'id' => SORT_ASC]);
+    }
+
 }

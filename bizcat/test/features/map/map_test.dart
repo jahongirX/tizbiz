@@ -107,6 +107,42 @@ void main() {
     expect(q['min_rating'], '4.5');
   });
 
+  testWidgets('branches get their own placemarks; a branch card shows the branch', (t) async {
+    final cards = Fx.items(Fx.cards);
+    final aziza = {
+      ...cards[1],
+      'branches': [
+        {
+          'id': 7,
+          'name': 'Aziza Denov',
+          'city': 'Denov',
+          'district': 'Denov tumani',
+          'address': 'Sharof Rashidov 188',
+          'lat': 38.2767,
+          'lng': 67.8956,
+        },
+        // Same spot as the business itself: no extra placemark.
+        {'id': 8, 'name': 'Aziza Bosh', 'address': 'x', 'lat': cards[1]['lat'], 'lng': cards[1]['lng']},
+      ],
+    };
+    await pumpBizcat(
+      t,
+      location: '/map',
+      setup: (api) => api.on(
+        'GET',
+        _path,
+        body: {
+          'data': [cards[0], aziza],
+        },
+      ),
+    );
+    expect(find.byType(MapPin), findsNWidgets(3));
+    await t.tap(find.byKey(const ValueKey('pin-aziza-tortlari#7')));
+    await settle(t);
+    expect(find.text('Filial: Aziza Denov'), findsOneWidget);
+    expect(find.text('Sharof Rashidov 188, Denov tumani'), findsOneWidget);
+  });
+
   testWidgets('no results shows the empty pill', (t) async {
     await pumpBizcat(
       t,

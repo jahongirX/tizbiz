@@ -135,4 +135,35 @@ void main() {
     expect(find.byType(RatingSummaryView), findsOneWidget);
     expect(find.text("Usta juda e'tiborli, soch ajoyib chiqdi!"), findsOneWidget);
   });
+
+  testWidgets('an unclaimed listing shows the note and no booking CTA; branches are listed', (t) async {
+    t.view.physicalSize = const Size(1080, 4000);
+    t.view.devicePixelRatio = 2.5;
+    addTearDown(t.view.reset);
+    final detail = _copy(Fx.detail);
+    final business = (detail['data'] as Map<String, dynamic>)['business'] as Map<String, dynamic>;
+    business['is_claimed'] = false;
+    business['online_booking_enabled'] = false;
+    business['branches'] = [
+      {'id': 1, 'name': 'Shox Markaz', 'address': "At-Termiziy 18", 'lat': 37.24, 'lng': 67.28},
+      {'id': 2, 'name': 'Shox Yangi', 'address': 'Navoiy 34', 'lat': 37.23, 'lng': 67.28},
+    ];
+    final site = _copy(Fx.siteSlot);
+    ((site['data'] as Map<String, dynamic>)['business'] as Map<String, dynamic>)['online_booking_enabled'] = false;
+    await pumpBizcat(
+      t,
+      location: AppRoutes.business('shox-barber'),
+      setup: (api) => api
+        ..on('GET', '/v1/directory/businesses/shox-barber', body: detail)
+        ..on('GET', '/v1/site/shox-barber', body: site),
+    );
+    expect(find.byKey(const Key('business-unclaimed')), findsOneWidget);
+    expect(find.text('Bu biznes hali onlayn bron qabul qilmaydi'), findsOneWidget);
+    expect(find.text('2 ta filial'), findsOneWidget);
+
+    await t.tap(find.byKey(const Key('business-branches-chip')));
+    await settle(t);
+    expect(find.text('Filiallar (2)'), findsOneWidget);
+    expect(find.text('Shox Yangi'), findsOneWidget);
+  });
 }

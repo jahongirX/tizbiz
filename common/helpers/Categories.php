@@ -28,6 +28,17 @@ final class Categories
         return array_column(self::ALL, 'key');
     }
 
+    /** The booking engine of a category ('slot' when unknown). */
+    public static function engine(?string $key): string
+    {
+        foreach (self::ALL as $c) {
+            if ($c['key'] === $key) {
+                return $c['engine'];
+            }
+        }
+        return 'slot';
+    }
+
     public static function label(?string $key): ?string
     {
         if ($key === null || $key === '') {
