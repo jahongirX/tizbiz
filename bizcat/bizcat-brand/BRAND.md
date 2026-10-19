@@ -1,6 +1,8 @@
 # Bizcat — brand guide
 
-Bizcat — shahar biznes katalogi (TizBiz ekotizimining B2C tomoni). Belgi: mushuk boshi + xarita pini.
+Bizcat — shahar biznes katalogi (TizBiz ekotizimining B2C tomoni). Belgi: jilmayib turgan mushuk boshi + xarita pini.
+
+Belgi (2026-10 yangilangan): yumaloq bosh (doira) + yumshoq quloqlar + pin uchi; "kulayotgan" yumuq ko'zlar, pushti yonoqlar, kichik burun va "ω" tabassum. Do'stona, zamonaviy, tekis (flat) uslub. Favicon'da yonoq va og'iz yo'q (kichik o'lchamda o'qilishi uchun).
 
 ## Fayllar
 | Fayl | Qayerda ishlatiladi |
